@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Saranya Jewellery</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #560517 0%, #3a0310 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+        }
+
+        .register-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            display: flex;
+            width: 90%;
+            max-width: 900px;
+            overflow: hidden;
+            animation: slideIn 0.6s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .register-form-section {
+            flex: 1;
+            padding: 3rem 2rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            max-height: 100vh;
+            overflow-y: auto;
+        }
+
+        .register-image-section {
+            flex: 1;
+            background: linear-gradient(135deg, #EAD271 0%, #f0e599 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 6rem;
+            position: relative;
+            overflow: hidden;
+            min-height: 500px;
+        }
+
+        .register-image-section::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400"><defs><pattern id="pattern" patternUnits="userSpaceOnUse" width="50" height="50"><circle cx="25" cy="25" r="15" fill="%23ffffff" opacity="0.1"/></pattern></defs><rect width="400" height="400" fill="url(%23pattern)"/></svg>');
+        }
+
+        .register-form h1 {
+            color: #000;
+            margin-bottom: 0.5rem;
+            font-size: 2rem;
+        }
+
+        .register-form p {
+            color: #333;
+            margin-bottom: 2rem;
+            font-size: 0.9rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.2rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #000;
+            font-weight: 600;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.9rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #EAD271;
+            box-shadow: 0 0 10px rgba(234, 210, 113, 0.2);
+        }
+
+        .form-group input::placeholder {
+            color: #999;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .password-strength {
+            margin-top: 0.5rem;
+            height: 4px;
+            background: #e0e0e0;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .password-strength-bar {
+            height: 100%;
+            width: 0;
+            background: #ccc;
+            border-radius: 2px;
+            transition: all 0.3s;
+        }
+
+        .terms-agreement {
+            margin-bottom: 2rem;
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .terms-agreement input {
+            width: auto;
+        }
+
+        .terms-agreement label {
+            margin: 0;
+            font-weight: 400;
+            font-size: 0.85rem;
+            color: #000;
+        }
+
+        .terms-agreement a {
+            color: #EAD271;
+            text-decoration: none;
+        }
+
+        .terms-agreement a:hover {
+            text-decoration: underline;
+        }
+
+        .register-btn {
+            width: 100%;
+            padding: 1rem;
+            background: linear-gradient(135deg, #EAD271 0%, #f0e599 100%);
+            border: none;
+            border-radius: 8px;
+            color: #560517;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 1rem;
+        }
+
+        .register-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(234, 210, 113, 0.4);
+        }
+
+        .register-btn:active {
+            transform: translateY(0);
+        }
+
+        .login-link {
+            text-align: center;
+            color: #666;
+        }
+
+        .login-link a {
+            color: #EAD271;
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.3s;
+        }
+
+        .login-link a:hover {
+            color: #f0e599;
+        }
+
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: none;
+            border: 1px solid #fcc;
+        }
+
+        .success-message {
+            background: #efe;
+            color: #3c3;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: none;
+            border: 1px solid #cfc;
+        }
+
+        .back-link {
+            position: absolute;
+            top: 1.5rem;
+            left: 1.5rem;
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.3s;
+        }
+
+        .back-link:hover {
+            color: #EAD271;
+        }
+
+        @media (max-width: 768px) {
+            .register-container {
+                flex-direction: column;
+                width: 95%;
+            }
+
+            .register-image-section {
+                min-height: 200px;
+            }
+
+            .register-form-section {
+                padding: 2rem;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .back-link {
+                position: static;
+                display: inline-block;
+                margin-bottom: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-link">← Back to Home</a>
+    
+    <div class="register-container">
+        <div class="register-form-section">
+            <div class="register-form">
+                <h1>Join Saranya Jewellery</h1>
+                <p>Create an account to enjoy exclusive benefits</p>
+
+                <div class="error-message" id="errorMessage"></div>
+                <div class="success-message" id="successMessage"></div>
+
+                <form id="registerForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="firstName">First Name</label>
+                            <input 
+                                type="text" 
+                                id="firstName" 
+                                name="firstName" 
+                                placeholder="John"
+                                required
+                            >
+                        </div>
+                        <div class="form-group">
+                            <label for="lastName">Last Name</label>
+                            <input 
+                                type="text" 
+                                id="lastName" 
+                                name="lastName" 
+                                placeholder="Doe"
+                                required
+                            >
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email">Email Address</label>
+                        <input 
+                            type="email" 
+                            id="email" 
+                            name="email" 
+                            placeholder="john@example.com"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="username">Username</label>
+                        <input 
+                            type="text" 
+                            id="username" 
+                            name="username" 
+                            placeholder="Choose a username"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input 
+                            type="password" 
+                            id="password" 
+                            name="password" 
+                            placeholder="Create a strong password"
+                            required
+                        >
+                        <div class="password-strength">
+                            <div class="password-strength-bar" id="strengthBar"></div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="confirmPassword">Confirm Password</label>
+                        <input 
+                            type="password" 
+                            id="confirmPassword" 
+                            name="confirmPassword" 
+                            placeholder="Confirm your password"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="phone">Phone Number (Optional)</label>
+                        <input 
+                            type="tel" 
+                            id="phone" 
+                            name="phone" 
+                            placeholder="+1 (555) 123-4567"
+                        >
+                    </div>
+
+                    <div class="terms-agreement">
+                        <input type="checkbox" id="terms" name="terms" required>
+                        <label for="terms">
+                            I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>
+                        </label>
+                    </div>
+
+                    <button type="submit" class="register-btn">Create Account</button>
+                </form>
+
+                <p class="login-link">
+                    Already have an account? <a href="login.html">Sign in</a>
+                </p>
+            </div>
+        </div>
+
+        <div class="register-image-section">
+            👑
+        </div>
+    </div>
+
+    <script>
+        // Password strength indicator
+        document.getElementById('password').addEventListener('input', (e) => {
+            const password = e.target.value;
+            const strengthBar = document.getElementById('strengthBar');
+            let strength = 0;
+
+            if (password.length >= 8) strength += 25;
+            if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength += 25;
+            if (/[0-9]/.test(password)) strength += 25;
+            if (/[!@#$%^&*]/.test(password)) strength += 25;
+
+            strengthBar.style.width = strength + '%';
+            
+            if (strength <= 25) strengthBar.style.background = '#ff6b6b';
+            else if (strength <= 50) strengthBar.style.background = '#ffd93d';
+            else if (strength <= 75) strengthBar.style.background = '#6bcf7f';
+            else strengthBar.style.background = '#2ecc71';
+        });
+
+        // Form submission
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = {
+                firstName: document.getElementById('firstName').value,
+                lastName: document.getElementById('lastName').value,
+                email: document.getElementById('email').value,
+                username: document.getElementById('username').value,
+                password: document.getElementById('password').value,
+                confirmPassword: document.getElementById('confirmPassword').value,
+                phone: document.getElementById('phone').value,
+                terms: document.getElementById('terms').checked
+            };
+
+            const errorDiv = document.getElementById('errorMessage');
+            const successDiv = document.getElementById('successMessage');
+
+            // Reset messages
+            errorDiv.style.display = 'none';
+            successDiv.style.display = 'none';
+
+            // Validation
+            if (!formData.firstName || !formData.lastName || !formData.email || !formData.username || !formData.password) {
+                errorDiv.textContent = 'Please fill in all required fields';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            if (formData.password !== formData.confirmPassword) {
+                errorDiv.textContent = 'Passwords do not match';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            if (formData.password.length < 6) {
+                errorDiv.textContent = 'Password must be at least 6 characters long';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            if (!formData.terms) {
+                errorDiv.textContent = 'Please accept the Terms of Service';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            try {
+                // Call API to register
+                const response = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        firstName: formData.firstName,
+                        lastName: formData.lastName,
+                        email: formData.email,
+                        username: formData.username,
+                        password: formData.password,
+                        phone: formData.phone
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    successDiv.textContent = 'Registration successful! Redirecting to login...';
+                    successDiv.style.display = 'block';
+                    
+                    // Redirect to login after 1.5 seconds
+                    setTimeout(() => {
+                        window.location.href = 'login.html';
+                    }, 1500);
+                } else {
+                    errorDiv.textContent = data.message || 'Registration failed. Please try again.';
+                    errorDiv.style.display = 'block';
+                }
+            } catch (error) {
+                errorDiv.textContent = 'Connection error. Please try again.';
+                errorDiv.style.display = 'block';
+                console.error('Error:', error);
+            }
+        });
+    </script>
+</body>
+</html>

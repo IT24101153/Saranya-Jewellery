@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saranya Jewellery - Premium Jewelry Store</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #560517 0%, #3a0310 100%);
+            color: #000;
+        }
+
+        /* Navigation */
+        nav {
+            background: linear-gradient(90deg, #560517 0%, #2a0309 100%);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #EAD271;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: #EAD271;
+        }
+
+        .auth-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn-login {
+            padding: 0.6rem 1.5rem;
+            background: transparent;
+            border: 2px solid #EAD271;
+            color: #EAD271;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-login:hover {
+            background: #EAD271;
+            color: #560517;
+        }
+
+        .btn-register {
+            padding: 0.6rem 1.5rem;
+            background: #EAD271;
+            color: #560517;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-register:hover {
+            background: #f0e599;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(234, 210, 113, 0.3);
+        }
+
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(135deg, rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600"><defs><pattern id="pattern" patternUnits="userSpaceOnUse" width="100" height="100"><circle cx="50" cy="50" r="30" fill="%23EAD271" opacity="0.05"/></pattern></defs><rect width="1200" height="600" fill="%23560517"/><rect width="1200" height="600" fill="url(%23pattern)"/></svg>');
+            background-size: cover;
+            background-position: center;
+            color: white;
+            text-align: center;
+            padding: 8rem 2rem;
+            min-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .hero h1 {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #EAD271, #f0e599);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        .hero p {
+            font-size: 1.3rem;
+            margin-bottom: 2rem;
+            color: #ddd;
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            animation: fadeInUp 1s ease-out;
+        }
+
+        .btn-explore {
+            padding: 1rem 2.5rem;
+            background: #EAD271;
+            color: #560517;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-explore:hover {
+            background: #f0e599;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(234, 210, 113, 0.4);
+        }
+
+        /* Featured Products */
+        .featured-section {
+            background: white;
+            padding: 4rem 2rem;
+            text-align: center;
+        }
+
+        .featured-section h2 {
+            font-size: 2.5rem;
+            margin-bottom: 3rem;
+            color: #000;
+            position: relative;
+            display: inline-block;
+        }
+
+        .featured-section h2::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 3px;
+            background: #EAD271;
+        }
+
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .product-card {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+            border: 1px solid #f0f0f0;
+        }
+
+        .product-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 40px rgba(234, 210, 113, 0.2);
+        }
+
+        .product-image {
+            width: 100%;
+            height: 250px;
+            background: linear-gradient(135deg, #f5f5f5, #e8e8e8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4rem;
+        }
+
+        .product-info {
+            padding: 1.5rem;
+        }
+
+        .product-name {
+            font-size: 1.2rem;
+            color: #000;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+        }
+
+        .product-desc {
+            color: #444;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .product-price {
+            font-size: 1.4rem;
+            color: #EAD271;
+            font-weight: bold;
+            margin-bottom: 1rem;
+        }
+
+        .product-card button {
+            width: 100%;
+            padding: 0.8rem;
+            background: #EAD271;
+            border: none;
+            color: #560517;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .product-card button:hover {
+            background: #f0e599;
+        }
+
+        /* Features Section */
+        .features-section {
+            background: linear-gradient(135deg, #560517 0%, #3a0310 100%);
+            padding: 4rem 2rem;
+            color: white;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .feature-item {
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .feature-item h3 {
+            color: #EAD271;
+            margin-bottom: 0.5rem;
+        }
+
+        .feature-item p {
+            color: #ddd;
+        }
+
+        /* Footer */
+        footer {
+            background: #2a0309;
+            color: white;
+            text-align: center;
+            padding: 2rem;
+            border-top: 1px solid #EAD271;
+        }
+
+        footer p {
+            margin-bottom: 0.5rem;
+        }
+
+        footer a {
+            color: #EAD271;
+            text-decoration: none;
+        }
+
+        /* Animations */
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .hero p {
+                font-size: 1rem;
+            }
+
+            .nav-links {
+                gap: 1rem;
+                font-size: 0.9rem;
+            }
+
+            .nav-logo {
+                font-size: 1.3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <a href="index.html" class="nav-logo"><img src="SaranyaLOGO.jpeg" alt="Saranya Logo" style="height: 40px; margin-right: 0.5rem;"> Saranya</a>
+        <div class="nav-links">
+            <a href="#featured">Featured</a>
+            <a href="#features">Why Us</a>
+            <a href="#contact">Contact</a>
+            <div class="auth-buttons">
+                <a href="login.html" class="btn-login">Login</a>
+                <a href="register.html" class="btn-register">Register</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <h1>SARANYA JEWELLERY</h1>
+        <p>Discover the finest collection of handcrafted jewelry</p>
+        <div class="hero-buttons">
+            <a href="#featured" class="btn-explore">Shop Now</a>
+            <a href="login.html" class="btn-explore" style="background: transparent; border: 2px solid #EAD271; color: #EAD271;">Sign In</a>
+        </div>
+    </section>
+
+    <!-- Featured Products -->
+    <section class="featured-section" id="featured">
+        <h2>Featured Collection</h2>
+        <div class="products-grid">
+            <div class="product-card">
+                <div class="product-image">💍</div>
+                <div class="product-info">
+                    <div class="product-name">Diamond Ring</div>
+                    <div class="product-desc">Elegant 18K gold ring with certified diamond</div>
+                    <div class="product-price">$2,499</div>
+                    <button onclick="alert('Please login to add to cart')">Add to Cart</button>
+                </div>
+            </div>
+
+            <div class="product-card">
+                <div class="product-image">👑</div>
+                <div class="product-info">
+                    <div class="product-name">Royal Tiara</div>
+                    <div class="product-desc">Stunning crystal and pearl tiara</div>
+                    <div class="product-price">$1,899</div>
+                    <button onclick="alert('Please login to add to cart')">Add to Cart</button>
+                </div>
+            </div>
+
+            <div class="product-card">
+                <div class="product-image">✨</div>
+                <div class="product-info">
+                    <div class="product-name">Pearl Necklace</div>
+                    <div class="product-desc">Luxurious freshwater pearl necklace</div>
+                    <div class="product-price">$899</div>
+                    <button onclick="alert('Please login to add to cart')">Add to Cart</button>
+                </div>
+            </div>
+
+            <div class="product-card">
+                <div class="product-image">💎</div>
+                <div class="product-info">
+                    <div class="product-name">Sapphire Earrings</div>
+                    <div class="product-desc">Premium blue sapphire drop earrings</div>
+                    <div class="product-price">$1,299</div>
+                    <button onclick="alert('Please login to add to cart')">Add to Cart</button>
+                </div>
+            </div>
+
+            <div class="product-card">
+                <div class="product-image">🔗</div>
+                <div class="product-info">
+                    <div class="product-name">Gold Bracelet</div>
+                    <div class="product-desc">Intricate 24K gold chain bracelet</div>
+                    <div class="product-price">$1,599</div>
+                    <button onclick="alert('Please login to add to cart')">Add to Cart</button>
+                </div>
+            </div>
+
+            <div class="product-card">
+                <div class="product-image">🌟</div>
+                <div class="product-info">
+                    <div class="product-name">Emerald Set</div>
+                    <div class="product-desc">Complete jewelry set with emeralds</div>
+                    <div class="product-price">$3,299</div>
+                    <button onclick="alert('Please login to add to cart')">Add to Cart</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features-section" id="features">
+        <div class="features-grid">
+            <div class="feature-item">
+                <div class="feature-icon">🔒</div>
+                <h3>100% Authentic</h3>
+                <p>All jewelry pieces are certified and authenticated</p>
+            </div>
+
+            <div class="feature-item">
+                <div class="feature-icon">🚚</div>
+                <h3>Free Shipping</h3>
+                <p>Complimentary shipping on orders over $500</p>
+            </div>
+
+            <div class="feature-item">
+                <div class="feature-icon">💳</div>
+                <h3>Secure Payment</h3>
+                <p>Safe and encrypted payment processing</p>
+            </div>
+
+            <div class="feature-item">
+                <div class="feature-icon">🛡️</div>
+                <h3>Lifetime Warranty</h3>
+                <p>Lifetime warranty on all jewelry items</p>
+            </div>
+
+            <div class="feature-item">
+                <div class="feature-icon">👥</div>
+                <h3>Expert Support</h3>
+                <p>24/7 customer support from jewelry experts</p>
+            </div>
+
+            <div class="feature-item">
+                <div class="feature-icon">📦</div>
+                <h3>Premium Packaging</h3>
+                <p>Each item comes in luxury gift packaging</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer id="contact">
+        <p>&copy; 2026 Saranya Jewellery. All rights reserved.</p>
+        <p>Email: <a href="mailto:info@saranyajewellery.com">info@saranyajewellery.com</a> | Phone: +1 (555) 123-4567</p>
+        <p>Follow us on <a href="#">Facebook</a> | <a href="#">Instagram</a> | <a href="#">Twitter</a></p>
+    </footer>
+</body>
+</html>
