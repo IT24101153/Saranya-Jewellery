@@ -1,6 +1,7 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import User from '../models/user.model.js';
+import Staff from '../models/staff.model.js';
 
 const router = express.Router();
 
@@ -9,6 +10,7 @@ const router = express.Router();
 // @access  Public
 router.post('/register', async (req, res) => {
   try {
+    console.log('Register endpoint hit with data:', req.body);
     const { firstName, lastName, email, username, password, phone } = req.body;
 
     // Validation
@@ -110,6 +112,68 @@ router.post('/login', async (req, res) => {
     });
   } catch (error) {
     console.error('Login error:', error);
+    res.status(500).json({ 
+      message: 'Error logging in. Please try again.' 
+    });
+  }
+});
+
+// @route   POST /api/auth/staff-login
+// @desc    Staff login
+// @access  Public
+router.post('/staff-login', async (req, res) => {
+  try {
+    const { email, password, staffId } = req.body;
+
+    // Validation
+    if (!email || !password) {
+      return res.status(400).json({ 
+        message: 'Please provide email and password' 
+      });
+    }
+
+    // Check if staff exists
+    const staff = await Staff.findOne({ 
+      $or: [{ email }, { staffId }] 
+    });
+
+    if (!staff) {
+      return res.status(401).json({ 
+        message: 'Invalid email or staff ID' 
+      });
+    }
+
+    // Check password
+    const isPasswordValid = await bcrypt.compare(password, staff.password);
+
+    if (!isPasswordValid) {
+      return res.status(401).json({ 
+        message: 'Invalid credentials' 
+      });
+    }
+
+    // Check if staff is active
+    if (!staff.isActive) {
+      return res.status(401).json({ 
+        message: 'Staff account is inactive' 
+      });
+    }
+
+    res.status(200).json({
+      message: 'Staff login successful',
+      token: `${staff._id}`,
+      user: {
+        id: staff._id,
+        firstName: staff.firstName,
+        lastName: staff.lastName,
+        email: staff.email,
+        staffId: staff.staffId,
+        role: staff.role,
+        department: staff.department
+      }
+    });
+  } catch (error) {
+    console.error('Staff login error:', error);
     res.status(500).json({ 
       message: 'Error logging in. Please try again.' 
     });

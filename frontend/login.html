@@ -149,13 +149,18 @@
             margin-bottom: 1rem;
         }
 
-        .login-btn:hover {
+        .login-btn:hover:not(:disabled) {
             transform: translateY(-2px);
             box-shadow: 0 10px 30px rgba(234, 210, 113, 0.4);
         }
 
-        .login-btn:active {
+        .login-btn:active:not(:disabled) {
             transform: translateY(0);
+        }
+
+        .login-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
         }
 
         .signup-link {
@@ -344,6 +349,9 @@
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
+            const submitBtn = document.querySelector('.login-btn');
+            const originalText = submitBtn.textContent;
+            
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
             const errorDiv = document.getElementById('errorMessage');
@@ -352,6 +360,8 @@
             // Reset messages
             errorDiv.style.display = 'none';
             successDiv.style.display = 'none';
+            errorDiv.textContent = '';
+            successDiv.textContent = '';
 
             // Validation
             if (!username || !password) {
@@ -360,7 +370,12 @@
                 return;
             }
 
+            // Disable button and show loading state
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Signing In...';
+
             try {
+                console.log('Sending login request...');
                 // Call API to login
                 const response = await fetch('/api/auth/login', {
                     method: 'POST',
@@ -370,28 +385,34 @@
                     body: JSON.stringify({ username, password })
                 });
 
+                console.log('Response status:', response.status);
                 const data = await response.json();
+                console.log('Response data:', data);
 
                 if (response.ok) {
                     // Store token
                     localStorage.setItem('token', data.token);
                     localStorage.setItem('user', JSON.stringify(data.user));
                     
-                    successDiv.textContent = 'Login successful! Redirecting...';
+                    successDiv.textContent = 'Login successful! Redirecting to dashboard...';
                     successDiv.style.display = 'block';
                     
-                    // Redirect to dashboard after 1.5 seconds
+                    // Redirect to dashboard after 2 seconds
                     setTimeout(() => {
                         window.location.href = 'dashboard.html';
-                    }, 1500);
+                    }, 2000);
                 } else {
                     errorDiv.textContent = data.message || 'Login failed. Please try again.';
                     errorDiv.style.display = 'block';
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = originalText;
                 }
             } catch (error) {
-                errorDiv.textContent = 'Connection error. Please try again.';
+                console.error('Fetch error:', error);
+                errorDiv.textContent = 'Connection error. Please check your internet and try again.';
                 errorDiv.style.display = 'block';
-                console.error('Error:', error);
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalText;
             }
         });
     </script>

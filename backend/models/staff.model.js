@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const userSchema = new mongoose.Schema(
+const staffSchema = new mongoose.Schema(
   {
     firstName: {
       type: String,
@@ -10,12 +10,6 @@ const userSchema = new mongoose.Schema(
     lastName: {
       type: String,
       required: true,
-      trim: true,
-    },
-    username: {
-      type: String,
-      required: true,
-      unique: true,
       trim: true,
     },
     email: {
@@ -29,14 +23,28 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    phone: {
+    staffId: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+    },
+    department: {
       type: String,
       trim: true,
     },
     role: {
       type: String,
-      enum: ["user", "admin"],
-      default: "user",
+      enum: ["staff", "manager", "admin"],
+      default: "staff",
+    },
+    phone: {
+      type: String,
+      trim: true,
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
     },
     createdAt: {
       type: Date,
@@ -52,6 +60,6 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-const User = mongoose.model("User", userSchema, "users");
+const Staff = mongoose.model("Staff", staffSchema, "staff");
 
-export default User;    
+export default Staff;
