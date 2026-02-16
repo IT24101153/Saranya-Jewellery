@@ -3,8 +3,10 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { connectionDB } from './config/db.js';
+import dns from 'node:dns';
 
 dotenv.config();
+dns.setServers(["1.1.1.1", "8.8.8.8"]);
 
 const app = express();
 const PORT = 3000;
