@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saranya Jewellery - Welcome</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --brand-burgundy: #6f0022;
+            --brand-burgundy-dark: #4f0018;
+            --brand-gold: #e0bf63;
+            --brand-gold-strong: #f3d97f;
+            --text-soft: #f7ebc4;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: radial-gradient(circle at top, #7d0c30 0%, var(--brand-burgundy) 45%, var(--brand-burgundy-dark) 100%);
+            color: var(--text-soft);
+            margin: 0;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        a {
+            color: var(--brand-gold);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        a:hover {
+            color: #fff;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 2rem;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 15px;
+            border: 1px solid rgba(224, 191, 99, 0.22);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            padding: 2rem;
+            transition: all 0.3s ease;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 5%;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 90%;
+            z-index: 1000;
+            background: rgba(79, 0, 24, 0.6);
+            backdrop-filter: blur(5px);
+            border-bottom: 1px solid rgba(224, 191, 99, 0.25);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            color: var(--brand-gold-strong);
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .logo img {
+            width: 44px;
+            height: 44px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 1px solid rgba(224, 191, 99, 0.35);
+        }
+
+        .nav a {
+            margin-left: 2rem;
+            font-weight: 500;
+            font-size: 1rem;
+            color: var(--text-soft);
+        }
+
+        .hero {
+            text-align: center;
+            padding: 10rem 2rem 6rem;
+            color: var(--text-soft);
+        }
+
+        .hero-logo {
+            width: 160px;
+            max-width: 50vw;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            border: 1px solid rgba(224, 191, 99, 0.35);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+        }
+
+        .hero h1 {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            font-weight: 700;
+            color: var(--brand-gold-strong);
+            text-shadow: 0 0 20px rgba(0, 0, 0, 0.45);
+            animation: fadeInDown 1s ease;
+        }
+
+        .hero p {
+            font-size: 1.3rem;
+            color: var(--text-soft);
+            animation: fadeInUp 1s ease 0.5s;
+            animation-fill-mode: backwards;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 0.85rem 1.8rem;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(45deg, var(--brand-gold), var(--brand-gold-strong));
+            color: #4f0018;
+            font-size: 1.1rem;
+            font-weight: 600;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.35);
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            text-decoration: none;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 15px;
+            border: 1px solid rgba(224, 191, 99, 0.22);
+            padding: 1.5rem;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.45);
+        }
+
+        .card h3 {
+            margin-top: 0;
+            color: var(--brand-gold-strong);
+            font-weight: 600;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .mt-2 {
+            margin-top: 2rem;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="header">
+        <div class="logo">
+            <img src="SaranyaLOGO.jpeg" alt="Saranya logo">
+            <span>Saranya Jewellery</span>
+        </div>
+        <nav class="nav">
+            <a href="#collections">Collections</a>
+            <a href="#about">About</a>
+        </nav>
+    </header>
+
+    <main>
+        <section class="hero">
+            <img src="SaranyaLOGO.jpeg" alt="Saranya brand mark" class="hero-logo">
+            <h1>Elegance Redefined</h1>
+            <p>Discover jewellery that tells your story.</p>
+            <a href="#collections" class="btn mt-2">Explore Now</a>
+        </section>
+
+        <div class="container" id="collections">
+            <div class="glass-panel">
+                <h2 class="text-center" style="color: #fff; font-weight: 600;">Our Collections</h2>
+                <div class="grid-container mt-2">
+                    <div class="card">
+                        <h3>Diamond Dreams</h3>
+                        <p>Exquisite diamond pieces that capture the light and your heart.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Golden Glamour</h3>
+                        <p>Timeless gold jewellery, from classic designs to modern statements.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Sapphire Souls</h3>
+                        <p>Dive into the deep blues of our stunning sapphire collection.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="container" id="about">
+            <div class="glass-panel">
+                <h2 class="text-center" style="color: #fff; font-weight: 600;">Our Story</h2>
+                <p class="text-center mt-2" style="max-width: 800px; margin: 1rem auto; color: #e0e0e0;">
+                    Saranya Jewellery is where tradition meets innovation. We blend timeless craftsmanship with contemporary design to create pieces that are both beautiful and meaningful. Each gem is hand-selected, and every piece is crafted with passion and precision.
+                </p>
+            </div>
+        </div>
+    </main>
+
+</body>
+</html>
