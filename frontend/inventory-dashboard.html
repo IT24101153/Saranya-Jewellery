@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory Dashboard - Saranya Jewellery</title>
+    <link rel="icon" type="image/png" sizes="512x512" href="/favicon.png">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --brand-burgundy: #6f0022;
+            --brand-burgundy-dark: #4f0018;
+            --brand-gold: #e0bf63;
+            --brand-gold-strong: #f3d97f;
+            --text-soft: #f7ebc4;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: radial-gradient(circle at top, #7d0c30 0%, var(--brand-burgundy) 45%, var(--brand-burgundy-dark) 100%);
+            color: var(--text-soft);
+            min-height: 100vh;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(224, 191, 99, 0.22);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            color: var(--brand-gold);
+            font-size: 1.5rem;
+        }
+
+        .logout-btn {
+            padding: 8px 20px;
+            background: rgba(220, 53, 69, 0.3);
+            border: 1px solid rgba(220, 53, 69, 0.5);
+            color: var(--text-soft);
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .container {
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .dashboard-content {
+            transition: filter 0.3s ease;
+        }
+
+        .dashboard-content.blurred {
+            filter: blur(10px);
+            pointer-events: none;
+            user-select: none;
+        }
+
+        .pending-overlay {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 2px solid var(--brand-gold);
+            border-radius: 15px;
+            padding: 3rem;
+            text-align: center;
+            z-index: 1000;
+            max-width: 500px;
+        }
+
+        .pending-overlay.show {
+            display: block;
+        }
+
+        .pending-overlay h2 {
+            color: var(--brand-gold);
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .pending-overlay p {
+            color: var(--text-soft);
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+        }
+
+        .pending-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+
+        .section {
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(224, 191, 99, 0.22);
+            border-radius: 10px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .section h2 {
+            color: var(--brand-gold);
+            margin-bottom: 1rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(224, 191, 99, 0.22);
+            border-radius: 10px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .stat-card h3 {
+            color: var(--brand-gold);
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-card p {
+            color: var(--text-soft);
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📦 Inventory Dashboard</h1>
+        <div>
+            <span id="staffName" style="margin-right: 1rem;"></span>
+            <button class="logout-btn" onclick="logout()">Logout</button>
+        </div>
+    </div>
+
+    <div class="pending-overlay" id="pendingOverlay">
+        <div class="pending-icon">⏳</div>
+        <h2>Account Pending Approval</h2>
+        <p>Your account is waiting for administrator approval. You will be able to access your dashboard once approved.</p>
+        <p style="font-size: 0.9rem; opacity: 0.8;">Please check back later or contact your administrator.</p>
+        <button class="logout-btn" onclick="logout()" style="margin-top: 1rem;">Logout</button>
+    </div>
+
+    <div class="container">
+        <div class="dashboard-content" id="dashboardContent">
+            <!-- Stats -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>352</h3>
+                    <p>Total Items</p>
+                </div>
+                <div class="stat-card">
+                    <h3>18</h3>
+                    <p>Low Stock Items</p>
+                </div>
+                <div class="stat-card">
+                    <h3>25</h3>
+                    <p>New Arrivals</p>
+                </div>
+                <div class="stat-card">
+                    <h3>₹2.5M</h3>
+                    <p>Total Value</p>
+                </div>
+            </div>
+
+            <!-- Inventory Management -->
+            <div class="section">
+                <h2>Inventory Management</h2>
+                <p>Inventory tracking and management features will be implemented here...</p>
+            </div>
+
+            <!-- Stock Alerts -->
+            <div class="section">
+                <h2>Stock Alerts</h2>
+                <p>Low stock alerts and reorder notifications will be shown here...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/auth/me');
+                if (!response.ok) {
+                    window.location.href = '/staff-login';
+                    return;
+                }
+                const data = await response.json();
+                document.getElementById('staffName').textContent = data.fullName || data.email;
+
+                if (data.status !== 'Approved') {
+                    document.getElementById('dashboardContent').classList.add('blurred');
+                    document.getElementById('pendingOverlay').classList.add('show');
+                }
+            } catch (error) {
+                window.location.href = '/staff-login';
+            }
+        }
+
+        async function logout() {
+            await fetch('/api/auth/logout', { method: 'POST' });
+            window.location.href = '/staff-login';
+        }
+
+        checkAuth();
+    </script>
+</body>
+</html>

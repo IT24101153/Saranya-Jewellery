@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Saranya Jewellery</title>
+    <link rel="icon" type="image/png" sizes="512x512" href="/favicon.png">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --brand-burgundy: #6f0022;
+            --brand-burgundy-dark: #4f0018;
+            --brand-gold: #e0bf63;
+            --brand-gold-strong: #f3d97f;
+            --text-soft: #f7ebc4;
+            --success: #28a745;
+            --danger: #dc3545;
+            --warning: #ffc107;
+            --info: #17a2b8;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: radial-gradient(circle at top, #7d0c30 0%, var(--brand-burgundy) 45%, var(--brand-burgundy-dark) 100%);
+            color: var(--text-soft);
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(224, 191, 99, 0.22);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            color: var(--brand-gold);
+            font-size: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .user-info {
+            color: var(--text-soft);
+        }
+
+        .logout-btn {
+            padding: 8px 20px;
+            background: rgba(220, 53, 69, 0.3);
+            border: 1px solid rgba(220, 53, 69, 0.5);
+            color: var(--text-soft);
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: rgba(220, 53, 69, 0.5);
+        }
+
+        /* Main Container */
+        .container {
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Stats Section */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(224, 191, 99, 0.22);
+            border-radius: 10px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .stat-card h3 {
+            color: var(--brand-gold);
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-card p {
+            color: var(--text-soft);
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        /* Staff Management Section */
+        .section {
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(224, 191, 99, 0.22);
+            border-radius: 10px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-header h2 {
+            color: var(--brand-gold);
+            font-size: 1.5rem;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--brand-gold) 0%, var(--brand-gold-strong) 100%);
+            color: var(--brand-burgundy-dark);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(224, 191, 99, 0.4);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-warning {
+            background: var(--warning);
+            color: #333;
+        }
+
+        .btn-sm {
+            padding: 5px 12px;
+            font-size: 0.8rem;
+        }
+
+        /* Filters */
+        .filters {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(224, 191, 99, 0.3);
+            color: var(--text-soft);
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .filter-btn.active {
+            background: var(--brand-gold);
+            color: var(--brand-burgundy-dark);
+            border-color: var(--brand-gold);
+        }
+
+        /* Table */
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: rgba(224, 191, 99, 0.1);
+        }
+
+        th {
+            padding: 12px;
+            text-align: left;
+            color: var(--brand-gold);
+            font-weight: 600;
+            border-bottom: 2px solid rgba(224, 191, 99, 0.3);
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid rgba(224, 191, 99, 0.1);
+        }
+
+        tr:hover {
+            background: rgba(224, 191, 99, 0.05);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-pending {
+            background: rgba(255, 193, 7, 0.3);
+            color: #ffc107;
+        }
+
+        .badge-approved {
+            background: rgba(40, 167, 69, 0.3);
+            color: #28a745;
+        }
+
+        .badge-revoked {
+            background: rgba(220, 53, 69, 0.3);
+            color: #dc3545;
+        }
+
+        .badge-active {
+            background: rgba(40, 167, 69, 0.3);
+            color: #28a745;
+        }
+
+        .badge-inactive {
+            background: rgba(108, 117, 125, 0.3);
+            color: #999;
+        }
+
+        /* Actions */
+        .actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal.show {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: var(--brand-burgundy-dark);
+            border: 1px solid rgba(224, 191, 99, 0.22);
+            border-radius: 10px;
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-header h3 {
+            color: var(--brand-gold);
+            font-size: 1.3rem;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: var(--text-soft);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-soft);
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(224, 191, 99, 0.3);
+            border-radius: 5px;
+            color: var(--text-soft);
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .form-group select option {
+            background: var(--brand-burgundy-dark);
+        }
+
+        .alert {
+            padding: 12px;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+            display: none;
+        }
+
+        .alert.show {
+            display: block;
+        }
+
+        .alert-error {
+            background: rgba(220, 53, 69, 0.2);
+            border: 1px solid rgba(220, 53, 69, 0.5);
+            color: #ffcccc;
+        }
+
+        .alert-success {
+            background: rgba(40, 167, 69, 0.2);
+            border: 1px solid rgba(40, 167, 69, 0.5);
+            color: #ccffcc;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-soft);
+            opacity: 0.7;
+        }
+
+        .empty-state img {
+            width: 100px;
+            opacity: 0.5;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <h1>🏪 Admin Dashboard</h1>
+        <div class="header-right">
+            <div class="user-info">
+                <span id="adminName">Admin</span>
+            </div>
+            <button class="logout-btn" onclick="logout()">Logout</button>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3 id="totalStaff">0</h3>
+                <p>Total Staff</p>
+            </div>
+            <div class="stat-card">
+                <h3 id="pendingStaff">0</h3>
+                <p>Pending Approval</p>
+            </div>
+            <div class="stat-card">
+                <h3 id="approvedStaff">0</h3>
+                <p>Approved Staff</p>
+            </div>
+            <div class="stat-card">
+                <h3 id="revokedStaff">0</h3>
+                <p>Revoked Access</p>
+            </div>
+        </div>
+
+        <!-- Staff Management Section -->
+        <div class="section">
+            <div class="section-header">
+                <h2>Staff Management</h2>
+                <button class="btn btn-primary" onclick="openAddStaffModal()">+ Add New Staff</button>
+            </div>
+
+            <div id="alert" class="alert"></div>
+
+            <!-- Filters -->
+            <div class="filters">
+                <button class="filter-btn active" onclick="filterStaff('all')">All</button>
+                <button class="filter-btn" onclick="filterStaff('Pending')">Pending</button>
+                <button class="filter-btn" onclick="filterStaff('Approved')">Approved</button>
+                <button class="filter-btn" onclick="filterStaff('Revoked')">Revoked</button>
+            </div>
+
+            <!-- Staff Table -->
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                            <th>Active</th>
+                            <th>Joined</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="staffTableBody">
+                        <tr>
+                            <td colspan="7" class="empty-state">Loading staff...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Staff Modal -->
+    <div id="staffModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Add New Staff</h3>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+
+            <form id="staffForm">
+                <div class="form-group">
+                    <label for="fullName">Full Name *</label>
+                    <input type="text" id="fullName" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email *</label>
+                    <input type="email" id="email" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="role">Role *</label>
+                    <select id="role" required>
+                        <option value="">-- Select Role --</option>
+                        <option value="Customer Care">Customer Care</option>
+                        <option value="Inventory">Inventory</option>
+                        <option value="Order Management">Order Management</option>
+                        <option value="Loyalty Management">Loyalty Management</option>
+                        <option value="Product Management">Product Management</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="passwordGroup">
+                    <label for="password">Password *</label>
+                    <input type="password" id="password" minlength="6">
+                </div>
+
+                <div class="form-group">
+                    <label for="status">Status *</label>
+                    <select id="status" required>
+                        <option value="Pending">Pending</option>
+                        <option value="Approved">Approved</option>
+                        <option value="Revoked">Revoked</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Save Staff</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let allStaff = [];
+        let currentFilter = 'all';
+        let editingStaffId = null;
+
+        // Check authentication
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/auth/me');
+                if (!response.ok || response.status === 401) {
+                    window.location.href = '/staff-login';
+                    return false;
+                }
+                const data = await response.json();
+                if (data.role !== 'Admin') {
+                    alert('Access denied. Admin only.');
+                    window.location.href = '/staff-login';
+                    return false;
+                }
+                document.getElementById('adminName').textContent = data.fullName || data.email;
+                return true;
+            } catch (error) {
+                console.error('Auth check error:', error);
+                window.location.href = '/staff-login';
+                return false;
+            }
+        }
+
+        // Load staff
+        async function loadStaff() {
+            try {
+                const response = await fetch('/api/staff');
+                if (!response.ok) throw new Error('Failed to load staff');
+                
+                allStaff = await response.json();
+                updateStats();
+                displayStaff();
+            } catch (error) {
+                console.error('Error loading staff:', error);
+                showAlert('Error loading staff data', 'error');
+            }
+        }
+
+        // Update stats
+        function updateStats() {
+            document.getElementById('totalStaff').textContent = allStaff.length;
+            document.getElementById('pendingStaff').textContent = allStaff.filter(s => s.status === 'Pending').length;
+            document.getElementById('approvedStaff').textContent = allStaff.filter(s => s.status === 'Approved').length;
+            document.getElementById('revokedStaff').textContent = allStaff.filter(s => s.status === 'Revoked').length;
+        }
+
+        // Display staff
+        function displayStaff() {
+            const tbody = document.getElementById('staffTableBody');
+            let filteredStaff = currentFilter === 'all' 
+                ? allStaff 
+                : allStaff.filter(s => s.status === currentFilter);
+
+            if (filteredStaff.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No staff found</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = filteredStaff.map(staff => `
+                <tr>
+                    <td>${staff.fullName}</td>
+                    <td>${staff.email}</td>
+                    <td>${staff.role}</td>
+                    <td><span class="badge badge-${staff.status.toLowerCase()}">${staff.status}</span></td>
+                    <td><span class="badge badge-${staff.isActive ? 'active' : 'inactive'}">${staff.isActive ? 'Active' : 'Inactive'}</span></td>
+                    <td>${new Date(staff.createdAt).toLocaleDateString()}</td>
+                    <td>
+                        <div class="actions">
+                            ${staff.status === 'Pending' ? `
+                                <button class="btn btn-success btn-sm" onclick="approveStaff('${staff._id}')">✓ Approve</button>
+                                <button class="btn btn-danger btn-sm" onclick="rejectStaff('${staff._id}')">✗ Reject</button>
+                            ` : ''}
+                            ${staff.status === 'Approved' ? `
+                                <button class="btn btn-warning btn-sm" onclick="toggleActive('${staff._id}', ${staff.isActive})">
+                                    ${staff.isActive ? '⏸ Deactivate' : '▶ Activate'}
+                                </button>
+                            ` : ''}
+                            <button class="btn btn-primary btn-sm" onclick="editStaff('${staff._id}')">✏ Edit</button>
+                            ${staff.role !== 'Admin' ? `
+                                <button class="btn btn-danger btn-sm" onclick="deleteStaff('${staff._id}', '${staff.fullName}')">🗑 Delete</button>
+                            ` : ''}
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Filter staff
+        function filterStaff(filter) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            displayStaff();
+        }
+
+        // Approve staff
+        async function approveStaff(id) {
+            try {
+                const response = await fetch(`/api/staff/${id}/approve`, { method: 'PATCH' });
+                if (!response.ok) throw new Error('Failed to approve');
+                
+                showAlert('Staff approved successfully', 'success');
+                await loadStaff();
+            } catch (error) {
+                showAlert('Error approving staff', 'error');
+            }
+        }
+
+        // Reject staff
+        async function rejectStaff(id) {
+            if (!confirm('Are you sure you want to reject this staff?')) return;
+            
+            try {
+                const response = await fetch(`/api/staff/${id}/reject`, { method: 'PATCH' });
+                if (!response.ok) throw new Error('Failed to reject');
+                
+                showAlert('Staff rejected', 'success');
+                await loadStaff();
+            } catch (error) {
+                showAlert('Error rejecting staff', 'error');
+            }
+        }
+
+        // Toggle active status
+        async function toggleActive(id, currentStatus) {
+            try {
+                const response = await fetch(`/api/staff/${id}/toggle-active`, { method: 'PATCH' });
+                if (!response.ok) throw new Error('Failed to toggle status');
+                
+                showAlert(`Staff ${currentStatus ? 'deactivated' : 'activated'} successfully`, 'success');
+                await loadStaff();
+            } catch (error) {
+                showAlert('Error updating staff status', 'error');
+            }
+        }
+
+        // Delete staff
+        async function deleteStaff(id, name) {
+            if (!confirm(`Are you sure you want to permanently delete ${name}?`)) return;
+            
+            try {
+                const response = await fetch(`/api/staff/${id}`, { method: 'DELETE' });
+                if (!response.ok) throw new Error('Failed to delete');
+                
+                showAlert('Staff deleted successfully', 'success');
+                await loadStaff();
+            } catch (error) {
+                showAlert('Error deleting staff', 'error');
+            }
+        }
+
+        // Open add staff modal
+        function openAddStaffModal() {
+            editingStaffId = null;
+            document.getElementById('modalTitle').textContent = 'Add New Staff';
+            document.getElementById('staffForm').reset();
+            document.getElementById('passwordGroup').style.display = 'block';
+            document.getElementById('password').required = true;
+            document.getElementById('staffModal').classList.add('show');
+        }
+
+        // Edit staff
+        function editStaff(id) {
+            const staff = allStaff.find(s => s._id === id);
+            if (!staff) return;
+
+            editingStaffId = id;
+            document.getElementById('modalTitle').textContent = 'Edit Staff';
+            document.getElementById('fullName').value = staff.fullName;
+            document.getElementById('email').value = staff.email;
+            document.getElementById('role').value = staff.role;
+            document.getElementById('status').value = staff.status;
+            document.getElementById('passwordGroup').style.display = 'none';
+            document.getElementById('password').required = false;
+            document.getElementById('staffModal').classList.add('show');
+        }
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('staffModal').classList.remove('show');
+            document.getElementById('staffForm').reset();
+            editingStaffId = null;
+        }
+
+        // Handle form submit
+        document.getElementById('staffForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const fullName = document.getElementById('fullName').value;
+            const email = document.getElementById('email').value;
+            const role = document.getElementById('role').value;
+            const status = document.getElementById('status').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                let response;
+                if (editingStaffId) {
+                    // Update staff
+                    response = await fetch(`/api/staff/${editingStaffId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ fullName, role, status })
+                    });
+                } else {
+                    // Create staff
+                    response = await fetch('/api/staff', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ fullName, email, role, status, password })
+                    });
+                }
+
+                if (!response.ok) {
+                    const data = await response.json();
+                    throw new Error(data.message || 'Failed to save staff');
+                }
+
+                showAlert(`Staff ${editingStaffId ? 'updated' : 'created'} successfully`, 'success');
+                closeModal();
+                await loadStaff();
+            } catch (error) {
+                showAlert(error.message, 'error');
+            }
+        });
+
+        // Show alert
+        function showAlert(message, type) {
+            const alert = document.getElementById('alert');
+            alert.textContent = message;
+            alert.className = `alert alert-${type} show`;
+            setTimeout(() => {
+                alert.className = 'alert';
+            }, 5000);
+        }
+
+        // Logout
+        async function logout() {
+            try {
+                await fetch('/api/auth/logout', { method: 'POST' });
+                window.location.href = '/staff-login';
+            } catch (error) {
+                console.error('Logout error:', error);
+                window.location.href = '/staff-login';
+            }
+        }
+
+        // Initialize
+        (async function init() {
+            const isAuth = await checkAuth();
+            if (isAuth) {
+                await loadStaff();
+            }
+        })();
+    </script>
+</body>
+</html>
