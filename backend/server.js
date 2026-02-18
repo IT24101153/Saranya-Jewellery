@@ -17,6 +17,9 @@ const frontendDir = path.join(__dirname, '..', 'frontend');
 
 await connectionDB();
 
+// Serve static files from frontend directory
+app.use(express.static(frontendDir));
+
 app.get('/', (req, res) => {
   res.sendFile(path.join(frontendDir, 'index.html'));
 });
