@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Saranya – Add Loyalty Customer</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
+  :root {
+    --brand-burgundy: #6f0022;
+    --brand-burgundy-dark: #4f0018;
+    --brand-gold: #e0bf63;
+    --brand-gold-strong: #f3d97f;
+    --text-soft: #f7ebc4;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+  body {
+    font-family: 'Poppins', sans-serif;
+    background: radial-gradient(ellipse at 20% 0%, #9a0a38 0%, #6f0022 40%, #3a0010 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+
+  /* Simulated blurred dashboard behind */
+  .bg-overlay {
+    position: fixed; inset: 0;
+    background: rgba(10,0,5,0.6);
+    backdrop-filter: blur(3px);
+    z-index: 0;
+  }
+
+  /* Grid lines to simulate dashboard */
+  .bg-dashboard {
+    position: fixed; inset: 0;
+    z-index: 0;
+    padding: 20px;
+    opacity: 0.15;
+  }
+  .bg-nav { height: 40px; background: #3a0010; border-radius: 4px; margin-bottom: 16px; }
+  .bg-cards { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 16px; }
+  .bg-card { height: 60px; background: #3a0010; border-radius: 6px; }
+  .bg-table { height: 200px; background: #3a0010; border-radius: 6px; }
+
+  /* MODAL */
+  .modal {
+    position: relative;
+    z-index: 10;
+    background: rgba(255, 255, 255, 0.07);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(243, 217, 127, 0.28);
+    border-radius: 14px;
+    padding: 30px 30px 24px;
+    width: 100%;
+    max-width: 480px;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255,255,255,0.09);
+  }
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+
+  .modal-title { font-size: 16px; font-weight: 700; color: #ffffff; }
+
+  .modal-close {
+    background: transparent; border: none;
+    color: rgba(255,255,255,0.45);
+    font-size: 18px; cursor: pointer; line-height: 1;
+    padding: 2px 5px;
+    border-radius: 3px;
+    transition: color 0.15s;
+  }
+  .modal-close:hover { color: rgba(255,255,255,0.8); }
+
+  .field { margin-bottom: 14px; }
+
+  .field label {
+    display: block;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #f3d97f;
+    margin-bottom: 7px;
+  }
+
+  .field label .req { color: #f08080; margin-left: 2px; }
+
+  .field input,
+  .field select {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(243, 217, 127, 0.22);
+    border-radius: 8px;
+    padding: 10px 13px;
+    font-size: 13px;
+    font-family: 'Poppins', sans-serif;
+    color: #ffffff;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  .field input::placeholder { color: rgba(255,255,255,0.3); }
+  .field input:focus, .field select:focus {
+    border-color: rgba(243, 217, 127, 0.55);
+    box-shadow: 0 0 0 3px rgba(243,217,127,0.1);
+  }
+
+  .field input::placeholder { color: rgba(255,255,255,0.22); }
+  .field input:focus, .field select:focus { border-color: rgba(210,160,50,0.55); }
+
+  .field select {
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23a06030' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 32px;
+  }
+
+  .field select option { background: #3d0818; color: rgba(255,255,255,0.8); }
+
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+  .field-row .field { margin-bottom: 0; }
+
+  .btn-save {
+    width: 100%;
+    padding: 13px;
+    background: linear-gradient(135deg, #d4a843, #f3d97f);
+    border: none;
+    border-radius: 8px;
+    font-family: 'Poppins', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: #3a0010;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: all 0.2s;
+    letter-spacing: 0.3px;
+    box-shadow: 0 4px 18px rgba(243,217,127,0.3);
+  }
+  .btn-save:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(243,217,127,0.45); }
+</style>
+</head>
+<body>
+
+<div class="bg-dashboard">
+  <div class="bg-nav"></div>
+  <div class="bg-cards">
+    <div class="bg-card"></div>
+    <div class="bg-card"></div>
+    <div class="bg-card"></div>
+    <div class="bg-card"></div>
+  </div>
+  <div class="bg-table"></div>
+</div>
+<div class="bg-overlay"></div>
+
+<div class="modal">
+  <div class="modal-header">
+    <div class="modal-title">Add New Loyalty Customer</div>
+    <button class="modal-close">&#x2715;</button>
+  </div>
+
+  <div class="field">
+    <label>Full Name <span class="req">*</span></label>
+    <input type="text" placeholder="" />
+  </div>
+
+  <div class="field">
+    <label>Email <span class="req">*</span></label>
+    <input type="email" placeholder="" />
+  </div>
+
+  <div class="field">
+    <label>Phone Number <span class="req">*</span></label>
+    <input type="tel" placeholder="" />
+  </div>
+
+  <div class="field-row">
+    <div class="field">
+      <label>Initial Tier <span class="req">*</span></label>
+      <select>
+        <option value="">-- Select Tier --</option>
+        <option>🥈 Silver</option>
+        <option>🥇 Gold</option>
+        <option>💎 Platinum</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Status <span class="req">*</span></label>
+      <select>
+        <option>Active</option>
+        <option>Inactive</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="field-row">
+    <div class="field">
+      <label>Initial Points</label>
+      <input type="number" placeholder="0" />
+    </div>
+    <div class="field">
+      <label>Total Spent (Rs.)</label>
+      <input type="number" placeholder="0.00" />
+    </div>
+  </div>
+
+  <button class="btn-save">Save Customer</button>
+</div>
+
+</body>
+</html>

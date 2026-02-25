@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Saranya – Loyalty Staff Login</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
+  :root {
+    --brand-burgundy: #6f0022;
+    --brand-burgundy-dark: #4f0018;
+    --brand-gold: #e0bf63;
+    --brand-gold-strong: #f3d97f;
+    --text-soft: #f7ebc4;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+  body {
+    font-family: 'Poppins', sans-serif;
+    background: radial-gradient(ellipse at 20% 0%, #9a0a38 0%, #6f0022 40%, #3a0010 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+  }
+  .card {
+    background: rgba(255, 255, 255, 0.07);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(243, 217, 127, 0.28);
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255,255,255,0.1);
+    border-radius: 16px;
+    padding: 42px 38px 34px;
+    width: 100%;
+    max-width: 430px;
+  }
+  .logo-row {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 28px;
+  }
+  .logo-row img {
+    width: 64px; height: 64px;
+    border-radius: 12px;
+    border: 2px solid rgba(243,217,127,0.5);
+    box-shadow: 0 0 20px rgba(243,217,127,0.2);
+    margin-bottom: 14px;
+    object-fit: cover;
+  }
+  .brand-title {
+    font-size: 20px;
+    font-weight: 800;
+    color: #f3d97f;
+    letter-spacing: 5px;
+    text-align: center;
+    margin-bottom: 3px;
+  }
+  .brand-sub {
+    font-size: 12px;
+    color: #d4a855;
+    text-align: center;
+    letter-spacing: 1.5px;
+    font-weight: 500;
+  }
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(243,217,127,0.35), transparent);
+    margin-bottom: 24px;
+  }
+  .alert {
+    background: rgba(243, 217, 127, 0.07);
+    border: 1px solid rgba(243, 217, 127, 0.25);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 22px;
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+  }
+  .alert-text { font-size: 12.5px; color: #f0d888; line-height: 1.6; font-weight: 400; }
+  .field { margin-bottom: 18px; }
+  .field label {
+    display: block;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #f3d97f;
+    margin-bottom: 8px;
+    letter-spacing: 0.3px;
+  }
+  .field input {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(243, 217, 127, 0.25);
+    border-radius: 8px;
+    padding: 11px 14px;
+    font-size: 14px;
+    font-family: 'Poppins', sans-serif;
+    color: #ffffff;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .field input::placeholder { color: rgba(255,255,255,0.3); }
+  .field input:focus {
+    border-color: rgba(243, 217, 127, 0.6);
+    box-shadow: 0 0 0 3px rgba(243,217,127,0.1);
+  }
+  .btn-primary {
+    width: 100%;
+    padding: 13px;
+    background: linear-gradient(135deg, #d4a843, #f3d97f);
+    border: none;
+    border-radius: 8px;
+    font-family: 'Poppins', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    color: #3a0010;
+    cursor: pointer;
+    margin-top: 6px;
+    transition: all 0.2s;
+    box-shadow: 0 4px 18px rgba(243,217,127,0.3);
+  }
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 28px rgba(243,217,127,0.45);
+  }
+  .btn-primary:disabled { opacity: 0.65; cursor: not-allowed; transform: none; }
+  .card-footer { text-align: center; margin-top: 22px; font-size: 12.5px; color: #c0a050; }
+  .card-footer a { color: #f0cc60; text-decoration: none; font-weight: 600; }
+  .card-footer a:hover { color: #fff; }
+  .card-footer .sep { margin: 0 8px; opacity: 0.4; }
+  .error-msg {
+    display: none;
+    background: rgba(220,60,60,0.15);
+    border: 1px solid rgba(220,60,60,0.4);
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-bottom: 16px;
+    font-size: 12.5px;
+    color: #ff9090;
+    font-weight: 500;
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo-row">
+    <img src="SaranyaLOGO.jpeg" alt="Saranya Logo">
+    <div class="brand-title">SARANYA</div>
+    <div class="brand-sub">LOYALTY PORTAL</div>
+  </div>
+  <div class="divider"></div>
+  <div class="alert">
+    <span style="font-size:14px;flex-shrink:0;margin-top:1px;">🔒</span>
+    <div class="alert-text">Access is restricted to authorized loyalty management staff only.</div>
+  </div>
+  <div class="error-msg" id="errorMsg"></div>
+  <div class="field">
+    <label>Email Address</label>
+    <input type="email" id="emailInput" placeholder="loyalty@saranya.com" />
+  </div>
+  <div class="field">
+    <label>Password</label>
+    <input type="password" id="passwordInput" placeholder="Enter your password" />
+  </div>
+  <button class="btn-primary" id="loginBtn" onclick="handleLogin()">LOGIN</button>
+  <div class="card-footer">
+    <a href="/">← Back to Home</a>
+  </div>
+</div>
+
+<script>
+  async function handleLogin() {
+    const email    = document.getElementById('emailInput').value.trim();
+    const password = document.getElementById('passwordInput').value;
+    const errorMsg = document.getElementById('errorMsg');
+    const btn      = document.getElementById('loginBtn');
+
+    errorMsg.style.display = 'none';
+
+    if (!email || !password) {
+      errorMsg.textContent = 'Please enter your email and password.';
+      errorMsg.style.display = 'block';
+      return;
+    }
+
+    btn.textContent = 'Logging in...';
+    btn.disabled = true;
+
+    try {
+      const res  = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        window.location.href = data.redirect;
+      } else {
+        errorMsg.textContent = data.message || 'Login failed.';
+        errorMsg.style.display = 'block';
+        btn.textContent = 'LOGIN';
+        btn.disabled = false;
+      }
+    } catch (err) {
+      errorMsg.textContent = 'Could not connect to server. Please try again.';
+      errorMsg.style.display = 'block';
+      btn.textContent = 'LOGIN';
+      btn.disabled = false;
+    }
+  }
+
+  // Allow pressing Enter to submit
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') handleLogin();
+  });
+</script>
+
+</body>
+</html>

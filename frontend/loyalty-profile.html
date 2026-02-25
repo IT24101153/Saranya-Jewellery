@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Saranya – Customer Loyalty Profile</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
+  :root {
+    --brand-burgundy: #6f0022;
+    --brand-burgundy-dark: #4f0018;
+    --brand-gold: #e0bf63;
+    --brand-gold-strong: #f3d97f;
+    --text-soft: #f7ebc4;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+  body { font-family: 'Poppins', sans-serif; background: radial-gradient(ellipse at 20% 0%, #9a0a38 0%, #6f0022 40%, #3a0010 100%); min-height: 100vh; color: #ffffff; }
+
+  nav {
+    background: rgba(45, 0, 16, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    padding: 0 28px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(243, 217, 127, 0.3);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  }
+  .nav-left { display: flex; align-items: center; gap: 10px; }
+  .nav-icon { width: 32px; height: 32px; background: #7d1530; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+  .nav-brand { font-size: 15px; font-weight: 800; color: #f3d97f; letter-spacing: 2px; }
+  .nav-label { font-size: 10px; color: #c09050; letter-spacing: 2.5px; font-weight: 500; }
+  .nav-right { display: flex; gap: 14px; align-items: center; }
+  .nav-btn { background: transparent; border: 1px solid rgba(243, 217, 127, 0.45); color: var(--brand-gold-strong); padding: 6px 16px; border-radius: 6px; font-size: 12px; font-family: 'Poppins', sans-serif; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+  .nav-btn:hover { background: rgba(243,217,127,0.12); }
+
+  main { padding: 28px; max-width: 1050px; margin: 0 auto; }
+
+  .breadcrumb { font-size: 12px; color: #a06030; margin-bottom: 18px; }
+  .breadcrumb span { color: #e8c252; }
+
+  .card { background: rgba(255, 255, 255, 0.07); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(243, 217, 127, 0.22); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.06); border-radius: 12px; padding: 22px 24px; }
+  .card-title { font-size: 14px; font-weight: 700; color: #f3d97f; margin-bottom: 16px; }
+
+  /* PROFILE HEADER */
+  .profile-hdr {
+    background: rgba(255, 255, 255, 0.07);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(243, 217, 127, 0.25);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255,255,255,0.07);
+    border-radius: 14px;
+    padding: 26px 28px;
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    margin-bottom: 18px;
+  }
+  .avatar {
+    width: 64px; height: 64px;
+    background: linear-gradient(135deg, #9a9a9a, #6a6a6a);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px;
+    border: 2px solid rgba(200,140,40,0.3);
+    flex-shrink: 0;
+  }
+  .pinfo { flex: 1; }
+  .pname { font-size: 19px; font-weight: 800; color: #ffffff; margin-bottom: 3px; }
+  .pemail { font-size: 12.5px; color: #d4a855; margin-bottom: 9px; font-weight: 500; }
+  .pbadges { display: flex; gap: 7px; }
+  .badge { display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: 10.5px; font-weight: 600; }
+  .badge-platinum { background: rgba(180,200,255,0.1); color: #b8d0ff; border: 1px solid rgba(180,200,255,0.28); }
+  .badge-gold { background: rgba(212,175,55,0.12); color: #e8c252; border: 1px solid rgba(212,175,55,0.35); }
+  .badge-silver { background: rgba(192,192,192,0.12); color: #c8c8c8; border: 1px solid rgba(192,192,192,0.28); }
+  .badge-active { background: rgba(60,180,90,0.1); color: #70d888; border: 1px solid rgba(60,180,90,0.28); }
+  .divider-v { width: 1px; background: rgba(150,40,60,0.35); align-self: stretch; }
+  .pstats { display: flex; gap: 28px; flex-shrink: 0; }
+  .pstat { text-align: center; }
+  .pstat-val { font-size: 22px; font-weight: 800; color: #f3d97f; margin-bottom: 3px; }
+  .pstat-label { font-size: 11px; color: #d4a855; font-weight: 500; }
+
+  /* 2 COL */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 18px; }
+
+  .info-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid rgba(243, 217, 127, 0.1); font-size: 13px; }
+  .info-row:last-child { border-bottom: none; }
+  .info-key { color: #d4a855; font-weight: 500; }
+  .info-val { color: #ffffff; font-weight: 700; }
+  .info-val.gold { color: #e8c252; }
+  .info-val.green { color: #70d888; }
+
+  /* TIER STEPS */
+  .tier-steps { display: flex; gap: 8px; margin-bottom: 18px; }
+  .tier-step {
+    flex: 1; text-align: center; padding: 12px 8px;
+    background: rgba(243, 217, 127, 0.04);
+    border: 1px solid rgba(243, 217, 127, 0.18);
+    border-radius: 9px;
+    transition: background 0.2s;
+  }
+  .tier-step.active { background: rgba(180,200,255,0.07); border: 2px solid rgba(180,200,255,0.35); }
+  .tier-step-icon { font-size: 18px; margin-bottom: 4px; }
+  .tier-step-label { font-size: 11px; color: #d4a855; font-weight: 500; }
+  .tier-step.active .tier-step-label { color: #f3d97f; font-weight: 700; }
+
+  /* PROGRESS */
+  .prog-label { display: flex; justify-content: space-between; font-size: 12px; color: #d4a855; margin-bottom: 6px; font-weight: 500; }
+  .prog-wrap { height: 7px; background: rgba(0,0,0,0.35); border-radius: 4px; overflow: hidden; margin-bottom: 5px; }
+  .prog-fill { height: 100%; background: linear-gradient(90deg, #c08030, #e8c252); border-radius: 4px; width: 80%; }
+  .prog-note { font-size: 11px; color: #a06030; text-align: right; }
+
+  /* BENEFITS */
+  .benefit-item { display: flex; gap: 9px; align-items: center; font-size: 13px; color: #f0e4c0; margin-bottom: 8px; font-weight: 400; }
+  .benefit-check { color: #70d888; font-size: 12px; }
+
+  /* PURCHASE TABLE */
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  thead th { text-align: left; padding: 10px 10px; color: #f3d97f; font-size: 11px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; border-bottom: 1px solid rgba(243, 217, 127, 0.25); }
+  tbody tr { border-bottom: 1px solid rgba(243, 217, 127, 0.08); transition: background 0.12s; }
+  tbody tr:hover { background: rgba(243, 217, 127, 0.05); }
+  tbody td { padding: 12px 10px; color: #f0e8c8; }
+
+  .pts-pill { background: rgba(212,175,55,0.1); border: 1px solid rgba(212,175,55,0.3); border-radius: 20px; padding: 2px 9px; font-size: 11px; color: #e8c252; font-weight: 600; }
+
+  .card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .btn-add { background: linear-gradient(135deg, #d4a843, #f3d97f); border: none; border-radius: 6px; padding: 8px 18px; font-family: 'Poppins', sans-serif; font-size: 12px; font-weight: 700; color: #3a0010; cursor: pointer; transition: all 0.2s; box-shadow: 0 3px 12px rgba(243,217,127,0.3); }
+  .btn-add:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(243,217,127,0.45); }
+  .btn-add:hover { background: #f0cc60; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-left">
+    <div class="nav-icon">💎</div>
+    <div>
+      <div class="nav-brand">SARANYA</div>
+      <div class="nav-label">LOYALTY MANAGEMENT</div>
+    </div>
+  </div>
+  <div class="nav-right">
+    <button class="nav-btn">← Back to Dashboard</button>
+  </div>
+</nav>
+
+<main>
+  <div class="breadcrumb">Dashboard › Customers › <span>Priya Sharma</span></div>
+
+  <div class="profile-hdr">
+    <div class="avatar">👩</div>
+    <div class="pinfo">
+      <div class="pname">Priya Sharma</div>
+      <div class="pemail">priya@gmail.com &nbsp;·&nbsp; +94 77 123 4567</div>
+      <div class="pbadges">
+        <span class="badge badge-platinum">💎 Platinum</span>
+        <span class="badge badge-active">Active</span>
+      </div>
+    </div>
+    <div class="divider-v"></div>
+    <div class="pstats">
+      <div class="pstat"><div class="pstat-val">4,820</div><div class="pstat-label">Total Points</div></div>
+      <div class="pstat"><div class="pstat-val">Rs. 241K</div><div class="pstat-label">Total Spent</div></div>
+      <div class="pstat"><div class="pstat-val">14</div><div class="pstat-label">Purchases</div></div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="card">
+      <div class="card-title">Loyalty Details</div>
+      <div class="info-row"><span class="info-key">Member Since</span><span class="info-val">March 12, 2021</span></div>
+      <div class="info-row"><span class="info-key">Current Tier</span><span class="info-val gold">💎 Platinum</span></div>
+      <div class="info-row"><span class="info-key">Points Balance</span><span class="info-val gold">4,820 pts</span></div>
+      <div class="info-row"><span class="info-key">Total Spent</span><span class="info-val">Rs. 241,000</span></div>
+      <div class="info-row"><span class="info-key">Last Purchase</span><span class="info-val">Feb 10, 2026</span></div>
+      <div class="info-row"><span class="info-key">Expiry Risk</span><span class="info-val green">None</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Tier Progress</div>
+      <div class="tier-steps">
+        <div class="tier-step"><div class="tier-step-icon">🥈</div><div class="tier-step-label">Silver</div></div>
+        <div class="tier-step"><div class="tier-step-icon">🥇</div><div class="tier-step-label">Gold</div></div>
+        <div class="tier-step active"><div class="tier-step-icon">💎</div><div class="tier-step-label">Platinum ✓</div></div>
+      </div>
+      <div class="prog-label"><span>Rs. 241,000</span><span>Rs. 300,000</span></div>
+      <div class="prog-wrap"><div class="prog-fill"></div></div>
+      <div class="prog-note">Rs. 59,000 more to secure Platinum renewal</div>
+      <div style="margin-top:16px;">
+        <div style="font-size:12px;color:#a06030;margin-bottom:10px;font-weight:600;letter-spacing:0.5px;">TIER BENEFITS</div>
+        <div class="benefit-item"><span class="benefit-check">✓</span> Priority customer service</div>
+        <div class="benefit-item"><span class="benefit-check">✓</span> 5% discount on all purchases</div>
+        <div class="benefit-item"><span class="benefit-check">✓</span> Early access to new collections</div>
+        <div class="benefit-item"><span class="benefit-check">✓</span> Exclusive gold rate notifications</div>
+        <div class="benefit-item"><span class="benefit-check">✓</span> Birthday special offer</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-top">
+      <div class="card-title">Purchase History & Points Log</div>
+      <button class="btn-add">+ Add Points</button>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Item</th>
+          <th>Amount</th>
+          <th>Points Earned</th>
+          <th>Running Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="color:#a06030;">Feb 10, 2026</td>
+          <td>Gold Necklace – 22K</td>
+          <td>Rs. 38,500</td>
+          <td><span class="pts-pill">+770 pts</span></td>
+          <td style="color:#e8c252;font-weight:600;">4,820</td>
+        </tr>
+        <tr>
+          <td style="color:#a06030;">Nov 22, 2025</td>
+          <td>Diamond Ring Set</td>
+          <td>Rs. 52,000</td>
+          <td><span class="pts-pill">+1,040 pts</span></td>
+          <td style="color:#e8c252;font-weight:600;">4,050</td>
+        </tr>
+        <tr>
+          <td style="color:#a06030;">Aug 5, 2025</td>
+          <td>Gold Earrings Pair</td>
+          <td>Rs. 22,000</td>
+          <td><span class="pts-pill">+440 pts</span></td>
+          <td style="color:#e8c252;font-weight:600;">3,010</td>
+        </tr>
+        <tr>
+          <td style="color:#a06030;">Apr 14, 2025</td>
+          <td>Silver Bangles (Set of 4)</td>
+          <td>Rs. 18,000</td>
+          <td><span class="pts-pill">+360 pts</span></td>
+          <td style="color:#e8c252;font-weight:600;">2,570</td>
+        </tr>
+        <tr>
+          <td style="color:#a06030;">Jan 3, 2025</td>
+          <td>Gold Chain – 18K</td>
+          <td>Rs. 29,500</td>
+          <td><span class="pts-pill">+590 pts</span></td>
+          <td style="color:#e8c252;font-weight:600;">2,210</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</main>
+</body>
+</html>

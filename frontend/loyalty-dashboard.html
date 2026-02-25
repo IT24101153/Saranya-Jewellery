@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Saranya – Loyalty Dashboard</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
+  :root {
+    --brand-burgundy: #6f0022;
+    --brand-burgundy-dark: #4f0018;
+    --brand-gold: #e0bf63;
+    --brand-gold-strong: #f3d97f;
+    --text-soft: #f7ebc4;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+  body { font-family: 'Poppins', sans-serif; background: radial-gradient(ellipse at 20% 0%, #9a0a38 0%, #6f0022 40%, #3a0010 100%); min-height: 100vh; color: #ffffff; }
+
+  /* NAV */
+  nav {
+    background: rgba(45, 0, 16, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    padding: 0 28px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(243, 217, 127, 0.3);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  }
+  .nav-left { display: flex; align-items: center; gap: 10px; }
+  .nav-icon {
+    width: 32px; height: 32px;
+    background: #7d1530;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+  }
+  .nav-brand { font-size: 15px; font-weight: 800; color: #f3d97f; letter-spacing: 2px; }
+  .nav-label { font-size: 10px; color: #c09050; letter-spacing: 2.5px; font-weight: 500; }
+  .nav-right { display: flex; align-items: center; gap: 14px; }
+  .nav-user { font-size: 13px; color: #f0dfa0; font-weight: 500; }
+  .nav-btn {
+    background: transparent;
+    border: 1px solid rgba(243, 217, 127, 0.45);
+    color: var(--brand-gold-strong);
+    padding: 6px 16px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .nav-btn:hover { background: rgba(243,217,127,0.12); border-color: var(--brand-gold-strong); }
+
+  /* MAIN */
+  main { padding: 28px 28px; }
+
+  .page-title { font-size: 22px; font-weight: 800; color: #ffffff; letter-spacing: 0.3px; margin-bottom: 4px; }
+  .page-sub { font-size: 13px; color: #d4a855; margin-bottom: 26px; font-weight: 500; }
+
+  /* STAT CARDS */
+  .stats-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 24px; }
+
+  .stat-card {
+    background: rgba(255, 255, 255, 0.07);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(243, 217, 127, 0.25);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.07);
+    border-radius: 12px;
+    padding: 20px 22px;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .stat-card:hover { transform: translateY(-4px); box-shadow: 0 14px 40px rgba(0,0,0,0.5); }
+  .stat-num { font-size: 28px; font-weight: 800; color: #f3d97f; margin-bottom: 4px; }
+  .stat-label { font-size: 12px; color: #e0c880; font-weight: 500; }
+  .stat-icon { font-size: 20px; margin-bottom: 10px; }
+
+  /* CONTENT */
+  .content-row { display: grid; grid-template-columns: 1fr 280px; gap: 18px; }
+
+  /* CARD */
+  .card {
+    background: rgba(255, 255, 255, 0.07);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(243, 217, 127, 0.22);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.06);
+    border-radius: 12px;
+    padding: 22px 24px;
+  }
+
+  .card-top {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .card-title { font-size: 14px; font-weight: 700; color: #f3d97f; letter-spacing: 0.3px; }
+
+  .btn-add {
+    background: linear-gradient(45deg, var(--brand-gold), var(--brand-gold-strong));
+    border: none;
+    border-radius: 5px;
+    padding: 7px 16px;
+    font-family: 'Poppins', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    color: #4f0018;
+    cursor: pointer;
+    transition: background 0.18s;
+    letter-spacing: 0.3px;
+  }
+  .btn-add:hover { background: #f0cc60; }
+
+  /* FILTER ROW */
+  .filter-row { display: flex; gap: 10px; margin-bottom: 14px; }
+  .filter-row input, .filter-row select {
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(243, 217, 127, 0.22);
+    border-radius: 6px;
+    padding: 9px 12px;
+    font-size: 13px;
+    font-family: 'Poppins', sans-serif;
+    color: #ffffff;
+    outline: none;
+  }
+  .filter-row input::placeholder { color: rgba(255,255,255,0.35); }
+  .filter-row input:focus, .filter-row select:focus { border-color: rgba(243, 217, 127, 0.5); box-shadow: 0 0 0 3px rgba(243,217,127,0.08); }
+  .filter-row input { flex: 1; }
+  .filter-row input::placeholder { color: rgba(255,255,255,0.25); }
+  .filter-row input:focus, .filter-row select:focus { border-color: rgba(210,160,50,0.5); }
+  .filter-row select { cursor: pointer; }
+  .filter-row select option { background: #3d0818; }
+
+  /* TABLE */
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  thead th {
+    text-align: left;
+    padding: 10px 10px;
+    color: #f3d97f;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    border-bottom: 1px solid rgba(243, 217, 127, 0.25);
+  }
+  tbody tr { border-bottom: 1px solid rgba(243, 217, 127, 0.08); transition: background 0.12s; }
+  tbody tr:hover { background: rgba(243, 217, 127, 0.05); }
+  tbody td { padding: 12px 10px; color: #f0e8c8; font-size: 13px; }
+
+  .cust-name { font-weight: 700; color: #ffffff; font-size: 13px; }
+  .cust-email { font-size: 11px; color: #c0a870; margin-top: 2px; }
+
+  /* BADGES */
+  .badge {
+    display: inline-block;
+    padding: 2px 9px;
+    border-radius: 20px;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+  }
+  .badge-silver { background: rgba(192,192,192,0.12); color: #c8c8c8; border: 1px solid rgba(192,192,192,0.28); }
+  .badge-gold { background: rgba(212,175,55,0.12); color: #e8c252; border: 1px solid rgba(212,175,55,0.35); }
+  .badge-platinum { background: rgba(180,200,255,0.1); color: #b8d0ff; border: 1px solid rgba(180,200,255,0.28); }
+  .badge-active { background: rgba(60,180,90,0.1); color: #70d888; border: 1px solid rgba(60,180,90,0.28); }
+
+  /* ACTION BTNS */
+  .act-btns { display: flex; gap: 5px; }
+  .btn-view, .btn-edit, .btn-del {
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    transition: background 0.15s;
+    font-weight: 500;
+  }
+  .btn-view { background: transparent; border: 1px solid rgba(200,140,40,0.4); color: #e8c252; }
+  .btn-view:hover { background: rgba(200,140,40,0.1); }
+  .btn-edit { background: transparent; border: 1px solid rgba(200,140,40,0.4); color: #e8c252; }
+  .btn-edit:hover { background: rgba(200,140,40,0.1); }
+  .btn-del { background: transparent; border: 1px solid rgba(220,80,80,0.35); color: #f08080; }
+  .btn-del:hover { background: rgba(220,80,80,0.1); }
+
+  /* PAGINATION */
+  .pag { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; font-size: 12px; color: #d4a855; font-weight: 500; }
+  .pag-btns { display: flex; gap: 4px; }
+  .pag-btn {
+    width: 28px; height: 28px;
+    background: rgba(60,5,20,0.6);
+    border: 1px solid rgba(150,40,60,0.4);
+    border-radius: 4px;
+    color: #e8c252;
+    font-size: 11px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .pag-btn.active { background: #e8c252; color: #3a0a10; font-weight: 700; }
+  .pag-btn:hover:not(.active) { background: rgba(200,140,40,0.1); }
+
+  /* SIDEBAR */
+  .sidebar-card { margin-bottom: 16px; }
+
+  .tier-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 14px;
+    background: rgba(243, 217, 127, 0.05);
+    border: 1px solid rgba(243, 217, 127, 0.18);
+    border-radius: 10px;
+    margin-bottom: 10px;
+    transition: background 0.2s;
+  }
+  .tier-item:hover { background: rgba(243,217,127,0.09); }
+  .tier-item:last-child { margin-bottom: 0; }
+  .tier-emoji { font-size: 20px; }
+  .tier-info { flex: 1; }
+  .tier-name { font-size: 13px; font-weight: 700; color: #f3d97f; }
+  .tier-range { font-size: 11px; color: #d4a855; margin-top: 2px; }
+  .tier-count { font-size: 22px; font-weight: 800; color: #f3d97f; }
+
+  .rule-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(243, 217, 127, 0.1);
+    font-size: 13px;
+  }
+  .rule-row:last-child { border-bottom: none; }
+  .rule-key { color: #d4a855; font-weight: 500; }
+  .rule-val { color: #ffffff; font-weight: 700; }
+  .rule-val.gold { color: #e8c252; }
+  .rule-val.red { color: #f08080; }
+
+  .btn-edit-sm {
+    background: linear-gradient(45deg, var(--brand-gold), var(--brand-gold-strong));
+    border: none;
+    border-radius: 4px;
+    padding: 5px 12px;
+    font-family: 'Poppins', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    color: #4f0018;
+    cursor: pointer;
+    transition: background 0.18s;
+  }
+  .btn-edit-sm:hover { background: #f0cc60; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-left">
+    <div class="nav-icon">💎</div>
+    <div>
+      <div class="nav-brand">SARANYA</div>
+      <div class="nav-label">LOYALTY MANAGEMENT</div>
+    </div>
+  </div>
+  <div class="nav-right">
+    <span class="nav-user">Loyalty Manager</span>
+    <button class="nav-btn">Logout</button>
+  </div>
+</nav>
+
+<main>
+  <div class="page-title">Loyalty Dashboard</div>
+  <div class="page-sub">Manage customer loyalty points and membership tiers</div>
+
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-icon">👥</div>
+      <div class="stat-num">284</div>
+      <div class="stat-label">Total Members</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">💎</div>
+      <div class="stat-num">38</div>
+      <div class="stat-label">Platinum Members</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">⭐</div>
+      <div class="stat-num">142K</div>
+      <div class="stat-label">Total Points Issued</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">💰</div>
+      <div class="stat-num">18.4M</div>
+      <div class="stat-label">Total Revenue (Rs.)</div>
+    </div>
+  </div>
+
+  <div class="content-row">
+
+    <div class="card">
+      <div class="card-top">
+        <div class="card-title">Loyalty Customers</div>
+        <button class="btn-add">+ Add Customer</button>
+      </div>
+
+      <div class="filter-row">
+        <input type="text" placeholder="Search by name or email..." />
+        <select>
+          <option>All Tiers</option>
+          <option>Silver</option>
+          <option>Gold</option>
+          <option>Platinum</option>
+        </select>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Customer</th>
+            <th>Points</th>
+            <th>Total Spent</th>
+            <th>Tier</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              <div class="cust-name">Priya Sharma</div>
+              <div class="cust-email">priya@gmail.com</div>
+            </td>
+            <td style="color:#e8c252;font-weight:600;">4,820</td>
+            <td>Rs. 241,000</td>
+            <td><span class="badge badge-platinum">Platinum</span></td>
+            <td><span class="badge badge-active">Active</span></td>
+            <td><div class="act-btns"><button class="btn-view">View</button><button class="btn-edit">Edit</button><button class="btn-del">Remove</button></div></td>
+          </tr>
+          <tr>
+            <td>
+              <div class="cust-name">Ananya Kumar</div>
+              <div class="cust-email">ananya@gmail.com</div>
+            </td>
+            <td style="color:#e8c252;font-weight:600;">2,310</td>
+            <td>Rs. 115,500</td>
+            <td><span class="badge badge-gold">Gold</span></td>
+            <td><span class="badge badge-active">Active</span></td>
+            <td><div class="act-btns"><button class="btn-view">View</button><button class="btn-edit">Edit</button><button class="btn-del">Remove</button></div></td>
+          </tr>
+          <tr>
+            <td>
+              <div class="cust-name">Kavitha Raj</div>
+              <div class="cust-email">kavitha@yahoo.com</div>
+            </td>
+            <td style="color:#e8c252;font-weight:600;">980</td>
+            <td>Rs. 49,000</td>
+            <td><span class="badge badge-silver">Silver</span></td>
+            <td><span class="badge badge-active">Active</span></td>
+            <td><div class="act-btns"><button class="btn-view">View</button><button class="btn-edit">Edit</button><button class="btn-del">Remove</button></div></td>
+          </tr>
+          <tr>
+            <td>
+              <div class="cust-name">Meena Rajan</div>
+              <div class="cust-email">meena@gmail.com</div>
+            </td>
+            <td style="color:#e8c252;font-weight:600;">3,670</td>
+            <td>Rs. 183,500</td>
+            <td><span class="badge badge-platinum">Platinum</span></td>
+            <td><span class="badge badge-active">Active</span></td>
+            <td><div class="act-btns"><button class="btn-view">View</button><button class="btn-edit">Edit</button><button class="btn-del">Remove</button></div></td>
+          </tr>
+          <tr>
+            <td>
+              <div class="cust-name">Deepa Pillai</div>
+              <div class="cust-email">deepa@outlook.com</div>
+            </td>
+            <td style="color:#e8c252;font-weight:600;">1,520</td>
+            <td>Rs. 76,000</td>
+            <td><span class="badge badge-gold">Gold</span></td>
+            <td><span class="badge badge-active">Active</span></td>
+            <td><div class="act-btns"><button class="btn-view">View</button><button class="btn-edit">Edit</button><button class="btn-del">Remove</button></div></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="pag">
+        <span>Showing 1–5 of 284 customers</span>
+        <div class="pag-btns">
+          <button class="pag-btn">&#8249;</button>
+          <button class="pag-btn active">1</button>
+          <button class="pag-btn">2</button>
+          <button class="pag-btn">3</button>
+          <button class="pag-btn">&#8250;</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SIDEBAR -->
+    <div>
+      <div class="card sidebar-card">
+        <div class="card-top">
+          <div class="card-title">Tier Overview</div>
+        </div>
+        <div class="tier-item">
+          <div class="tier-emoji">🥈</div>
+          <div class="tier-info">
+            <div class="tier-name">Silver</div>
+            <div class="tier-range">Up to Rs. 99,999</div>
+          </div>
+          <div class="tier-count">156</div>
+        </div>
+        <div class="tier-item">
+          <div class="tier-emoji">🥇</div>
+          <div class="tier-info">
+            <div class="tier-name">Gold</div>
+            <div class="tier-range">Rs. 1,00,000 – 1,99,999</div>
+          </div>
+          <div class="tier-count">90</div>
+        </div>
+        <div class="tier-item">
+          <div class="tier-emoji">💎</div>
+          <div class="tier-info">
+            <div class="tier-name">Platinum</div>
+            <div class="tier-range">Rs. 2,00,000+</div>
+          </div>
+          <div class="tier-count">38</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-top">
+          <div class="card-title">Tier Rules</div>
+          <button class="btn-edit-sm">Edit</button>
+        </div>
+        <div class="rule-row"><span class="rule-key">Points / Rs. 1,000</span><span class="rule-val gold">20 pts</span></div>
+        <div class="rule-row"><span class="rule-key">Silver → Gold</span><span class="rule-val gold">Rs. 1,00,000</span></div>
+        <div class="rule-row"><span class="rule-key">Gold → Platinum</span><span class="rule-val gold">Rs. 2,00,000</span></div>
+        <div class="rule-row"><span class="rule-key">Expiry (Inactivity)</span><span class="rule-val red">2 Years</span></div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+</body>
+</html>
