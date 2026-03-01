@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff Registration - Saranya Jewellery</title>
+    <link rel="icon" type="image/png" sizes="512x512" href="/favicon.png">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="register-container">
+        <div class="logo-area">
+            <h1>Saranya</h1>
+            <p>Staff Portal Registration</p>
+        </div>
+
+        <div class="info-note">
+            📌 Your account will be pending approval until an administrator reviews and approves it.
+        </div>
+
+        <div id="alert" class="alert"></div>
+
+        <form id="registerForm">
+            <div class="form-group">
+                <label for="fullName">Full Name</label>
+                <input type="text" id="fullName" name="fullName" placeholder="Enter your full name" required>
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input type="email" id="email" name="email" placeholder="Enter your email" required>
+            </div>
+
+            <div class="form-group">
+                <label for="role">Select Your Role</label>
+                <select id="role" name="role" required>
+                    <option value="">-- Choose Role --</option>
+                    <option value="Customer Care">Customer Care</option>
+                    <option value="Inventory">Inventory</option>
+                    <option value="Order Management">Order Management</option>
+                    <option value="Loyalty Management">Loyalty Management</option>
+                    <option value="Product Management">Product Management</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" placeholder="Create a password" required minlength="6">
+            </div>
+
+            <div class="form-group">
+                <label for="confirmPassword">Confirm Password</label>
+                <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Re-enter password" required minlength="6">
+            </div>
+
+            <button type="submit" class="btn" id="registerBtn">Register</button>
+        </form>
+
+        <div class="footer-links">
+            <a href="/staff-login">Already have an account? Login</a>
+            <span class="divider">|</span>
+            <a href="/">Back to Home</a>
+        </div>
+    </div>
+
+    <script>
+        const registerForm = document.getElementById('registerForm');
+        const registerBtn = document.getElementById('registerBtn');
+        const alertDiv = document.getElementById('alert');
+
+        function showAlert(message, type = 'error') {
+            alertDiv.textContent = message;
+            alertDiv.className = `alert alert-${type} show`;
+            setTimeout(() => {
+                alertDiv.className = 'alert';
+            }, 5000);
+        }
+
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const fullName = document.getElementById('fullName').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const role = document.getElementById('role').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            // Validation
+            if (!fullName || !email || !role || !password || !confirmPassword) {
+                showAlert('Please fill in all fields');
+                return;
+            }
+
+            // Name validation
+            if (fullName.length < 3) {
+                showAlert('Name must be at least 3 characters long');
+                return;
+            }
+
+            // Email format validation
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                showAlert('Please enter a valid email address');
+                return;
+            }
+
+            // Password strength validation
+            if (password.length < 6) {
+                showAlert('Password must be at least 6 characters long');
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                showAlert('Passwords do not match');
+                return;
+            }
+
+            registerBtn.disabled = true;
+            registerBtn.textContent = 'Registering...';
+
+            try {
+                const response = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ fullName, email, role, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showAlert('Registration successful! Your account is pending approval. Redirecting to login...', 'success');
+                    registerForm.reset();
+                    
+                    setTimeout(() => {
+                        window.location.href = '/staff-login';
+                    }, 2000);
+                } else {
+                    showAlert(data.message || 'Registration failed');
+                    registerBtn.disabled = false;
+                    registerBtn.textContent = 'Register';
+                }
+            } catch (error) {
+                console.error('Registration error:', error);
+                showAlert('Network error. Please check your connection and try again.');
+                registerBtn.disabled = false;
+                registerBtn.textContent = 'Register';
+            }
+        });
+    </script>
+</body>
+</html>

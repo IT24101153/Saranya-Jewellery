@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Management - Saranya Jewellery</title>
+    <link rel="icon" href="/favicon.png">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Cormorant+Garamond:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body style="font-family: 'Poppins', sans-serif; background-color: #f5f5f5; margin: 0; padding: 0;">
+
+    <!-- Pending Approval Overlay -->
+    <div id="pendingOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 9999; align-items: center; justify-content: center;">
+        <div style="background: white; padding: 3rem; border-radius: 8px; text-align: center; max-width: 500px;">
+            <h2 style="color: #6f0022; margin-bottom: 1rem;">⏳ Pending Approval</h2>
+            <p style="color: #666; margin-bottom: 2rem;">Your account is awaiting admin approval. Please check back later.</p>
+            <button onclick="logout()" style="background: #6f0022; color: white; padding: 0.8rem 2rem; border: none; border-radius: 4px; cursor: pointer;">Logout</button>
+        </div>
+    </div>
+
+    <div style="max-width: 1400px; margin: 0 auto; padding: 2rem;">
+        
+        <!-- Header -->
+        <div style="display: flex; justify-content: space-between; align-items: center; background: #6f0022; color: white; padding: 1.5rem 2rem; border-radius: 8px; margin-bottom: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            <div>
+                <h1 style="margin: 0; font-family: 'Cormorant Garamond', serif; font-size: 2rem;">🛍️ Order Management</h1>
+                <p style="margin: 0.5rem 0 0; opacity: 0.9;">Welcome, <span id="userName">Manager</span></p>
+            </div>
+            <button onclick="logout()" style="background: white; color: #6f0022; border: none; padding: 0.75rem 1.5rem; border-radius: 4px; cursor: pointer; font-weight: 600;">Logout</button>
+        </div>
+
+        <!-- Stats Cards -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center;">
+                <h3 style="font-size: 2.5rem; color: #ffc107; margin: 0 0 0.5rem;" id="pending">0</h3>
+                <p style="margin: 0; color: #666;">Pending Orders</p>
+            </div>
+            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center;">
+                <h3 style="font-size: 2.5rem; color: #17a2b8; margin: 0 0 0.5rem;" id="processing">0</h3>
+                <p style="margin: 0; color: #666;">Processing</p>
+            </div>
+            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center;">
+                <h3 style="font-size: 2.5rem; color: #28a745; margin: 0 0 0.5rem;" id="completed">0</h3>
+                <p style="margin: 0; color: #666;">Completed</p>
+            </div>
+            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center;">
+                <h3 style="font-size: 2.5rem; color: #6f0022; margin: 0 0 0.5rem;" id="revenue">Rs. 0</h3>
+                <p style="margin: 0; color: #666;">Total Revenue</p>
+            </div>
+        </div>
+
+        <!-- Order Management -->
+        <div style="background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h2 style="margin: 0; font-family: 'Cormorant Garamond', serif;">Orders</h2>
+                <button onclick="openCreateModal()" style="background: #6f0022; color: white; padding: 0.8rem 1.5rem; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">+ Create Order</button>
+            </div>
+
+            <!-- Alert -->
+            <div id="alert" style="padding: 1rem; border-radius: 4px; margin-bottom: 1rem; display: none;"></div>
+
+            <!-- Status Filter -->
+            <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+                <button class="filter-btn active" onclick="filterOrders('all')">All</button>
+                <button class="filter-btn" onclick="filterOrders('Pending')">Pending</button>
+                <button class="filter-btn" onclick="filterOrders('Processing')">Processing</button>
+                <button class="filter-btn" onclick="filterOrders('Shipped')">Shipped</button>
+                <button class="filter-btn" onclick="filterOrders('Delivered')">Delivered</button>
+                <button class="filter-btn" onclick="filterOrders('Completed')">Completed</button>
+                <button class="filter-btn" onclick="filterOrders('Cancelled')">Cancelled</button>
+            </div>
+
+            <!-- Orders Table -->
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr>
+                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Order ID</th>
+                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Customer</th>
+                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Date</th>
+                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Amount</th>
+                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Status</th>
+                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Payment</th>
+                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ordersTable">
+                        <tr><td colspan="7" style="padding: 2rem; text-align: center; color: #999;">Loading orders...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Order Status Flow Info -->
+        <div style="background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-top: 2rem;">
+            <h3 style="font-family: 'Cormorant Garamond', serif; margin-bottom: 1rem;">Order Status Flow</h3>
+            <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                <span style="padding: 0.5rem 1rem; background: #fff3cd; border-radius: 4px;">Pending</span>
+                <span>→</span>
+                <span style="padding: 0.5rem 1rem; background: #d1ecf1; border-radius: 4px;">Processing</span>
+                <span>→</span>
+                <span style="padding: 0.5rem 1rem; background: #cce5ff; border-radius: 4px;">Shipped</span>
+                <span>→</span>
+                <span style="padding: 0.5rem 1rem; background: #d4edda; border-radius: 4px;">Delivered</span>
+                <span>→</span>
+                <span style="padding: 0.5rem 1rem; background: #d4edda; border-radius: 4px;">Completed</span>
+            </div>
+            <p style="margin-top: 1rem; color: #666;">Note: Orders can be cancelled at any stage before completion</p>
+        </div>
+    </div>
+
+    <!-- Create Order Modal -->
+    <div id="createModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000;">
+        <div style="background: white; padding: 2rem; border-radius: 8px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 1.5rem;">
+                <h3 style="margin: 0;">Create New Order</h3>
+                <button onclick="closeCreateModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+            </div>
+            <form id="createOrderForm">
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem;">Customer Email *</label>
+                    <input type="email" id="customerEmail" required style="width: 95%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem;">Product IDs (comma-separated) *</label>
+                    <input type="text" id="productIds" required placeholder="e.g., 507f1f77bcf86cd799439011, 507f..." style="width: 95%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem;">Total Amount (Rs.) *</label>
+                    <input type="number" id="totalAmount" step="0.01" required style="width: 95%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem;">Payment Method *</label>
+                    <select id="paymentMethod" required style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
+                        <option value="">Select</option>
+                        <option value="Cash">Cash</option>
+                        <option value="Card">Card</option>
+                        <option value="UPI">UPI</option>
+                        <option value="Net Banking">Net Banking</option>
+                    </select>
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem;">Delivery Address *</label>
+                    <textarea id="deliveryAddress" required rows="3" style="width: 95%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;"></textarea>
+                </div>
+                <button type="submit" style="width: 100%; background: #6f0022; color: white; padding: 0.8rem; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Create Order</button>
+            </form>
+        </div>
+    </div>
+
+    <style>
+        .filter-btn { padding: 0.6rem 1.2rem; border: 1px solid #6f0022; background: white; color: #6f0022; cursor: pointer; border-radius: 4px; font-weight: 500; transition: all 0.3s; }
+        .filter-btn:hover { background: #f5f5f5; }
+        .filter-btn.active { background: #6f0022; color: white; }
+    </style>
+
+    <script>
+        let orders = [];
+        let currentFilter = 'all';
+
+        async function checkAuth() {
+            try {
+                const res = await fetch('/api/auth/me');
+                if (!res.ok) { window.location.href = '/staff-login'; return false; }
+                const user = await res.json();
+                if (user.role !== 'Order Management') { alert('Access denied'); window.location.href = '/staff-login'; return false; }
+                if (user.status !== 'Approved') { document.getElementById('pendingOverlay').style.display = 'flex'; return false; }
+                if (!user.isActive) { alert('Account deactivated'); window.location.href = '/staff-login'; return false; }
+                document.getElementById('userName').textContent = user.fullName || user.email;
+                return true;
+            } catch (e) { window.location.href = '/staff-login'; return false; }
+        }
+
+        async function loadOrders() {
+            try {
+                const res = await fetch('/api/orders');
+                if (!res.ok) throw new Error();
+                orders = await res.json();
+                updateStats();
+                displayOrders();
+            } catch (e) { showAlert('Error loading orders', 'error'); }
+        }
+
+        function updateStats() {
+            document.getElementById('pending').textContent = orders.filter(o => o.status === 'Pending').length;
+            document.getElementById('processing').textContent = orders.filter(o => o.status === 'Processing').length;
+            document.getElementById('completed').textContent = orders.filter(o => ['Completed', 'Delivered'].includes(o.status)).length;
+            const total = orders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+            document.getElementById('revenue').textContent = 'Rs. ' + total.toLocaleString();
+        }
+
+        function displayOrders() {
+            const tbody = document.getElementById('ordersTable');
+            let filtered = currentFilter === 'all' ? orders : orders.filter(o => o.status === currentFilter);
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="padding: 2rem; text-align: center; color: #999;">No orders found</td></tr>';
+                return;
+            }
+            tbody.innerHTML = filtered.map(o => `
+                <tr>
+                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">${o.orderId || o._id}</td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">${o.customerEmail || o.customer?.email || 'N/A'}</td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">${new Date(o.createdAt).toLocaleDateString()}</td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">Rs. ${(o.totalAmount || 0).toLocaleString()}</td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #eee;"><span style="padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.85rem; background: ${getStatusColor(o.status)};">${o.status}</span></td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">${o.paymentStatus || 'Pending'}</td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">
+                        <select onchange="updateStatus('${o._id}', this.value)" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
+                            <option value="">Change Status</option>
+                            <option value="Processing">Processing</option>
+                            <option value="Shipped">Shipped</option>
+                            <option value="Delivered">Delivered</option>
+                            <option value="Completed">Completed</option>
+                            <option value="Cancelled">Cancelled</option>
+                        </select>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function getStatusColor(status) {
+            const colors = {
+                'Pending': '#fff3cd',
+                'Processing': '#d1ecf1',
+                'Shipped': '#cce5ff',
+                'Delivered': '#d4edda',
+                'Completed': '#d4edda',
+                'Cancelled': '#f8d7da'
+            };
+            return colors[status] || '#e9ecef';
+        }
+
+        function filterOrders(status) {
+            currentFilter = status;
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+            displayOrders();
+        }
+
+        async function updateStatus(id, newStatus) {
+            if (!newStatus) return;
+            try {
+                const res = await fetch(`/api/orders/${id}/status`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: newStatus })
+                });
+                if (!res.ok) throw new Error();
+                showAlert('Status updated', 'success');
+                loadOrders();
+            } catch (e) { showAlert('Error updating status', 'error'); }
+        }
+
+        function openCreateModal() { document.getElementById('createModal').style.display = 'flex'; }
+        function closeCreateModal() { document.getElementById('createModal').style.display = 'none'; document.getElementById('createOrderForm').reset(); }
+
+        document.getElementById('createOrderForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = {
+                customerEmail: document.getElementById('customerEmail').value,
+                products: document.getElementById('productIds').value.split(',').map(id => id.trim()),
+                totalAmount: parseFloat(document.getElementById('totalAmount').value),
+                paymentMethod: document.getElementById('paymentMethod').value,
+                deliveryAddress: document.getElementById('deliveryAddress').value
+            };
+            try {
+                const res = await fetch('/api/orders', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (!res.ok) { const err = await res.json(); throw new Error(err.message); }
+                showAlert('Order created', 'success');
+                closeCreateModal();
+                loadOrders();
+            } catch (e) { showAlert(e.message, 'error'); }
+        });
+
+        function showAlert(msg, type) {
+            const alert = document.getElementById('alert');
+            alert.textContent = msg;
+            alert.style.display = 'block';
+            alert.style.background = type === 'success' ? '#d4edda' : '#f8d7da';
+            alert.style.color = type === 'success' ? '#155724' : '#721c24';
+            alert.style.border = `1px solid ${type === 'success' ? '#c3e6cb' : '#f5c6cb'}`;
+            setTimeout(() => alert.style.display = 'none', 5000);
+        }
+
+        async function logout() { try { await fetch('/api/auth/logout', { method: 'POST' }); } catch (e) {} window.location.href = '/staff-login'; }
+
+        (async () => { const auth = await checkAuth(); if (auth) loadOrders(); })();
+    </script>
+</body>
+</html>
