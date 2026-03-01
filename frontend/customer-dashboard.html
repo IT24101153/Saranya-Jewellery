@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Dashboard - Saranya Jewellery</title>
+    <link rel="icon" type="image/png" sizes="512x512" href="/favicon.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="/favicon.png">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Top Bar -->
+    <div class="top-bar">
+        <div><i class="fas fa-phone"></i> <a href="tel:+1234567890">Contact Us</a></div>
+        <div>
+            <span id="customerName" style="margin-right: 1rem; color: var(--brand-gold-strong);">Loading...</span>
+            <span id="loyaltyPoints" style="margin-right: 1rem;">⭐ 0 Points</span>
+            <button class="logout-btn" onclick="logout()" style="font-size: 0.85rem; padding: 0.3rem 0.8rem;">Logout</button>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="nav">
+            <a href="/">Home</a>
+            <a href="/#collections">Shop</a>
+            <a href="#orders">My Orders</a>
+            <a href="#loyalty">Loyalty</a>
+        </div>
+        
+        <div class="logo">SARANYA JEWELLERY</div>
+        
+        <div class="header-icons">
+            <i class="fas fa-search header-icon"></i>
+            <a href="/customer-dashboard"><i class="fas fa-user header-icon"></i></a>
+            <i class="fas fa-shopping-cart header-icon"></i>
+        </div>
+    </header>
+
+    <main>
+    <div class="container" style="padding-top: 2rem;">
+        <!-- Welcome Section -->
+        <div class="welcome-section">
+            <h2>Welcome Back! ✨</h2>
+            <p>Discover our latest collections and manage your orders</p>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3 id="totalOrders">0</h3>
+                <p>Total Orders</p>
+            </div>
+            <div class="stat-card">
+                <h3 id="loyaltyPointsCard">0</h3>
+                <p>Loyalty Points</p>
+            </div>
+            <div class="stat-card">
+                <h3 id="activeOrders">0</h3>
+                <p>Active Orders</p>
+            </div>
+            <div class="stat-card">
+                <h3 id="wishlistCount">0</h3>
+                <p>Wishlist Items</p>
+            </div>
+        </div>
+
+        <!-- Promotions & Announcements -->
+        <div class="section" id="promotionsSection" style="display: none;">
+            <h2>🎉 Latest Offers & Announcements</h2>
+            <div id="promotionsList" class="section-content"></div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="section">
+            <h2>Quick Actions</h2>
+            <div class="quick-actions">
+                <div class="action-card" onclick="browseCollections()">
+                    <div class="action-card-icon">🛍️</div>
+                    <h3>Browse Collections</h3>
+                    <p>Explore our latest jewellery collections</p>
+                </div>
+                <div class="action-card" onclick="viewOrders()">
+                    <div class="action-card-icon">📦</div>
+                    <h3>My Orders</h3>
+                    <p>Track and manage your orders</p>
+                </div>
+                <div class="action-card" onclick="viewProfile()">
+                    <div class="action-card-icon">👤</div>
+                    <h3>My Profile</h3>
+                    <p>Update your personal information</p>
+                </div>
+                <div class="action-card" onclick="contactSupport()">
+                    <div class="action-card-icon">💬</div>
+                    <h3>Contact Support</h3>
+                    <p>Get help from our customer care team</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Orders -->
+        <div class="section">
+            <h2>Recent Orders</h2>
+            <div class="section-content">
+                <div class="alert alert-info">
+                    Your order history will appear here once you make your first purchase.
+                </div>
+            </div>
+        </div>
+
+        <!-- Loyalty Program -->
+        <div class="section">
+            <h2>Loyalty Rewards</h2>
+            <div class="section-content">
+                <p style="margin-bottom: 1rem;">Earn points with every purchase and redeem them for exclusive discounts!</p>
+                <p style="color: var(--brand-gold-strong); font-size: 1.1rem; margin-bottom: 1rem;">
+                    Current Balance: <strong id="loyaltyBalance">0 points</strong>
+                </p>
+                <p style="font-size: 0.9rem; opacity: 0.8;">
+                    • Earn 1 point for every Rs. 100 spent<br>
+                    • 100 points = Rs. 100 discount<br>
+                    • Points never expire
+                </p>
+            </div>
+        </div>
+    </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>ABOUT SARANYA</h3>
+                <ul>
+                    <li><a href="/#story">Our Story</a></li>
+                    <li><a href="/#education">Education</a></li>
+                    <li><a href="/#faq">FAQ</a></li>
+                </ul>
+            </div>
+            
+            <div class="footer-section">
+                <h3>WHY SARANYA?</h3>
+                <ul>
+                    <li><a href="/#quality">Quality Guarantee</a></li>
+                    <li><a href="/#warranty">Lifetime Warranty</a></li>
+                    <li><a href="/#certification">Certified Jewellery</a></li>
+                    <li><a href="/#shipping">Free Shipping</a></li>
+                </ul>
+            </div>
+            
+            <div class="footer-section">
+                <h3>SERVICES</h3>
+                <ul>
+                    <li><a href="/#custom">Custom Design</a></li>
+                    <li><a href="/#resize">Free Ring Resize</a></li>
+                    <li><a href="/#gift">Gift Services</a></li>
+                </ul>
+            </div>
+            
+            <div class="footer-section">
+                <h3>POLICIES</h3>
+                <ul>
+                    <li><a href="/#policies">Our Policies</a></li>
+                    <li><a href="/#privacy">Privacy Policy</a></li>
+                    <li><a href="/#terms">Terms & Conditions</a></li>
+                    <li><a href="/#returns">Return Policy</a></li>
+                    <li><a href="/#payment">Payment Methods</a></li>
+                </ul>
+            </div>
+            
+            <div class="footer-section">
+                <h3>CONNECT WITH US</h3>
+                <div class="social-links">
+                    <a href="#" class="social-icon"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#" class="social-icon"><i class="fab fa-instagram"></i></a>
+                    <a href="#" class="social-icon"><i class="fab fa-twitter"></i></a>
+                    <a href="#" class="social-icon"><i class="fab fa-pinterest"></i></a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer-bottom">
+            <p>&copy; 2026 Saranya Jewellery. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Check authentication on page load
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/customer/me');
+                if (!response.ok) {
+                    window.location.href = '/customer-login';
+                    return;
+                }
+                const data = await response.json();
+                const customer = data.customer;
+                
+                // Update UI with customer data
+                document.getElementById('customerName').textContent = customer.fullName || customer.email;
+                const points = customer.loyaltyPoints || 0;
+                document.getElementById('loyaltyPoints').textContent = `⭐ ${points} Loyalty Points`;
+                document.getElementById('loyaltyPointsCard').textContent = points;
+                document.getElementById('loyaltyBalance').textContent = `${points} points`;
+                
+                // Load customer orders and stats
+                loadOrderStats();
+                loadPromotions();
+            } catch (error) {
+                console.error('Auth error:', error);
+                window.location.href = '/customer-login';
+            }
+        }
+
+        async function loadPromotions() {
+            try {
+                const response = await fetch('/api/messages/active');
+                if (response.ok) {
+                    const messages = await response.json();
+                    if (messages.length > 0) {
+                        displayPromotions(messages);
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading promotions:', error);
+            }
+        }
+
+        function displayPromotions(messages) {
+            const section = document.getElementById('promotionsSection');
+            const list = document.getElementById('promotionsList');
+            
+            const html = messages.map(msg => {
+                const icon = msg.type === 'promotion' ? '🎁' : 
+                            msg.type === 'announcement' ? '📢' : 
+                            msg.type === 'welcome' ? '👋' : 'ℹ️';
+                
+                const validUntil = msg.validUntil ? 
+                    `<p style="font-size: 0.85rem; color: #999; margin-top: 0.5rem;">Valid until: ${new Date(msg.validUntil).toLocaleDateString()}</p>` : '';
+                
+                return `
+                    <div style="background: linear-gradient(135deg, #6f0022 0%, #8b0028 100%); 
+                                color: white; 
+                                padding: 1.5rem; 
+                                border-radius: 8px; 
+                                margin-bottom: 1rem;
+                                box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                        <div style="display: flex; align-items: start; gap: 1rem;">
+                            <div style="font-size: 2rem;">${icon}</div>
+                            <div style="flex: 1;">
+                                <h3 style="margin: 0 0 0.5rem 0; color: var(--brand-gold-strong);">${msg.title}</h3>
+                                <p style="margin: 0; line-height: 1.6;">${msg.message}</p>
+                                ${validUntil}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            list.innerHTML = html;
+            section.style.display = 'block';
+        }
+
+        async function loadOrderStats() {
+            try {
+                // This would fetch real order data from backend
+                document.getElementById('totalOrders').textContent = '0';
+                document.getElementById('activeOrders').textContent = '0';
+                document.getElementById('wishlistCount').textContent = '0';
+            } catch (error) {
+                console.error('Error loading order stats:', error);
+            }
+        }
+
+        async function logout() {
+            try {
+                await fetch('/api/customer/logout', { method: 'POST' });
+            } catch (error) {
+                console.error('Logout error:', error);
+            } finally {
+                window.location.href = '/customer-login';
+            }
+        }
+
+        function browseCollections() {
+            window.location.href = '/#collections';
+        }
+
+        function viewOrders() {
+            alert('Order management feature coming soon! You will be able to view and track all your orders here.');
+        }
+
+        function viewProfile() {
+            alert('Profile management feature coming soon! You will be able to update your personal information and preferences here.');
+        }
+
+        function contactSupport() {
+            alert('Contact support feature coming soon! You will be able to reach our customer care team directly from here.');
+        }
+
+        // Initialize dashboard
+        checkAuth();
+    </script>
+</body>
+</html>

@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory Management - Saranya Jewellery</title>
+    <link rel="icon" href="/favicon.png">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Cormorant+Garamond:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body style="font-family: 'Poppins', sans-serif; background-color: #f5f5f5; margin: 0; padding: 0;">
+
+    <!-- Pending Approval Overlay -->
+    <div id="pendingOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 9999; align-items: center; justify-content: center;">
+        <div style="background: white; padding: 3rem; border-radius: 8px; text-align: center; max-width: 500px;">
+            <h2 style="color: #6f0022; margin-bottom: 1rem;">⏳ Pending Approval</h2>
+            <p style="color: #666; margin-bottom: 2rem;">Your account is awaiting admin approval. Please check back later.</p>
+            <button onclick="logout()" style="background: #6f0022; color: white; padding: 0.8rem 2rem; border: none; border-radius: 4px; cursor: pointer;">Logout</button>
+        </div>
+    </div>
+
+    <div style="max-width: 1400px; margin: 0 auto; padding: 2rem;">
+        
+        <!-- Header -->
+        <div style="display: flex; justify-content: space-between; align-items: center; background: #6f0022; color: white; padding: 1.5rem 2rem; border-radius: 8px; margin-bottom: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            <div>
+                <h1 style="margin: 0; font-family: 'Cormorant Garamond', serif; font-size: 2rem;">📊 Inventory Management</h1>
+                <p style="margin: 0.5rem 0 0; opacity: 0.9;">Welcome, <span id="userName">Manager</span></p>
+            </div>
+            <button onclick="logout()" style="background: white; color: #6f0022; border: none; padding: 0.75rem 1.5rem; border-radius: 4px; cursor: pointer; font-weight: 600;">Logout</button>
+        </div>
+
+        <!-- Gold Rates Section -->
+        <div style="background: linear-gradient(135deg, #e0bf63 0%, #d4a747 100%); padding: 2rem; border-radius: 8px; margin-bottom: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h2 style="margin: 0; color: #3e2723; font-family: 'Cormorant Garamond', serif;">Daily Gold Rates</h2>
+                <button onclick="openGoldRateModal()" style="background: #6f0022; color: white; padding: 0.6rem 1.2rem; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Update Rates</button>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-top: 1rem;">
+                <div style="background: rgba(255,255,255,0.9); padding: 1.5rem; border-radius: 8px; text-align: center;">
+                    <h3 style="margin: 0; color: #6f0022; font-size: 1.2rem;">18 Karat</h3>
+                    <p style="font-size: 2rem; margin: 0.5rem 0; font-weight: 700; color: #3e2723;" id="rate18K">Rs. 0</p>
+                    <p style="margin: 0; color: #666; font-size: 0.9rem;">per gram</p>
+                </div>
+                <div style="background: rgba(255,255,255,0.9); padding: 1.5rem; border-radius: 8px; text-align: center;">
+                    <h3 style="margin: 0; color: #6f0022; font-size: 1.2rem;">22 Karat</h3>
+                    <p style="font-size: 2rem; margin: 0.5rem 0; font-weight: 700; color: #3e2723;" id="rate22K">Rs. 0</p>
+                    <p style="margin: 0; color: #666; font-size: 0.9rem;">per gram</p>
+                </div>
+                <div style="background: rgba(255,255,255,0.9); padding: 1.5rem; border-radius: 8px; text-align: center;">
+                    <h3 style="margin: 0; color: #6f0022; font-size: 1.2rem;">24 Karat</h3>
+                    <p style="font-size: 2rem; margin: 0.5rem 0; font-weight: 700; color: #3e2723;" id="rate24K">Rs. 0</p>
+                    <p style="margin: 0; color: #666; font-size: 0.9rem;">per gram</p>
+                </div>
+            </div>
+            <p style="margin: 1rem 0 0; color: #3e2723; text-align: center; font-size: 0.9rem;">Last updated: <span id="lastUpdated">N/A</span></p>
+        </div>
+
+        <!-- Stats Cards -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center;">
+                <h3 style="font-size: 2.5rem; color: #6f0022; margin: 0 0 0.5rem;" id="totalItems">0</h3>
+                <p style="margin: 0; color: #666;">Total Items</p>
+            </div>
+            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center;">
+                <h3 style="font-size: 2.5rem; color: #dc3545; margin: 0 0 0.5rem;" id="lowStock">0</h3>
+                <p style="margin: 0; color: #666;">Low Stock</p>
+            </div>
+            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center;">
+                <h3 style="font-size: 2.5rem; color: #28a745; margin: 0 0 0.5rem;" id="newInventory">0</h3>
+                <p style="margin: 0; color: #666;">New Arrivals</p>
+            </div>
+            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center;">
+                <h3 style="font-size: 2.5rem; color: #6f0022; margin: 0 0 0.5rem;" id="totalValue">Rs. 0</h3>
+                <p style="margin: 0; color: #666;">Inventory Value</p>
+            </div>
+        </div>
+
+        <!-- Inventory Table -->
+        <div style="background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h2 style="margin: 0; font-family: 'Cormorant Garamond', serif;">Inventory Items</h2>
+                <button onclick="openAddStockModal()" style="background: #6f0022; color: white; padding: 0.8rem 1.5rem; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">+ Add Stock Entry</button>
+            </div>
+
+            <!-- Alert -->
+            <div id="alert" style="padding: 1rem; border-radius: 4px; margin-bottom: 1rem; display: none;"></div>
+
+            <!-- Filter -->
+            <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem;">
+                <select id="categoryFilter" onchange="loadInventory()" style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
+                    <option value="">All Categories</option>
+                    <option value="Ring">Ring</option>
+                    <option value="Necklace">Necklace</option>
+                    <option value="Bracelet">Bracelet</option>
+                    <option value="Earring">Earring</option>
+                    <option value="Pendant">Pendant</option>
+                    <option value="Chain">Chain</option>
+                    <option value="Bangles">Bangles</option>
+                    <option value="Anklet">Anklet</option>
+                </select>
+                <button onclick="filterLowStock()" style="padding: 0.8rem 1.2rem; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">⚠️ Low Stock Alert</button>
+            </div>
+
+            <!-- Inventory Table -->
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr>
+                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Product</th>
+                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">SKU</th>
+                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Category</th>
+                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Stock</th>
+                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Weight</th>
+                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Value</th>
+                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventoryTable">
+                        <tr><td colspan="7" style="padding: 2rem; text-align: center; color: #999;">Loading inventory...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Update Gold Rate Modal -->
+    <div id="goldRateModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000;">
+        <div style="background: white; padding: 2rem; border-radius: 8px; max-width: 500px; width: 90%;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 1.5rem;">
+                <h3 style="margin: 0;">Update Gold Rates</h3>
+                <button onclick="closeGoldRateModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+            </div>
+            <form id="goldRateForm">
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem;">18K Rate (Rs./gram) *</label>
+                    <input type="number" id="goldRate18K" step="0.01" required style="width: 95%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem;">22K Rate (Rs./gram) *</label>
+                    <input type="number" id="goldRate22K" step="0.01" required style="width: 95%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem;">24K Rate (Rs./gram) *</label>
+                    <input type="number" id="goldRate24K" step="0.01" required style="width: 95%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
+                <button type="submit" style="width: 100%; background: #6f0022; color: white; padding: 0.8rem; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Update Rates</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Stock Modal -->
+    <div id="addStockModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000;">
+        <div style="background: white; padding: 2rem; border-radius: 8px; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 1.5rem;">
+                <h3 style="margin: 0;">Add Stock Entry</h3>
+                <button onclick="closeAddStockModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+            </div>
+            <form id="addStockForm">
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem;">Product ID *</label>
+                    <input type="text" id="productId" required style="width: 95%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem;">Quantity to Add *</label>
+                    <input type="number" id="quantityAdd" required min="1" style="width: 95%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem;">Serial Number</label>
+                    <input type="text" id="serialNumber" style="width: 95%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem;">Notes</label>
+                    <textarea id="notes" rows="3" style="width: 95%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;"></textarea>
+                </div>
+                <button type="submit" style="width: 100%; background: #6f0022; color: white; padding: 0.8rem; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Add Stock</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let inventory = [];
+        let goldRates = { '18K': 0, '22K': 0, '24K': 0, lastUpdated: null };
+
+        async function checkAuth() {
+            try {
+                const res = await fetch('/api/auth/me');
+                if (!res.ok) { window.location.href = '/staff-login'; return false; }
+                const user = await res.json();
+                if (user.role !== 'Inventory') { alert('Access denied'); window.location.href = '/staff-login'; return false; }
+                if (user.status !== 'Approved') { document.getElementById('pendingOverlay').style.display = 'flex'; return false; }
+                if (!user.isActive) { alert('Account deactivated'); window.location.href = '/staff-login'; return false; }
+                document.getElementById('userName').textContent = user.fullName || user.email;
+                return true;
+            } catch (e) { window.location.href = '/staff-login'; return false; }
+        }
+
+        async function loadGoldRates() {
+            try {
+                const res = await fetch('/api/inventory/gold-rates');
+                if (res.ok) {
+                    goldRates = await res.json();
+                    document.getElementById('rate18K').textContent = 'Rs. ' + (goldRates['18K'] || 0).toLocaleString();
+                    document.getElementById('rate22K').textContent = 'Rs. ' + (goldRates['22K'] || 0).toLocaleString();
+                    document.getElementById('rate24K').textContent = 'Rs. ' + (goldRates['24K'] || 0).toLocaleString();
+                    document.getElementById('lastUpdated').textContent = goldRates.lastUpdated ? new Date(goldRates.lastUpdated).toLocaleString() : 'Never';
+                }
+            } catch (e) { console.error('Error loading gold rates'); }
+        }
+
+        async function loadInventory() {
+            try {
+                let url = '/api/products';
+                const cat = document.getElementById('categoryFilter').value;
+                if (cat) url += `?category=${cat}`;
+                
+                const res = await fetch(url);
+                if (!res.ok) throw new Error();
+                inventory = await res.json();
+                updateStats();
+                displayInventory();
+            } catch (e) { showAlert('Error loading inventory', 'error'); }
+        }
+
+        function updateStats() {
+            document.getElementById('totalItems').textContent = inventory.length;
+            document.getElementById('lowStock').textContent = inventory.filter(i => i.stockQuantity < 5).length;
+            const weekAgo = new Date();
+            weekAgo.setDate(weekAgo.getDate() - 7);
+            document.getElementById('newInventory').textContent = inventory.filter(i => new Date(i.createdAt) > weekAgo).length;
+            const totalValue = inventory.reduce((sum, i) => sum + (i.price * i.stockQuantity), 0);
+            document.getElementById('totalValue').textContent = 'Rs. ' + totalValue.toLocaleString();
+        }
+
+        function displayInventory() {
+            const tbody = document.getElementById('inventoryTable');
+            if (inventory.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="padding: 2rem; text-align: center; color: #999;">No inventory items</td></tr>';
+                return;
+            }
+            tbody.innerHTML = inventory.map(item => `
+                <tr style="background: ${item.stockQuantity < 5 ? '#fff3cd' : 'white'};">
+                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">${item.name}</td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">${item.sku || 'N/A'}</td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">${item.category}</td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">
+                        <span style="font-weight: 600; color: ${item.stockQuantity < 5 ? '#dc3545' : '#28a745'};">${item.stockQuantity}</span>
+                        ${item.stockQuantity < 5 ? ' ⚠️' : ''}
+                    </td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">${item.weight}g</td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">Rs. ${(item.price * item.stockQuantity).toLocaleString()}</td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">
+                        <button onclick="viewDetails('${item._id}')" style="padding: 0.4rem 0.8rem; background: #17a2b8; color: white; border: none; border-radius: 4px; cursor: pointer;">📋 Details</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function filterLowStock() {
+            inventory = inventory.filter(i => i.stockQuantity < 5);
+            displayInventory();
+        }
+
+        function viewDetails(id) {
+            const item = inventory.find(i => i._id === id);
+            if (item) alert(`Product: ${item.name}\nSKU: ${item.sku || 'N/A'}\nStock: ${item.stockQuantity}\nWeight: ${item.weight}g\nKarat: ${item.karat}\nPrice: Rs. ${item.price}\nTotal Value: Rs. ${(item.price * item.stockQuantity).toLocaleString()}`);
+        }
+
+        function openGoldRateModal() {
+            document.getElementById('goldRate18K').value = goldRates['18K'] || '';
+            document.getElementById('goldRate22K').value = goldRates['22K'] || '';
+            document.getElementById('goldRate24K').value = goldRates['24K'] || '';
+            document.getElementById('goldRateModal').style.display = 'flex';
+        }
+        function closeGoldRateModal() { document.getElementById('goldRateModal').style.display = 'none'; }
+
+        function openAddStockModal() { document.getElementById('addStockModal').style.display = 'flex'; }
+        function closeAddStockModal() { document.getElementById('addStockModal').style.display = 'none'; document.getElementById('addStockForm').reset(); }
+
+        document.getElementById('goldRateForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = {
+                '18K': parseFloat(document.getElementById('goldRate18K').value),
+                '22K': parseFloat(document.getElementById('goldRate22K').value),
+                '24K': parseFloat(document.getElementById('goldRate24K').value)
+            };
+            try {
+                const res = await fetch('/api/inventory/gold-rates', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (!res.ok) throw new Error();
+                showAlert('Gold rates updated', 'success');
+                closeGoldRateModal();
+                loadGoldRates();
+            } catch (e) { showAlert('Error updating rates', 'error'); }
+        });
+
+        document.getElementById('addStockForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = {
+                productId: document.getElementById('productId').value,
+                quantity: parseInt(document.getElementById('quantityAdd').value),
+                serialNumber: document.getElementById('serialNumber').value,
+                notes: document.getElementById('notes').value
+            };
+            try {
+                const res = await fetch('/api/inventory/add-stock', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (!res.ok) { const err = await res.json(); throw new Error(err.message); }
+                showAlert('Stock added successfully', 'success');
+                closeAddStockModal();
+                loadInventory();
+            } catch (e) { showAlert(e.message, 'error'); }
+        });
+
+        function showAlert(msg, type) {
+            const alert = document.getElementById('alert');
+            alert.textContent = msg;
+            alert.style.display = 'block';
+            alert.style.background = type === 'success' ? '#d4edda' : '#f8d7da';
+            alert.style.color = type === 'success' ? '#155724' : '#721c24';
+            alert.style.border = `1px solid ${type === 'success' ? '#c3e6cb' : '#f5c6cb'}`;
+            setTimeout(() => alert.style.display = 'none', 5000);
+        }
+
+        async function logout() { try { await fetch('/api/auth/logout', { method: 'POST' }); } catch (e) {} window.location.href = '/staff-login'; }
+
+        (async () => { const auth = await checkAuth(); if (auth) { loadGoldRates(); loadInventory(); } })();
+    </script>
+</body>
+</html>
