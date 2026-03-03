@@ -38,20 +38,12 @@
         </div>
     </div>
 
-    <script>
+    <script type="module">
+        import authManager from '/src/auth.js';
+
         const loginForm = document.getElementById('loginForm');
         const loginBtn = document.getElementById('loginBtn');
         const alertDiv = document.getElementById('alert');
-
-        // Role to dashboard mapping
-        const ROLE_DASHBOARDS = {
-            'Admin': '/admin-dashboard',
-            'Product Management': '/product-management-dashboard',
-            'Order Management': '/order-management-dashboard',
-            'Inventory': '/inventory-dashboard',
-            'Customer Care': '/customer-care-dashboard',
-            'Loyalty Management': '/loyalty-management-dashboard'
-        };
 
         function showAlert(message, type = 'error') {
             alertDiv.textContent = message;
@@ -83,33 +75,18 @@
             loginBtn.disabled = true;
             loginBtn.textContent = 'Logging in...';
 
-            try {
-                const response = await fetch('/api/auth/login', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ email, password })
-                });
+            const result = await authManager.loginStaff(email, password);
 
-                const data = await response.json();
-
-                if (response.ok) {
-                    showAlert('Login successful! Redirecting...', 'success');
-                    
-                    // Redirect based on role
-                    setTimeout(() => {
-                        const redirectUrl = ROLE_DASHBOARDS[data.staff?.role] || '/admin-dashboard';
-                        window.location.href = redirectUrl;
-                    }, 500);
-                } else {
-                    showAlert(data.message || 'Invalid email or password');
-                    loginBtn.disabled = false;
-                    loginBtn.textContent = 'Login';
-                }
-            } catch (error) {
-                console.error('Login error:', error);
-                showAlert('Network error. Please check your connection and try again.');
+            if (result.success) {
+                showAlert('Login successful! Redirecting...', 'success');
+                
+                // Redirect based on role
+                setTimeout(() => {
+                    const redirectUrl = authManager.getRoleDashboard(result.data.staff?.role);
+                    window.location.href = redirectUrl;
+                }, 500);
+            } else {
+                showAlert(result.error || 'Invalid email or password');
                 loginBtn.disabled = false;
                 loginBtn.textContent = 'Login';
             }

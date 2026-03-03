@@ -73,6 +73,30 @@ const productSchema = new mongoose.Schema({
   }
 });
 
+// Virtual fields for frontend compatibility
+productSchema.virtual('imageUrl').get(function() {
+  return this.image;
+});
+
+productSchema.virtual('karat').get(function() {
+  return this.kType;
+});
+
+productSchema.virtual('isAvailable').get(function() {
+  return this.availabilityStatus === 'In Stock';
+});
+
+// Ensure virtual fields are included when converting to JSON
+productSchema.set('toJSON', {
+  virtuals: true,
+  transform: function(doc, ret) {
+    // Add virtual fields to the JSON output
+    return ret;
+  }
+});
+
+productSchema.set('toObject', { virtuals: true });
+
 // Update the updatedAt timestamp before saving
 productSchema.pre('save', function(next) {
   this.updatedAt = Date.now();

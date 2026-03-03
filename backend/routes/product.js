@@ -35,12 +35,18 @@ router.get('/stats/overview', isAuthenticated, async (req, res) => {
 // Get all products (public route)
 router.get('/', async (req, res) => {
   try {
-    const { category, kType, availabilityStatus, featured } = req.query;
+    const { category, kType, karat, availabilityStatus, isAvailable, featured } = req.query;
     
     let filter = {};
     if (category) filter.category = category;
+    // Support both kType and karat parameters
     if (kType) filter.kType = kType;
+    if (karat) filter.kType = karat;
+    // Support both availabilityStatus and isAvailable parameters
     if (availabilityStatus) filter.availabilityStatus = availabilityStatus;
+    if (isAvailable !== undefined) {
+      filter.availabilityStatus = isAvailable === 'true' ? 'In Stock' : { $ne: 'In Stock' };
+    }
     if (featured) filter.featured = featured === 'true';
 
     const products = await Product.find(filter)

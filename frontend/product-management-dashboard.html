@@ -201,38 +201,21 @@
         </div>
     </div>
 
-    <script>
+    <script type="module">
+        import authManager from '/src/auth.js';
+
         let products = [];
         let editingId = null;
 
         async function checkAuth() {
-            try {
-                const res = await fetch('/api/auth/me');
-                if (!res.ok) {
-                    window.location.href = '/staff-login';
-                    return false;
-                }
-                const user = await res.json();
-                if (user.role !== 'Product Management') {
-                    alert('Access denied');
-                    window.location.href = '/staff-login';
-                    return false;
-                }
-                if (user.status !== 'Approved') {
-                    document.getElementById('pendingOverlay').style.display = 'flex';
-                    return false;
-                }
-                if (!user.isActive) {
-                    alert('Account deactivated');
-                    window.location.href = '/staff-login';
-                    return false;
-                }
-                document.getElementById('userName').textContent = user.fullName || user.email;
-                return true;
-            } catch (error) {
-                window.location.href = '/staff-login';
+            const user = await authManager.checkStaffAuth('Product Management');
+            if (!user) return false;
+            if (user.needsApproval) {
+                document.getElementById('pendingOverlay').style.display = 'flex';
                 return false;
             }
+            document.getElementById('userName').textContent = user.fullName || user.email;
+            return true;
         }
 
         async function loadProducts() {
@@ -446,12 +429,12 @@
             setTimeout(() => alert.style.display = 'none', 5000);
         }
 
-        async function logout() {
-            try {
-                await fetch('/api/auth/logout', { method: 'POST' });
-            } catch (e) {}
-            window.location.href = '/staff-login';
+        function logout() {
+            authManager.logout();
         }
+
+        // Make logout available globally
+        window.logout = logout;
 
         (async () => {
             const auth = await checkAuth();

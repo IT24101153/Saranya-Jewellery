@@ -163,32 +163,19 @@
         }
     </style>
 
-    <script>
+    <script type="module">
+        import authManager from '/src/auth.js';
+
         let staffList = [];
         let currentFilter = 'all';
         let editingStaffId = null;
 
         // Check authentication and role
         async function checkAuth() {
-            try {
-                const response = await fetch('/api/auth/me');
-                if (!response.ok) {
-                    window.location.href = '/staff-login';
-                    return false;
-                }
-                const user = await response.json();
-                if (user.role !== 'Admin') {
-                    alert('Access denied. Admin only.');
-                    window.location.href = '/staff-login';
-                    return false;
-                }
-                document.getElementById('adminName').textContent = user.fullName || user.email;
-                return true;
-            } catch (error) {
-                console.error('Auth check failed:', error);
-                window.location.href = '/staff-login';
-                return false;
-            }
+            const user = await authManager.checkStaffAuth('Admin');
+            if (!user || user.needsApproval) return false;
+            document.getElementById('adminName').textContent = user.fullName || user.email;
+            return true;
         }
 
         // Load all staff
@@ -410,15 +397,12 @@
         }
 
         // Logout
-        async function logout() {
-            try {
-                await fetch('/api/auth/logout', { method: 'POST' });
-            } catch (error) {
-                console.error('Logout error:', error);
-            } finally {
-                window.location.href = '/staff-login';
-            }
+        function logout() {
+            authManager.logout();
         }
+
+        // Make logout available globally
+        window.logout = logout;
 
         // Initialize
         (async function() {

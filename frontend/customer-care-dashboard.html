@@ -92,6 +92,136 @@
                 <p style="text-align: center; color: #999;">Loading feedback...</p>
             </div>
         </div>
+
+        <!-- Customer Chat Support -->
+        <div style="background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-top: 2rem;">
+            <h2 style="margin: 0 0 1.5rem; font-family: 'Cormorant Garamond', serif;">💬 Customer Support Chats</h2>
+            
+            <!-- Chat Stats -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+                <div style="background: #f8f9fa; padding: 1rem; border-radius: 6px; text-align: center;">
+                    <h3 style="font-size: 1.8rem; color: #6f0022; margin: 0;" id="totalChats">0</h3>
+                    <p style="margin: 0.3rem 0 0; color: #666; font-size: 0.85rem;">Total Chats</p>
+                </div>
+                <div style="background: #f8f9fa; padding: 1rem; border-radius: 6px; text-align: center;">
+                    <h3 style="font-size: 1.8rem; color: #28a745; margin: 0;" id="activeChats">0</h3>
+                    <p style="margin: 0.3rem 0 0; color: #666; font-size: 0.85rem;">Active</p>
+                </div>
+                <div style="background: #f8f9fa; padding: 1rem; border-radius: 6px; text-align: center;">
+                    <h3 style="font-size: 1.8rem; color: #dc3545; margin: 0;" id="unreadMessages">0</h3>
+                    <p style="margin: 0.3rem 0 0; color: #666; font-size: 0.85rem;">Unread</p>
+                </div>
+            </div>
+
+            <!-- Chat Filter -->
+            <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; border-bottom: 2px solid #eee; padding-bottom: 0.5rem;">
+                <button onclick="filterChats('all')" id="chat-filter-all" style="background: none; border: none; padding: 0.5rem 1rem; cursor: pointer; font-weight: 600; color: #6f0022; border-bottom: 3px solid #6f0022;">All</button>
+                <button onclick="filterChats('active')" id="chat-filter-active" style="background: none; border: none; padding: 0.5rem 1rem; cursor: pointer; color: #666;">Active</button>
+                <button onclick="filterChats('resolved')" id="chat-filter-resolved" style="background: none; border: none; padding: 0.5rem 1rem; cursor: pointer; color: #666;">Resolved</button>
+            </div>
+
+            <!-- Chat List -->
+            <div id="chatsList" style="display: flex; flex-direction: column; gap: 1rem; max-height: 600px; overflow-y: auto;">
+                <p style="text-align: center; color: #999;">Loading chats...</p>
+            </div>
+            
+            <div style="background: #f0f7ff; padding: 1rem; border-radius: 6px; margin-top: 1rem; border-left: 4px solid #17a2b8;">
+                <p style="margin: 0; font-size: 0.9rem; color: #666;">
+                    💡 <strong>Tip:</strong> Click on any chat above to view the conversation and send a reply
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat Detail Modal -->
+    <div id="chatModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 2000;">
+        <div style="background: white; border-radius: 8px; max-width: 800px; width: 90%; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden;">
+            <!-- Chat Header -->
+            <div style="background: #6f0022; color: white; padding: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h3 style="margin: 0;" id="chatCustomerName">Customer Name</h3>
+                    <p style="margin: 0.3rem 0 0; font-size: 0.9rem; opacity: 0.9;" id="chatCustomerEmail">customer@email.com</p>
+                </div>
+                <button onclick="closeChatModal()" style="background: white; color: #6f0022; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; font-weight: 600;">✕ Close</button>
+            </div>
+
+            <!-- Chat Messages -->
+            <div id="chatModalMessages" style="flex: 1; overflow-y: auto; padding: 1.5rem; background: #f9f9f9; min-height: 400px; max-height: 500px;">
+                <p style="text-align: center; color: #999;">Loading conversation...</p>
+            </div>
+
+            <!-- Chat Status & Actions -->
+            <div style="padding: 1rem 1.5rem; background: #f8f9fa; border-top: 1px solid #ddd; display: flex; gap: 1rem; align-items: center;">
+                <label style="font-size: 0.9rem; color: #666;">Status:</label>
+                <select id="chatStatus" onchange="updateChatStatus()" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
+                    <option value="active">Active</option>
+                    <option value="pending">Pending</option>
+                    <option value="resolved">Resolved</option>
+                </select>
+            </div>
+
+            <!-- Reply Form -->
+            <div style="padding: 1.5rem; background: white; border-top: 2px solid #6f0022;">
+                <h4 style="margin: 0 0 1rem 0; color: #6f0022; font-size: 1rem;">📤 Send Your Reply:</h4>
+                <form id="replyForm" style="display: flex; gap: 0.5rem;">
+                    <input 
+                        type="text" 
+                        id="replyInput" 
+                        placeholder="Type your reply to the customer..." 
+                        required
+                        style="flex: 1; padding: 0.8rem; border: 1px solid #ddd; border-radius: 25px; font-size: 1rem;"
+                    >
+                    <button type="submit" style="background: #6f0022; color: white; border: none; padding: 0.8rem 1.5rem; border-radius: 25px; cursor: pointer; font-weight: 600; white-space: nowrap;">
+                        📤 Send Reply
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .chat-item {
+            padding: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: white;
+        }
+        .chat-item:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-color: #6f0022;
+        }
+        .chat-item.unread {
+            background: #fff8f0;
+            border-left: 4px solid #6f0022;
+        }
+        .chat-message-bubble {
+            padding: 0.8rem 1rem;
+            border-radius: 12px;
+            margin-bottom: 0.8rem;
+            max-width: 70%;
+        }
+        .chat-message-bubble.customer {
+            background: #f0f0f0;
+            margin-right: auto;
+        }
+        .chat-message-bubble.care-manager {
+            background: #6f0022;
+            color: white;
+            margin-left: auto;
+        }
+        .chat-badge {
+            display: inline-block;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .chat-badge.active { background: #d4edda; color: #155724; }
+        .chat-badge.pending { background: #fff3cd; color: #856404; }
+        .chat-badge.resolved { background: #d1ecf1; color: #0c5460; }
+    </style>
     </div>
 
     <!-- Message Modal -->
@@ -206,7 +336,9 @@
         </div>
     </div>
 
-    <script>
+    <script type="module">
+        import authManager from '/src/auth.js';
+
         let campaigns = [];
         let feedback = [];
         let messages = [];
@@ -215,16 +347,14 @@
         let currentFilter = 'all';
 
         async function checkAuth() {
-            try {
-                const res = await fetch('/api/auth/me');
-                if (!res.ok) { window.location.href = '/staff-login'; return false; }
-                const user = await res.json();
-                if (user.role !== 'Customer Care') { alert('Access denied'); window.location.href = '/staff-login'; return false; }
-                if (user.status !== 'Approved') { document.getElementById('pendingOverlay').style.display = 'flex'; return false; }
-                if (!user.isActive) { alert('Account deactivated'); window.location.href = '/staff-login'; return false; }
-                document.getElementById('userName').textContent = user.fullName || user.email;
-                return true;
-            } catch (e) { window.location.href = '/staff-login'; return false; }
+            const user = await authManager.checkStaffAuth('Customer Care');
+            if (!user) return false;
+            if (user.needsApproval) {
+                document.getElementById('pendingOverlay').style.display = 'flex';
+                return false;
+            }
+            document.getElementById('userName').textContent = user.fullName || user.email;
+            return true;
         }
 
         // Message Functions
@@ -601,9 +731,273 @@
             setTimeout(() => alert.style.display = 'none', 5000);
         }
 
-        async function logout() { try { await fetch('/api/auth/logout', { method: 'POST' }); } catch (e) {} window.location.href = '/staff-login'; }
+        // ============ CHAT SUPPORT FUNCTIONS ============
+        let chats = [];
+        let currentChatId = null;
+        let currentChatFilter = 'all';
+        let chatRefreshInterval;
 
-        (async () => { const auth = await checkAuth(); if (auth) { loadMessages(); loadCampaigns(); loadFeedback(); } })();
+        async function loadChats() {
+            try {
+                const url = currentChatFilter === 'all' 
+                    ? '/api/chat/all' 
+                    : `/api/chat/all?status=${currentChatFilter}`;
+                    
+                const res = await fetch(url, {
+                    credentials: 'same-origin'
+                });
+                if (res.ok) {
+                    chats = await res.json();
+                    displayChats();
+                    await loadChatStats();
+                } else {
+                    console.error('Error loading chats:', res.status);
+                }
+            } catch (e) {
+                console.error('Error loading chats:', e);
+            }
+        }
+
+        async function loadChatStats() {
+            try {
+                const res = await fetch('/api/chat/stats/summary', {
+                    credentials: 'same-origin'
+                });
+                if (res.ok) {
+                    const stats = await res.json();
+                    document.getElementById('totalChats').textContent = stats.totalChats || 0;
+                    document.getElementById('activeChats').textContent = stats.activeChats || 0;
+                    document.getElementById('unreadMessages').textContent = stats.unreadMessages || 0;
+                }
+            } catch (e) {
+                console.error('Error loading chat stats:', e);
+            }
+        }
+
+        function displayChats() {
+            const container = document.getElementById('chatsList');
+            
+            if (chats.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #999; padding: 2rem;">No chats found</p>';
+                return;
+            }
+
+            container.innerHTML = chats.map(chat => {
+                const lastMsg = chat.lastMessage;
+                const time = new Date(chat.lastMessageAt).toLocaleString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: 'numeric',
+                    minute: '2-digit'
+                });
+
+                return `
+                    <div class="chat-item ${chat.unreadCount > 0 ? 'unread' : ''}" onclick="openChatModal('${chat._id}')" style="position: relative;">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
+                            <div style="flex: 1;">
+                                <h4 style="margin: 0; color: #6f0022;">${chat.customerName}</h4>
+                                <p style="margin: 0.2rem 0 0; font-size: 0.85rem; color: #666;">${chat.customerEmail}</p>
+                            </div>
+                            <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 0.3rem;">
+                                <span class="chat-badge ${chat.status}">${chat.status}</span>
+                                ${chat.unreadCount > 0 ? `<div style="background: #dc3545; color: white; border-radius: 50%; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 600;">${chat.unreadCount}</div>` : ''}
+                            </div>
+                        </div>
+                        ${lastMsg ? `
+                            <p style="margin: 0.5rem 0 0; color: #666; font-size: 0.9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                <strong>${lastMsg.senderName}:</strong> ${lastMsg.message}
+                            </p>
+                        ` : ''}
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem;">
+                            <p style="margin: 0; font-size: 0.75rem; color: #999;">${time} • ${chat.messageCount} messages</p>
+                            <button style="background: #6f0022; color: white; border: none; padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.85rem; cursor: pointer; font-weight: 600;" onclick="event.stopPropagation(); openChatModal('${chat._id}');">
+                                💬 Reply
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        window.filterChats = function(status) {
+            currentChatFilter = status;
+            
+            // Update button styles
+            ['all', 'active', 'resolved'].forEach(s => {
+                const btn = document.getElementById(`chat-filter-${s}`);
+                if (s === status) {
+                    btn.style.color = '#6f0022';
+                    btn.style.borderBottom = '3px solid #6f0022';
+                    btn.style.fontWeight = '600';
+                } else {
+                    btn.style.color = '#666';
+                    btn.style.borderBottom = 'none';
+                    btn.style.fontWeight = '400';
+                }
+            });
+            
+            loadChats();
+        };
+
+        window.openChatModal = async function(chatId) {
+            currentChatId = chatId;
+            document.getElementById('chatModal').style.display = 'flex';
+            
+            try {
+                const res = await fetch(`/api/chat/${chatId}`, {
+                    credentials: 'same-origin'
+                });
+                if (res.ok) {
+                    const chat = await res.json();
+                    document.getElementById('chatCustomerName').textContent = chat.customerName;
+                    document.getElementById('chatCustomerEmail').textContent = chat.customerEmail;
+                    document.getElementById('chatStatus').value = chat.status;
+                    
+                    // Display messages
+                    const messagesContainer = document.getElementById('chatModalMessages');
+                    if (chat.messages.length === 0) {
+                        messagesContainer.innerHTML = '<p style="text-align: center; color: #999;">No messages yet</p>';
+                    } else {
+                        messagesContainer.innerHTML = chat.messages.map(msg => {
+                            const time = new Date(msg.timestamp).toLocaleString('en-US', {
+                                hour: 'numeric',
+                                minute: '2-digit',
+                                hour12: true,
+                                month: 'short',
+                                day: 'numeric'
+                            });
+
+                            return `
+                                <div class="chat-message-bubble ${msg.sender}">
+                                    <div style="font-size: 0.75rem; font-weight: 600; margin-bottom: 0.3rem; ${msg.sender === 'care-manager' ? 'color: var(--brand-gold-strong);' : 'color: #6f0022;'}">${msg.senderName}</div>
+                                    <div>${escapeHtml(msg.message)}</div>
+                                    <div style="font-size: 0.7rem; opacity: 0.7; margin-top: 0.3rem;">${time}</div>
+                                </div>
+                            `;
+                        }).join('');
+                        
+                        // Scroll to bottom
+                        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                    }
+                } else {
+                    showAlert('Error loading chat', 'error');
+                }
+            } catch (e) {
+                console.error('Error loading chat:', e);
+                showAlert('Error loading chat', 'error');
+            }
+        };
+
+        window.closeChatModal = function() {
+            document.getElementById('chatModal').style.display = 'none';
+            currentChatId = null;
+            loadChats(); // Refresh the chat list
+        };
+
+        window.updateChatStatus = async function() {
+            if (!currentChatId) return;
+            
+            const status = document.getElementById('chatStatus').value;
+            
+            try {
+                const res = await fetch(`/api/chat/${currentChatId}/status`, {
+                    method: 'PATCH',
+                    credentials: 'same-origin',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status })
+                });
+                
+                if (res.ok) {
+                    showAlert('Status updated successfully', 'success');
+                } else {
+                    showAlert('Error updating status', 'error');
+                }
+            } catch (e) {
+                console.error('Error updating status:', e);
+                showAlert('Error updating status', 'error');
+            }
+        };
+
+        document.getElementById('replyForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (!currentChatId) return;
+            
+            const input = document.getElementById('replyInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            // Disable button while sending
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '⏳ Sending...';
+            
+            try {
+                const res = await fetch(`/api/chat/${currentChatId}/reply`, {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message })
+                });
+                
+                if (res.ok) {
+                    input.value = '';
+                    showAlert('Reply sent successfully!', 'success');
+                    // Reload the chat to show the new message
+                    await openChatModal(currentChatId);
+                } else {
+                    const error = await res.json();
+                    showAlert(error.message || 'Error sending reply', 'error');
+                }
+            } catch (e) {
+                console.error('Error sending reply:', e);
+                showAlert('Error sending reply: ' + e.message, 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            }
+        });
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function startChatRefresh() {
+            chatRefreshInterval = setInterval(() => {
+                loadChats();
+                if (currentChatId) {
+                    openChatModal(currentChatId);
+                }
+            }, 10000); // Refresh every 10 seconds
+        }
+
+        function stopChatRefresh() {
+            if (chatRefreshInterval) {
+                clearInterval(chatRefreshInterval);
+            }
+        }
+
+        window.addEventListener('beforeunload', stopChatRefresh);
+
+        // ============ END CHAT SUPPORT FUNCTIONS ============
+
+        function logout() { authManager.logout(); }
+        window.logout = logout;
+
+        (async () => { 
+            const auth = await checkAuth(); 
+            if (auth) { 
+                loadMessages(); 
+                loadCampaigns(); 
+                loadFeedback(); 
+                loadChats();
+                startChatRefresh();
+            } 
+        })();
     </script>
 </body>
 </html>

@@ -81,8 +81,8 @@ router.post('/login', async (req, res) => {
 
     // Set session
     req.session.customerId = customer._id;
-    req.session.customerEmail = customer.email;
-    req.session.customerFullName = customer.fullName;
+    req.session.email = customer.email;
+    req.session.fullName = customer.fullName;
     req.session.isCustomer = true;
 
     res.json({
@@ -165,6 +165,46 @@ router.put('/profile', async (req, res) => {
     });
   } catch (error) {
     console.error('Update profile error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// PUT /api/customer/change-password - Change customer password
+router.put('/change-password', async (req, res) => {
+  try {
+    if (!req.session.customerId) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: 'Current and new password are required' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: 'New password must be at least 6 characters' });
+    }
+
+    const customer = await Customer.findById(req.session.customerId);
+    if (!customer) {
+      return res.status(404).json({ message: 'Customer not found' });
+    }
+
+    // Verify current password
+    const isMatch = await customer.comparePassword(currentPassword);
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Current password is incorrect' });
+    }
+
+    // Update password
+    customer.password = newPassword;
+    customer.updatedAt = Date.now();
+    await customer.save();
+
+    res.json({ message: 'Password changed successfully' });
+  } catch (error) {
+    console.error('Change password error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });

@@ -21,17 +21,20 @@
     <header class="header">
         <div class="nav">
             <a href="#home">Home</a>
+            <a href="#collections">Shop</a>
             <a href="#rings">Rings</a>
             <a href="#necklaces">Necklaces</a>
-            <a href="#gemstones">Gemstones</a>
         </div>
         
         <div class="logo">SARANYA JEWELLERY</div>
         
         <div class="header-icons">
             <i class="fas fa-search header-icon"></i>
-            <a href="/customer-login"><i class="fas fa-user header-icon"></i></a>
-            <i class="fas fa-shopping-cart header-icon"></i>
+            <a href="/customer-login" id="userIcon"><i class="fas fa-user header-icon"></i></a>
+            <a href="/customer-cart" style="position: relative;">
+                <i class="fas fa-shopping-cart header-icon"></i>
+                <span id="cartBadge" style="display: none; position: absolute; top: -8px; right: -8px; background: var(--brand-gold-strong); color: white; border-radius: 50%; padding: 2px 6px; font-size: 0.7rem;">0</span>
+            </a>
         </div>
     </header>
 
@@ -286,6 +289,42 @@
 
         // Load products when page loads
         document.addEventListener('DOMContentLoaded', loadProducts);
+    </script>
+
+    <script type="module">
+        // Update cart badge and login status
+        import authManager from '/src/auth.js';
+        
+        let cart = JSON.parse(localStorage.getItem('saranyaCart') || '[]');
+        
+        function updateCartBadge() {
+            const badge = document.getElementById('cartBadge');
+            const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+            if (count > 0) {
+                badge.textContent = count;
+                badge.style.display = 'block';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+        
+        // Check if user is logged in and update user icon
+        async function checkLoginStatus() {
+            try {
+                const res = await fetch('/api/customer/me', { credentials: 'same-origin' });
+                if (res.ok) {
+                    const { customer } = await res.json();
+                    const userIcon = document.getElementById('userIcon');
+                    userIcon.href = '/customer-dashboard';
+                    userIcon.title = customer.fullName || customer.email;
+                }
+            } catch (error) {
+                // User not logged in, keep default behavior
+            }
+        }
+        
+        updateCartBadge();
+        checkLoginStatus();
     </script>
 
 </body>

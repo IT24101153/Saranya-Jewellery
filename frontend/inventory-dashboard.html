@@ -178,21 +178,21 @@
         </div>
     </div>
 
-    <script>
+    <script type="module">
+        import authManager from '/src/auth.js';
+
         let inventory = [];
         let goldRates = { '18K': 0, '22K': 0, '24K': 0, lastUpdated: null };
 
         async function checkAuth() {
-            try {
-                const res = await fetch('/api/auth/me');
-                if (!res.ok) { window.location.href = '/staff-login'; return false; }
-                const user = await res.json();
-                if (user.role !== 'Inventory') { alert('Access denied'); window.location.href = '/staff-login'; return false; }
-                if (user.status !== 'Approved') { document.getElementById('pendingOverlay').style.display = 'flex'; return false; }
-                if (!user.isActive) { alert('Account deactivated'); window.location.href = '/staff-login'; return false; }
-                document.getElementById('userName').textContent = user.fullName || user.email;
-                return true;
-            } catch (e) { window.location.href = '/staff-login'; return false; }
+            const user = await authManager.checkStaffAuth('Inventory');
+            if (!user) return false;
+            if (user.needsApproval) {
+                document.getElementById('pendingOverlay').style.display = 'flex';
+                return false;
+            }
+            document.getElementById('userName').textContent = user.fullName || user.email;
+            return true;
         }
 
         async function loadGoldRates() {
@@ -328,7 +328,8 @@
             setTimeout(() => alert.style.display = 'none', 5000);
         }
 
-        async function logout() { try { await fetch('/api/auth/logout', { method: 'POST' }); } catch (e) {} window.location.href = '/staff-login'; }
+        function logout() { authManager.logout(); }
+        window.logout = logout;
 
         (async () => { const auth = await checkAuth(); if (auth) { loadGoldRates(); loadInventory(); } })();
     </script>

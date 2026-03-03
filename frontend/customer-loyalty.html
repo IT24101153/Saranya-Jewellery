@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loyalty Rewards - Saranya Jewellery</title>
+    <link rel="icon" type="image/png" sizes="512x512" href="/favicon.png">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Top Bar -->
+    <div class="top-bar">
+        <div><i class="fas fa-phone"></i> <a href="tel:+1234567890">Contact Us</a></div>
+        <div>
+            <span id="customerName" style="margin-right: 1rem; color: var(--brand-gold-strong);">Loading...</span>
+            <span id="loyaltyPoints" style="margin-right: 1rem;">⭐ 0 Points</span>
+            <button class="logout-btn" onclick="logout()" style="font-size: 0.85rem; padding: 0.3rem 0.8rem;">Logout</button>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="nav">
+            <a href="/customer-dashboard">Dashboard</a>
+            <a href="/customer-shop">Shop</a>
+            <a href="/customer-orders">My Orders</a>
+            <a href="/customer-loyalty">Loyalty</a>
+            <a href="/customer-support">Support</a>
+        </div>
+        
+        <div class="logo">SARANYA JEWELLERY</div>
+        
+        <div class="header-icons">
+            <i class="fas fa-search header-icon"></i>
+            <i class="fas fa-user header-icon" onclick="viewProfile()" style="cursor: pointer;"></i>
+            <a href="/customer-cart" style="position: relative;">
+                <i class="fas fa-shopping-cart header-icon"></i>
+                <span id="cartBadge" style="display: none; position: absolute; top: -8px; right: -8px; background: var(--brand-gold-strong); color: white; border-radius: 50%; padding: 2px 6px; font-size: 0.7rem;">0</span>
+            </a>
+        </div>
+    </header>
+
+    <main>
+        <div class="dashboard-container">
+            <h1 style="text-align: center; margin-bottom: 2rem; font-family: 'Cormorant Garamond', serif; color: var(--brand-burgundy);">Loyalty Rewards Program</h1>
+
+            <!-- Current Balance -->
+            <div class="section loyalty-card" style="text-align: center; padding: 3rem 2rem;">
+                <div style="font-size: 5rem; margin-bottom: 1rem;">⭐</div>
+                <h2 style="color: var(--brand-gold); font-size: 3rem; margin: 1rem 0;">
+                    <span id="loyaltyBalance">0</span> <span style="font-size: 1.5rem;">Points</span>
+                </h2>
+                <p style="font-size: 1.1rem; color: var(--text-medium); margin-top: 1rem;">
+                    Your current loyalty points balance
+                </p>
+            </div>
+
+            <!-- How It Works -->
+            <div class="section">
+                <div class="section-header">
+                    <h2>How It Works</h2>
+                </div>
+                <div class="section-content">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem; margin-top: 1.5rem;">
+                        <div style="text-align: center; padding: 2rem; background: var(--bg-light); border-radius: 12px;">
+                            <div style="font-size: 3rem; margin-bottom: 1rem;">💰</div>
+                            <h3 style="color: var(--brand-burgundy); margin-bottom: 1rem;">Earn Points</h3>
+                            <p style="color: var(--text-medium);">Earn 1 point for every Rs. 100 you spend on purchases</p>
+                        </div>
+                        <div style="text-align: center; padding: 2rem; background: var(--bg-light); border-radius: 12px;">
+                            <div style="font-size: 3rem; margin-bottom: 1rem;">🎁</div>
+                            <h3 style="color: var(--brand-burgundy); margin-bottom: 1rem;">Redeem Rewards</h3>
+                            <p style="color: var(--text-medium);">100 points = Rs. 100 discount on your next purchase</p>
+                        </div>
+                        <div style="text-align: center; padding: 2rem; background: var(--bg-light); border-radius: 12px;">
+                            <div style="font-size: 3rem; margin-bottom: 1rem;">⏰</div>
+                            <h3 style="color: var(--brand-burgundy); margin-bottom: 1rem;">Never Expire</h3>
+                            <p style="color: var(--text-medium);">Your points never expire and keep accumulating</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rewards Tiers -->
+            <div class="section">
+                <div class="section-header">
+                    <h2>Rewards Tiers</h2>
+                </div>
+                <div class="section-content">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-top: 1.5rem;">
+                        <div style="background: linear-gradient(135deg, #cd7f32 0%, #d89c5f 100%); color: white; padding: 2rem; border-radius: 12px; text-align: center;">
+                            <div style="font-size: 3rem; margin-bottom: 1rem;">🥉</div>
+                            <h3 style="color: white; margin-bottom: 1rem;">Bronze</h3>
+                            <p style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem;">0 - 999 Points</p>
+                            <p style="font-size: 0.9rem; opacity: 0.9;">Standard benefits + Welcome bonus</p>
+                        </div>
+                        <div style="background: linear-gradient(135deg, #c0c0c0 0%, #e8e8e8 100%); color: #333; padding: 2rem; border-radius: 12px; text-align: center;">
+                            <div style="font-size: 3rem; margin-bottom: 1rem;">🥈</div>
+                            <h3 style="color: #333; margin-bottom: 1rem;">Silver</h3>
+                            <p style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem;">1000 - 2499 Points</p>
+                            <p style="font-size: 0.9rem; opacity: 0.8;">5% extra points on purchases</p>
+                        </div>
+                        <div style="background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%); color: #333; padding: 2rem; border-radius: 12px; text-align: center;">
+                            <div style="font-size: 3rem; margin-bottom: 1rem;">🥇</div>
+                            <h3 style="color: #333; margin-bottom: 1rem;">Gold</h3>
+                            <p style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem;">2500+ Points</p>
+                            <p style="font-size: 0.9rem; opacity: 0.8;">10% extra points + Priority support</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Points History -->
+            <div class="section">
+                <div class="section-header">
+                    <h2>Points History</h2>
+                </div>
+                <div id="pointsHistory" class="section-content">
+                    <div class="empty-state">
+                        <i class="fas fa-history" style="font-size: 3rem; color: #ddd; margin-bottom: 1rem;"></i>
+                        <p style="margin: 0;">Your points history will appear here</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FAQs -->
+            <div class="section">
+                <div class="section-header">
+                    <h2>Frequently Asked Questions</h2>
+                </div>
+                <div class="section-content">
+                    <div style="margin-top: 1rem;">
+                        <div style="padding: 1.5rem; background: var(--bg-light); border-radius: 8px; margin-bottom: 1rem;">
+                            <h4 style="color: var(--brand-burgundy); margin-bottom: 0.5rem;">How do I redeem my points?</h4>
+                            <p style="margin: 0; color: var(--text-medium);">During checkout, you can choose to redeem your points for a discount. 100 points = Rs. 100 discount.</p>
+                        </div>
+                        <div style="padding: 1.5rem; background: var(--bg-light); border-radius: 8px; margin-bottom: 1rem;">
+                            <h4 style="color: var(--brand-burgundy); margin-bottom: 0.5rem;">Do my points expire?</h4>
+                            <p style="margin: 0; color: var(--text-medium);">No! Your loyalty points never expire and will keep accumulating with every purchase.</p>
+                        </div>
+                        <div style="padding: 1.5rem; background: var(--bg-light); border-radius: 8px; margin-bottom: 1rem;">
+                            <h4 style="color: var(--brand-burgundy); margin-bottom: 0.5rem;">Can I combine points with other offers?</h4>
+                            <p style="margin: 0; color: var(--text-medium);">Yes! You can use your loyalty points with most promotional offers and discounts.</p>
+                        </div>
+                        <div style="padding: 1.5rem; background: var(--bg-light); border-radius: 8px;">
+                            <h4 style="color: var(--brand-burgundy); margin-bottom: 0.5rem;">What happens if I cancel an order?</h4>
+                            <p style="margin: 0; color: var(--text-medium);">If you cancel an order, any points earned from that purchase will be deducted from your balance.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>ABOUT SARANYA</h3>
+                <ul>
+                    <li><a href="/#story">Our Story</a></li>
+                    <li><a href="/#education">Education</a></li>
+                    <li><a href="/#faq">FAQ</a></li>
+                </ul>
+            </div>
+            
+            <div class="footer-section">
+                <h3>WHY SARANYA?</h3>
+                <ul>
+                    <li><a href="/#quality">Quality Guarantee</a></li>
+                    <li><a href="/#warranty">Lifetime Warranty</a></li>
+                    <li><a href="/#certification">Certified Jewellery</a></li>
+                </ul>
+            </div>
+            
+            <div class="footer-section">
+                <h3>CONNECT WITH US</h3>
+                <div class="social-links">
+                    <a href="#" class="social-icon"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#" class="social-icon"><i class="fab fa-instagram"></i></a>
+                    <a href="#" class="social-icon"><i class="fab fa-twitter"></i></a>
+                    <a href="#" class="social-icon"><i class="fab fa-pinterest"></i></a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer-bottom">
+            <p>&copy; 2026 Saranya Jewellery. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <script type="module">
+        import authManager from '/src/auth.js';
+
+        let cart = JSON.parse(localStorage.getItem('saranyaCart') || '[]');
+
+        async function checkAuth() {
+            const customer = await authManager.checkCustomerAuth();
+            if (!customer) return;
+
+            document.getElementById('customerName').textContent = customer.fullName || customer.email;
+            const points = customer.loyaltyPoints || 0;
+            document.getElementById('loyaltyPoints').textContent = `⭐ ${points} Points`;
+            document.getElementById('loyaltyBalance').textContent = points;
+            
+            updateCartBadge();
+        }
+
+        function updateCartBadge() {
+            const badge = document.getElementById('cartBadge');
+            const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+            if (count > 0) {
+                badge.textContent = count;
+                badge.style.display = 'block';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        function logout() {
+            authManager.logout();
+        }
+
+        function viewProfile() {
+            window.location.href = '/customer-dashboard?openProfile=true';
+        }
+
+        checkAuth();
+
+        window.logout = logout;
+        window.viewProfile = viewProfile;
+    </script>
+</body>
+</html>
