@@ -181,7 +181,9 @@
         // Load all staff
         async function loadStaff() {
             try {
-                const response = await fetch('/api/staff');
+                const response = await fetch('/api/staff', {
+                    credentials: 'same-origin'
+                });
                 if (!response.ok) throw new Error('Failed to load staff');
                 staffList = await response.json();
                 updateStats();
@@ -261,7 +263,10 @@
         // Approve staff
         async function approveStaff(id) {
             try {
-                const response = await fetch(`/api/staff/${id}/approve`, { method: 'PATCH' });
+                const response = await fetch(`/api/staff/${id}/approve`, { 
+                    method: 'PATCH',
+                    credentials: 'same-origin'
+                });
                 if (!response.ok) throw new Error('Failed to approve');
                 showAlert('Staff approved successfully', 'success');
                 loadStaff();
@@ -274,7 +279,10 @@
         async function rejectStaff(id) {
             if (!confirm('Are you sure you want to reject this staff request?')) return;
             try {
-                const response = await fetch(`/api/staff/${id}/reject`, { method: 'PATCH' });
+                const response = await fetch(`/api/staff/${id}/reject`, { 
+                    method: 'PATCH',
+                    credentials: 'same-origin'
+                });
                 if (!response.ok) throw new Error('Failed to reject');
                 showAlert('Staff rejected', 'success');
                 loadStaff();
@@ -286,7 +294,10 @@
         // Toggle active status
         async function toggleActive(id, currentStatus) {
             try {
-                const response = await fetch(`/api/staff/${id}/toggle-active`, { method: 'PATCH' });
+                const response = await fetch(`/api/staff/${id}/toggle-active`, { 
+                    method: 'PATCH',
+                    credentials: 'same-origin'
+                });
                 if (!response.ok) throw new Error('Failed to toggle');
                 showAlert(`Staff ${currentStatus ? 'deactivated' : 'activated'} successfully`, 'success');
                 loadStaff();
@@ -299,7 +310,10 @@
         async function deleteStaff(id, name) {
             if (!confirm(`Are you sure you want to delete ${name}?`)) return;
             try {
-                const response = await fetch(`/api/staff/${id}`, { method: 'DELETE' });
+                const response = await fetch(`/api/staff/${id}`, { 
+                    method: 'DELETE',
+                    credentials: 'same-origin'
+                });
                 if (!response.ok) throw new Error('Failed to delete');
                 showAlert('Staff deleted successfully', 'success');
                 loadStaff();
@@ -362,12 +376,14 @@
                     response = await fetch(`/api/staff/${editingStaffId}`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
+                        credentials: 'same-origin',
                         body: JSON.stringify(formData)
                     });
                 } else {
                     response = await fetch('/api/staff', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
+                        credentials: 'same-origin',
                         body: JSON.stringify(formData)
                     });
                 }
@@ -401,8 +417,16 @@
             authManager.logout();
         }
 
-        // Make logout available globally
+        // Make functions available globally for onclick handlers
         window.logout = logout;
+        window.openAddModal = openAddModal;
+        window.closeModal = closeModal;
+        window.filterStaff = filterStaff;
+        window.approveStaff = approveStaff;
+        window.rejectStaff = rejectStaff;
+        window.toggleActive = toggleActive;
+        window.editStaff = editStaff;
+        window.deleteStaff = deleteStaff;
 
         // Initialize
         (async function() {

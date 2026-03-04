@@ -30,159 +30,252 @@
             <button onclick="logout()" style="background: white; color: #6f0022; border: none; padding: 0.75rem 1.5rem; border-radius: 4px; cursor: pointer; font-weight: 600;">Logout</button>
         </div>
 
-        <!-- Gold Rates Section -->
-        <div style="background: linear-gradient(135deg, #e0bf63 0%, #d4a747 100%); padding: 2rem; border-radius: 8px; margin-bottom: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                <h2 style="margin: 0; color: #3e2723; font-family: 'Cormorant Garamond', serif;">Daily Gold Rates</h2>
-                <button onclick="openGoldRateModal()" style="background: #6f0022; color: white; padding: 0.6rem 1.2rem; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Update Rates</button>
-            </div>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-top: 1rem;">
-                <div style="background: rgba(255,255,255,0.9); padding: 1.5rem; border-radius: 8px; text-align: center;">
-                    <h3 style="margin: 0; color: #6f0022; font-size: 1.2rem;">18 Karat</h3>
-                    <p style="font-size: 2rem; margin: 0.5rem 0; font-weight: 700; color: #3e2723;" id="rate18K">Rs. 0</p>
-                    <p style="margin: 0; color: #666; font-size: 0.9rem;">per gram</p>
-                </div>
-                <div style="background: rgba(255,255,255,0.9); padding: 1.5rem; border-radius: 8px; text-align: center;">
-                    <h3 style="margin: 0; color: #6f0022; font-size: 1.2rem;">22 Karat</h3>
-                    <p style="font-size: 2rem; margin: 0.5rem 0; font-weight: 700; color: #3e2723;" id="rate22K">Rs. 0</p>
-                    <p style="margin: 0; color: #666; font-size: 0.9rem;">per gram</p>
-                </div>
-                <div style="background: rgba(255,255,255,0.9); padding: 1.5rem; border-radius: 8px; text-align: center;">
-                    <h3 style="margin: 0; color: #6f0022; font-size: 1.2rem;">24 Karat</h3>
-                    <p style="font-size: 2rem; margin: 0.5rem 0; font-weight: 700; color: #3e2723;" id="rate24K">Rs. 0</p>
-                    <p style="margin: 0; color: #666; font-size: 0.9rem;">per gram</p>
-                </div>
-            </div>
-            <p style="margin: 1rem 0 0; color: #3e2723; text-align: center; font-size: 0.9rem;">Last updated: <span id="lastUpdated">N/A</span></p>
+        <!-- Tab Navigation -->
+        <div style="display: flex; gap: 0.5rem; margin-bottom: 2rem; flex-wrap: wrap;">
+            <button class="tab-btn active" onclick="switchTab('products')">📦 Products</button>
+            <button class="tab-btn" onclick="switchTab('goldRates')">💰 Gold Rates</button>
+            <button class="tab-btn" onclick="switchTab('orders')">🛍️ Order Fulfillment</button>
         </div>
 
-        <!-- Stats Cards -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
-            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center;">
-                <h3 style="font-size: 2.5rem; color: #6f0022; margin: 0 0 0.5rem;" id="totalItems">0</h3>
-                <p style="margin: 0; color: #666;">Total Items</p>
-            </div>
-            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center;">
-                <h3 style="font-size: 2.5rem; color: #dc3545; margin: 0 0 0.5rem;" id="lowStock">0</h3>
-                <p style="margin: 0; color: #666;">Low Stock</p>
-            </div>
-            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center;">
-                <h3 style="font-size: 2.5rem; color: #28a745; margin: 0 0 0.5rem;" id="newInventory">0</h3>
-                <p style="margin: 0; color: #666;">New Arrivals</p>
-            </div>
-            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center;">
-                <h3 style="font-size: 2.5rem; color: #6f0022; margin: 0 0 0.5rem;" id="totalValue">Rs. 0</h3>
-                <p style="margin: 0; color: #666;">Inventory Value</p>
-            </div>
-        </div>
+        <!-- Alert -->
+        <div id="alert" style="padding: 1rem; border-radius: 4px; margin-bottom: 1rem; display: none;"></div>
 
-        <!-- Inventory Table -->
-        <div style="background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                <h2 style="margin: 0; font-family: 'Cormorant Garamond', serif;">Inventory Items</h2>
-                <button onclick="openAddStockModal()" style="background: #6f0022; color: white; padding: 0.8rem 1.5rem; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">+ Add Stock Entry</button>
+        <!-- ===== PRODUCTS TAB ===== -->
+        <div id="productsTab">
+            <!-- Gold Rates Summary -->
+            <div style="background: linear-gradient(135deg, #e0bf63 0%, #d4a747 100%); padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                <h3 style="margin: 0 0 1rem; color: #3e2723; font-family: 'Cormorant Garamond', serif;">Current Gold Rates</h3>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
+                    <div style="background: rgba(255,255,255,0.9); padding: 1rem; border-radius: 8px; text-align: center;">
+                        <h4 style="margin: 0; color: #6f0022;">18K</h4>
+                        <p style="font-size: 1.3rem; margin: 0.3rem 0; font-weight: 700; color: #3e2723;" id="rate18K">Rs. 0</p>
+                        <span style="font-size: 0.8rem; color: #666;">per gram</span>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.9); padding: 1rem; border-radius: 8px; text-align: center;">
+                        <h4 style="margin: 0; color: #6f0022;">22K</h4>
+                        <p style="font-size: 1.3rem; margin: 0.3rem 0; font-weight: 700; color: #3e2723;" id="rate22K">Rs. 0</p>
+                        <span style="font-size: 0.8rem; color: #666;">per gram</span>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.9); padding: 1rem; border-radius: 8px; text-align: center;">
+                        <h4 style="margin: 0; color: #6f0022;">24K</h4>
+                        <p style="font-size: 1.3rem; margin: 0.3rem 0; font-weight: 700; color: #3e2723;" id="rate24K">Rs. 0</p>
+                        <span style="font-size: 0.8rem; color: #666;">per gram</span>
+                    </div>
+                </div>
             </div>
 
-            <!-- Alert -->
-            <div id="alert" style="padding: 1rem; border-radius: 4px; margin-bottom: 1rem; display: none;"></div>
+            <!-- Stats Cards -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+                <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center;">
+                    <h3 style="font-size: 2.5rem; color: #6f0022; margin: 0 0 0.5rem;" id="totalItems">0</h3>
+                    <p style="margin: 0; color: #666;">Total Products</p>
+                </div>
+                <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center;">
+                    <h3 style="font-size: 2.5rem; color: #ffc107; margin: 0 0 0.5rem;" id="draftCount">0</h3>
+                    <p style="margin: 0; color: #666;">Draft (Needs Details)</p>
+                </div>
+                <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center;">
+                    <h3 style="font-size: 2.5rem; color: #28a745; margin: 0 0 0.5rem;" id="activeCount">0</h3>
+                    <p style="margin: 0; color: #666;">Active</p>
+                </div>
+                <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center;">
+                    <h3 style="font-size: 2.5rem; color: #dc3545; margin: 0 0 0.5rem;" id="lowStock">0</h3>
+                    <p style="margin: 0; color: #666;">Low Stock</p>
+                </div>
+            </div>
 
             <!-- Filter -->
-            <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem;">
-                <select id="categoryFilter" onchange="loadInventory()" style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
-                    <option value="">All Categories</option>
-                    <option value="Ring">Ring</option>
-                    <option value="Necklace">Necklace</option>
-                    <option value="Bracelet">Bracelet</option>
-                    <option value="Earring">Earring</option>
-                    <option value="Pendant">Pendant</option>
-                    <option value="Chain">Chain</option>
-                    <option value="Bangles">Bangles</option>
-                    <option value="Anklet">Anklet</option>
-                </select>
-                <button onclick="filterLowStock()" style="padding: 0.8rem 1.2rem; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">⚠️ Low Stock Alert</button>
+            <div style="background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <h2 style="margin: 0 0 1.5rem; font-family: 'Cormorant Garamond', serif;">Product Inventory</h2>
+                <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+                    <select id="categoryFilter" onchange="loadInventory()" style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
+                        <option value="">All Categories</option>
+                        <option value="Ring">Ring</option>
+                        <option value="Necklace">Necklace</option>
+                        <option value="Bracelet">Bracelet</option>
+                        <option value="Earring">Earring</option>
+                        <option value="Pendant">Pendant</option>
+                        <option value="Chain">Chain</option>
+                        <option value="Bangles">Bangles</option>
+                        <option value="Anklet">Anklet</option>
+                    </select>
+                    <select id="statusFilter" onchange="loadInventory()" style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
+                        <option value="">All Statuses</option>
+                        <option value="Draft">Draft (Needs Details)</option>
+                        <option value="Active">Active</option>
+                    </select>
+                    <button onclick="filterLowStock()" style="padding: 0.8rem 1.2rem; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">⚠️ Low Stock</button>
+                </div>
+
+                <!-- Inventory Table -->
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr>
+                                <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Product</th>
+                                <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Category</th>
+                                <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Status</th>
+                                <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">SKU</th>
+                                <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Karat</th>
+                                <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Weight</th>
+                                <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Price</th>
+                                <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Stock</th>
+                                <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inventoryTable">
+                            <tr><td colspan="9" style="padding: 2rem; text-align: center; color: #999;">Loading inventory...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== GOLD RATES TAB ===== -->
+        <div id="goldRatesTab" style="display: none;">
+            <div style="background: linear-gradient(135deg, #e0bf63 0%, #d4a747 100%); padding: 2rem; border-radius: 8px; margin-bottom: 2rem;">
+                <h2 style="margin: 0 0 1.5rem; color: #3e2723; font-family: 'Cormorant Garamond', serif;">Daily Gold Rates</h2>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem;">
+                    <div style="background: rgba(255,255,255,0.95); padding: 2rem; border-radius: 8px; text-align: center;">
+                        <h3 style="margin: 0; color: #6f0022; font-size: 1.3rem;">18 Karat</h3>
+                        <p style="font-size: 2.5rem; margin: 0.5rem 0; font-weight: 700; color: #3e2723;" id="rateDisplay18K">Rs. 0</p>
+                        <p style="margin: 0; color: #666;">per gram</p>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.95); padding: 2rem; border-radius: 8px; text-align: center;">
+                        <h3 style="margin: 0; color: #6f0022; font-size: 1.3rem;">22 Karat</h3>
+                        <p style="font-size: 2.5rem; margin: 0.5rem 0; font-weight: 700; color: #3e2723;" id="rateDisplay22K">Rs. 0</p>
+                        <p style="margin: 0; color: #666;">per gram</p>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.95); padding: 2rem; border-radius: 8px; text-align: center;">
+                        <h3 style="margin: 0; color: #6f0022; font-size: 1.3rem;">24 Karat</h3>
+                        <p style="font-size: 2.5rem; margin: 0.5rem 0; font-weight: 700; color: #3e2723;" id="rateDisplay24K">Rs. 0</p>
+                        <p style="margin: 0; color: #666;">per gram</p>
+                    </div>
+                </div>
+                <p style="margin: 0; color: #3e2723; text-align: center; font-size: 0.9rem;">Last updated: <span id="lastUpdated">N/A</span></p>
             </div>
 
-            <!-- Inventory Table -->
-            <div style="overflow-x: auto;">
-                <table style="width: 100%; border-collapse: collapse;">
-                    <thead>
-                        <tr>
-                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Product</th>
-                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">SKU</th>
-                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Category</th>
-                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Stock</th>
-                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Weight</th>
-                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Value</th>
-                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="inventoryTable">
-                        <tr><td colspan="7" style="padding: 2rem; text-align: center; color: #999;">Loading inventory...</td></tr>
-                    </tbody>
-                </table>
+            <div style="background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <h3 style="margin: 0 0 1.5rem; font-family: 'Cormorant Garamond', serif;">Update Gold Rates</h3>
+                <p style="color: #666; margin-bottom: 1.5rem;">Updating gold rates will automatically recalculate prices for all products based on their weight and karat type.</p>
+                <form id="goldRateForm">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+                        <div>
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">18K Rate (Rs./gram) *</label>
+                            <input type="number" id="goldRate18K" step="0.01" required style="width: 90%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">22K Rate (Rs./gram) *</label>
+                            <input type="number" id="goldRate22K" step="0.01" required style="width: 90%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">24K Rate (Rs./gram) *</label>
+                            <input type="number" id="goldRate24K" step="0.01" required style="width: 90%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
+                        </div>
+                    </div>
+                    <button type="submit" style="background: #6f0022; color: white; padding: 0.8rem 2rem; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">
+                        Update Rates & Recalculate Prices
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- ===== ORDERS TAB ===== -->
+        <div id="ordersTab" style="display: none;">
+            <div style="background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <h2 style="margin: 0 0 1.5rem; font-family: 'Cormorant Garamond', serif;">Orders Awaiting Fulfillment</h2>
+                <p style="color: #666; margin-bottom: 1.5rem;">These orders have been sent by the Order Manager and need to be prepared for the customer.</p>
+                
+                <div id="ordersList">
+                    <div style="text-align: center; padding: 3rem; color: #999;">Loading orders...</div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Update Gold Rate Modal -->
-    <div id="goldRateModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000;">
-        <div style="background: white; padding: 2rem; border-radius: 8px; max-width: 500px; width: 90%;">
+    <!-- Edit Product Modal -->
+    <div id="editModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000;">
+        <div style="background: white; padding: 2rem; border-radius: 8px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto;">
             <div style="display: flex; justify-content: space-between; margin-bottom: 1.5rem;">
-                <h3 style="margin: 0;">Update Gold Rates</h3>
-                <button onclick="closeGoldRateModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+                <h3 style="margin: 0;">Update Product Details</h3>
+                <button onclick="closeEditModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
             </div>
-            <form id="goldRateForm">
-                <div style="margin-bottom: 1rem;">
-                    <label style="display: block; margin-bottom: 0.5rem;">18K Rate (Rs./gram) *</label>
-                    <input type="number" id="goldRate18K" step="0.01" required style="width: 95%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
+            
+            <!-- Product Info (read-only) -->
+            <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                <p style="margin: 0.25rem 0;"><strong>Product:</strong> <span id="editProductName">-</span></p>
+                <p style="margin: 0.25rem 0;"><strong>Category:</strong> <span id="editProductCategory">-</span></p>
+                <p style="margin: 0.25rem 0;"><strong>Description:</strong> <span id="editProductDesc">-</span></p>
+            </div>
+
+            <form id="editProductForm">
+                <input type="hidden" id="editProductId">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Karat Type *</label>
+                        <select id="editKType" required style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
+                            <option value="">Select</option>
+                            <option value="18K">18K</option>
+                            <option value="22K">22K</option>
+                            <option value="24K">24K</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Karat Rate (Rs./g)</label>
+                        <input type="number" id="editKaratRate" step="0.01" readonly style="width: 90%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px; background: #f0f0f0;">
+                        <p style="font-size: 0.75rem; color: #888; margin: 0.25rem 0 0;">Auto-filled from gold rates</p>
+                    </div>
                 </div>
-                <div style="margin-bottom: 1rem;">
-                    <label style="display: block; margin-bottom: 0.5rem;">22K Rate (Rs./gram) *</label>
-                    <input type="number" id="goldRate22K" step="0.01" required style="width: 95%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Weight (grams) *</label>
+                        <input type="number" id="editWeight" step="0.01" required style="width: 90%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Calculated Price</label>
+                        <input type="text" id="editPrice" readonly style="width: 90%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px; background: #f0f0f0; font-weight: 700; color: #6f0022;">
+                        <p style="font-size: 0.75rem; color: #888; margin: 0.25rem 0 0;">Weight × Karat Rate</p>
+                    </div>
                 </div>
-                <div style="margin-bottom: 1rem;">
-                    <label style="display: block; margin-bottom: 0.5rem;">24K Rate (Rs./gram) *</label>
-                    <input type="number" id="goldRate24K" step="0.01" required style="width: 95%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">SKU *</label>
+                        <input type="text" id="editSku" required style="width: 90%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Stock Quantity *</label>
+                        <input type="number" id="editStockQuantity" min="0" required style="width: 90%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
+                    </div>
                 </div>
-                <button type="submit" style="width: 100%; background: #6f0022; color: white; padding: 0.8rem; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Update Rates</button>
+                <button type="submit" style="width: 100%; background: #6f0022; color: white; padding: 0.8rem; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">
+                    Save Inventory Details
+                </button>
             </form>
         </div>
     </div>
 
-    <!-- Add Stock Modal -->
-    <div id="addStockModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000;">
-        <div style="background: white; padding: 2rem; border-radius: 8px; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto;">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 1.5rem;">
-                <h3 style="margin: 0;">Add Stock Entry</h3>
-                <button onclick="closeAddStockModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
-            </div>
-            <form id="addStockForm">
-                <div style="margin-bottom: 1rem;">
-                    <label style="display: block; margin-bottom: 0.5rem;">Product ID *</label>
-                    <input type="text" id="productId" required style="width: 95%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
-                </div>
-                <div style="margin-bottom: 1rem;">
-                    <label style="display: block; margin-bottom: 0.5rem;">Quantity to Add *</label>
-                    <input type="number" id="quantityAdd" required min="1" style="width: 95%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
-                </div>
-                <div style="margin-bottom: 1rem;">
-                    <label style="display: block; margin-bottom: 0.5rem;">Serial Number</label>
-                    <input type="text" id="serialNumber" style="width: 95%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
-                </div>
-                <div style="margin-bottom: 1rem;">
-                    <label style="display: block; margin-bottom: 0.5rem;">Notes</label>
-                    <textarea id="notes" rows="3" style="width: 95%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;"></textarea>
-                </div>
-                <button type="submit" style="width: 100%; background: #6f0022; color: white; padding: 0.8rem; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Add Stock</button>
-            </form>
-        </div>
-    </div>
+    <style>
+        .tab-btn {
+            padding: 0.8rem 1.5rem;
+            border: 2px solid #6f0022;
+            background: white;
+            color: #6f0022;
+            cursor: pointer;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.3s;
+        }
+        .tab-btn:hover { background: #f5f5f5; }
+        .tab-btn.active { background: #6f0022; color: white; }
+    </style>
 
     <script type="module">
         import authManager from '/src/auth.js';
 
         let inventory = [];
         let goldRates = { '18K': 0, '22K': 0, '24K': 0, lastUpdated: null };
+        let pendingOrders = [];
 
         async function checkAuth() {
             const user = await authManager.checkStaffAuth('Inventory');
@@ -195,87 +288,36 @@
             return true;
         }
 
+        // ===== TAB SWITCHING =====
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById('productsTab').style.display = tab === 'products' ? 'block' : 'none';
+            document.getElementById('goldRatesTab').style.display = tab === 'goldRates' ? 'block' : 'none';
+            document.getElementById('ordersTab').style.display = tab === 'orders' ? 'block' : 'none';
+            
+            if (tab === 'orders') loadPendingOrders();
+        }
+
+        // ===== GOLD RATES =====
         async function loadGoldRates() {
             try {
-                const res = await fetch('/api/inventory/gold-rates');
+                const res = await fetch('/api/inventory/gold-rates', { credentials: 'same-origin' });
                 if (res.ok) {
                     goldRates = await res.json();
                     document.getElementById('rate18K').textContent = 'Rs. ' + (goldRates['18K'] || 0).toLocaleString();
                     document.getElementById('rate22K').textContent = 'Rs. ' + (goldRates['22K'] || 0).toLocaleString();
                     document.getElementById('rate24K').textContent = 'Rs. ' + (goldRates['24K'] || 0).toLocaleString();
+                    document.getElementById('rateDisplay18K').textContent = 'Rs. ' + (goldRates['18K'] || 0).toLocaleString();
+                    document.getElementById('rateDisplay22K').textContent = 'Rs. ' + (goldRates['22K'] || 0).toLocaleString();
+                    document.getElementById('rateDisplay24K').textContent = 'Rs. ' + (goldRates['24K'] || 0).toLocaleString();
                     document.getElementById('lastUpdated').textContent = goldRates.lastUpdated ? new Date(goldRates.lastUpdated).toLocaleString() : 'Never';
+                    document.getElementById('goldRate18K').value = goldRates['18K'] || '';
+                    document.getElementById('goldRate22K').value = goldRates['22K'] || '';
+                    document.getElementById('goldRate24K').value = goldRates['24K'] || '';
                 }
             } catch (e) { console.error('Error loading gold rates'); }
         }
-
-        async function loadInventory() {
-            try {
-                let url = '/api/products';
-                const cat = document.getElementById('categoryFilter').value;
-                if (cat) url += `?category=${cat}`;
-                
-                const res = await fetch(url);
-                if (!res.ok) throw new Error();
-                inventory = await res.json();
-                updateStats();
-                displayInventory();
-            } catch (e) { showAlert('Error loading inventory', 'error'); }
-        }
-
-        function updateStats() {
-            document.getElementById('totalItems').textContent = inventory.length;
-            document.getElementById('lowStock').textContent = inventory.filter(i => i.stockQuantity < 5).length;
-            const weekAgo = new Date();
-            weekAgo.setDate(weekAgo.getDate() - 7);
-            document.getElementById('newInventory').textContent = inventory.filter(i => new Date(i.createdAt) > weekAgo).length;
-            const totalValue = inventory.reduce((sum, i) => sum + (i.price * i.stockQuantity), 0);
-            document.getElementById('totalValue').textContent = 'Rs. ' + totalValue.toLocaleString();
-        }
-
-        function displayInventory() {
-            const tbody = document.getElementById('inventoryTable');
-            if (inventory.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" style="padding: 2rem; text-align: center; color: #999;">No inventory items</td></tr>';
-                return;
-            }
-            tbody.innerHTML = inventory.map(item => `
-                <tr style="background: ${item.stockQuantity < 5 ? '#fff3cd' : 'white'};">
-                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">${item.name}</td>
-                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">${item.sku || 'N/A'}</td>
-                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">${item.category}</td>
-                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">
-                        <span style="font-weight: 600; color: ${item.stockQuantity < 5 ? '#dc3545' : '#28a745'};">${item.stockQuantity}</span>
-                        ${item.stockQuantity < 5 ? ' ⚠️' : ''}
-                    </td>
-                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">${item.weight}g</td>
-                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">Rs. ${(item.price * item.stockQuantity).toLocaleString()}</td>
-                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">
-                        <button onclick="viewDetails('${item._id}')" style="padding: 0.4rem 0.8rem; background: #17a2b8; color: white; border: none; border-radius: 4px; cursor: pointer;">📋 Details</button>
-                    </td>
-                </tr>
-            `).join('');
-        }
-
-        function filterLowStock() {
-            inventory = inventory.filter(i => i.stockQuantity < 5);
-            displayInventory();
-        }
-
-        function viewDetails(id) {
-            const item = inventory.find(i => i._id === id);
-            if (item) alert(`Product: ${item.name}\nSKU: ${item.sku || 'N/A'}\nStock: ${item.stockQuantity}\nWeight: ${item.weight}g\nKarat: ${item.karat}\nPrice: Rs. ${item.price}\nTotal Value: Rs. ${(item.price * item.stockQuantity).toLocaleString()}`);
-        }
-
-        function openGoldRateModal() {
-            document.getElementById('goldRate18K').value = goldRates['18K'] || '';
-            document.getElementById('goldRate22K').value = goldRates['22K'] || '';
-            document.getElementById('goldRate24K').value = goldRates['24K'] || '';
-            document.getElementById('goldRateModal').style.display = 'flex';
-        }
-        function closeGoldRateModal() { document.getElementById('goldRateModal').style.display = 'none'; }
-
-        function openAddStockModal() { document.getElementById('addStockModal').style.display = 'flex'; }
-        function closeAddStockModal() { document.getElementById('addStockModal').style.display = 'none'; document.getElementById('addStockForm').reset(); }
 
         document.getElementById('goldRateForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -288,36 +330,240 @@
                 const res = await fetch('/api/inventory/gold-rates', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',
                     body: JSON.stringify(data)
                 });
                 if (!res.ok) throw new Error();
-                showAlert('Gold rates updated', 'success');
-                closeGoldRateModal();
+                const result = await res.json();
+                showAlert(`Gold rates updated! ${result.productsUpdated} product prices recalculated.`, 'success');
                 loadGoldRates();
+                loadInventory();
             } catch (e) { showAlert('Error updating rates', 'error'); }
         });
 
-        document.getElementById('addStockForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const data = {
-                productId: document.getElementById('productId').value,
-                quantity: parseInt(document.getElementById('quantityAdd').value),
-                serialNumber: document.getElementById('serialNumber').value,
-                notes: document.getElementById('notes').value
-            };
+        // ===== INVENTORY =====
+        async function loadInventory() {
             try {
-                const res = await fetch('/api/inventory/add-stock', {
-                    method: 'POST',
+                let url = '/api/inventory/products?';
+                const cat = document.getElementById('categoryFilter').value;
+                const status = document.getElementById('statusFilter').value;
+                if (cat) url += `category=${cat}&`;
+                if (status) url += `status=${status}&`;
+                
+                const res = await fetch(url, { credentials: 'same-origin' });
+                if (!res.ok) throw new Error();
+                inventory = await res.json();
+                updateStats();
+                displayInventory();
+            } catch (e) { showAlert('Error loading inventory', 'error'); }
+        }
+
+        function updateStats() {
+            document.getElementById('totalItems').textContent = inventory.length;
+            document.getElementById('draftCount').textContent = inventory.filter(i => i.productStatus === 'Draft').length;
+            document.getElementById('activeCount').textContent = inventory.filter(i => i.productStatus === 'Active').length;
+            document.getElementById('lowStock').textContent = inventory.filter(i => i.stockQuantity > 0 && i.stockQuantity < 5).length;
+        }
+
+        function displayInventory() {
+            const tbody = document.getElementById('inventoryTable');
+            if (inventory.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" style="padding: 2rem; text-align: center; color: #999;">No products found</td></tr>';
+                return;
+            }
+            tbody.innerHTML = inventory.map(item => {
+                const isDraft = item.productStatus === 'Draft';
+                const isLow = item.stockQuantity > 0 && item.stockQuantity < 5;
+                return `
+                <tr style="background: ${isDraft ? '#fff8e1' : isLow ? '#fff3cd' : 'white'};">
+                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <img src="${item.image || '/placeholder.jpg'}" alt="${item.name}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;">
+                            <span>${item.name}</span>
+                        </div>
+                    </td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">${item.category}</td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">
+                        <span style="padding: 0.3rem 0.7rem; border-radius: 20px; font-size: 0.8rem; background: ${isDraft ? '#fff3cd' : '#d4edda'}; color: ${isDraft ? '#856404' : '#155724'};">
+                            ${item.productStatus || 'Draft'}
+                        </span>
+                    </td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">${item.sku || '<span style="color:#dc3545;">Not set</span>'}</td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">${item.kType || '<span style="color:#dc3545;">Not set</span>'}</td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">${item.weight ? item.weight + 'g' : '<span style="color:#dc3545;">Not set</span>'}</td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">${item.price > 0 ? 'Rs. ' + item.price.toLocaleString() : '<span style="color:#999;">-</span>'}</td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">
+                        <span style="font-weight: 600; color: ${isLow ? '#dc3545' : item.stockQuantity > 0 ? '#28a745' : '#999'};">
+                            ${item.stockQuantity}${isLow ? ' ⚠️' : ''}
+                        </span>
+                    </td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">
+                        <button onclick="openEditModal('${item._id}')" style="padding: 0.5rem 1rem; background: ${isDraft ? '#ffc107' : '#17a2b8'}; color: ${isDraft ? '#333' : 'white'}; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">
+                            ${isDraft ? '✏️ Add Details' : '✏️ Edit'}
+                        </button>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        function filterLowStock() {
+            document.getElementById('statusFilter').value = '';
+            document.getElementById('categoryFilter').value = '';
+            loadInventory().then(() => {
+                inventory = inventory.filter(i => i.stockQuantity > 0 && i.stockQuantity < 5);
+                displayInventory();
+            });
+        }
+
+        // ===== EDIT PRODUCT MODAL =====
+        function openEditModal(id) {
+            const item = inventory.find(i => i._id === id);
+            if (!item) return;
+            
+            document.getElementById('editProductId').value = id;
+            document.getElementById('editProductName').textContent = item.name;
+            document.getElementById('editProductCategory').textContent = item.category;
+            document.getElementById('editProductDesc').textContent = item.description || '-';
+            document.getElementById('editKType').value = item.kType || '';
+            document.getElementById('editKaratRate').value = item.karatRate || '';
+            document.getElementById('editWeight').value = item.weight || '';
+            document.getElementById('editSku').value = item.sku || '';
+            document.getElementById('editStockQuantity').value = item.stockQuantity || 0;
+            
+            updatePricePreview();
+            document.getElementById('editModal').style.display = 'flex';
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').style.display = 'none';
+        }
+
+        document.getElementById('editKType').addEventListener('change', function() {
+            const kType = this.value;
+            if (kType && goldRates[kType]) {
+                document.getElementById('editKaratRate').value = goldRates[kType];
+            } else {
+                document.getElementById('editKaratRate').value = '';
+            }
+            updatePricePreview();
+        });
+
+        document.getElementById('editWeight').addEventListener('input', updatePricePreview);
+
+        function updatePricePreview() {
+            const weight = parseFloat(document.getElementById('editWeight').value) || 0;
+            const rate = parseFloat(document.getElementById('editKaratRate').value) || 0;
+            const price = weight * rate;
+            document.getElementById('editPrice').value = price > 0 ? 'Rs. ' + price.toLocaleString() : '-';
+        }
+
+        document.getElementById('editProductForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('editProductId').value;
+            const data = {
+                kType: document.getElementById('editKType').value,
+                karatRate: parseFloat(document.getElementById('editKaratRate').value),
+                weight: parseFloat(document.getElementById('editWeight').value),
+                sku: document.getElementById('editSku').value,
+                stockQuantity: parseInt(document.getElementById('editStockQuantity').value)
+            };
+
+            try {
+                const res = await fetch(`/api/inventory/products/${id}`, {
+                    method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',
                     body: JSON.stringify(data)
                 });
                 if (!res.ok) { const err = await res.json(); throw new Error(err.message); }
-                showAlert('Stock added successfully', 'success');
-                closeAddStockModal();
+                showAlert('Product inventory details updated!', 'success');
+                closeEditModal();
                 loadInventory();
-            } catch (e) { showAlert(e.message, 'error'); }
+            } catch (e) { showAlert(e.message || 'Error updating product', 'error'); }
         });
 
+        // ===== ORDER FULFILLMENT =====
+        async function loadPendingOrders() {
+            try {
+                const res = await fetch('/api/inventory/orders', { credentials: 'same-origin' });
+                if (!res.ok) throw new Error();
+                pendingOrders = await res.json();
+                displayPendingOrders();
+            } catch (e) { 
+                document.getElementById('ordersList').innerHTML = '<div style="text-align: center; padding: 3rem; color: #999;">Error loading orders</div>';
+            }
+        }
+
+        function displayPendingOrders() {
+            const container = document.getElementById('ordersList');
+            if (pendingOrders.length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: 3rem; color: #999;">✅ No orders awaiting fulfillment</div>';
+                return;
+            }
+            container.innerHTML = pendingOrders.map(order => `
+                <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 8px; margin-bottom: 1rem; border-left: 4px solid ${order.status === 'Preparing' ? '#17a2b8' : '#ffc107'};">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+                        <div>
+                            <h3 style="margin: 0; color: #6f0022;">Order #${order.orderNumber}</h3>
+                            <p style="color: #666; margin: 0.25rem 0;">Customer: ${order.customerName} (${order.customerEmail})</p>
+                            <p style="color: #666; margin: 0.25rem 0;">Date: ${new Date(order.createdAt).toLocaleDateString()}</p>
+                        </div>
+                        <div style="text-align: right;">
+                            <span style="display: inline-block; padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.85rem; background: ${order.status === 'Preparing' ? '#d1ecf1' : '#fff3cd'}; color: ${order.status === 'Preparing' ? '#0c5460' : '#856404'};">
+                                ${order.status}
+                            </span>
+                            <p style="font-size: 1.2rem; font-weight: 700; margin: 0.5rem 0 0; color: #6f0022;">Rs. ${order.total.toLocaleString()}</p>
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 1rem;">
+                        <strong>Items:</strong>
+                        <ul style="margin: 0.5rem 0; padding-left: 1.5rem;">
+                            ${order.items.map(item => `<li>${item.name} x ${item.quantity} (Rs. ${item.price.toLocaleString()})</li>`).join('')}
+                        </ul>
+                    </div>
+                    <div style="display: flex; gap: 1rem;">
+                        ${order.status === 'Confirmed' ? `
+                            <button onclick="acceptOrder('${order._id}')" style="padding: 0.6rem 1.5rem; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">
+                                ✅ Accept & Start Preparing
+                            </button>
+                        ` : ''}
+                        ${order.status === 'Preparing' ? `
+                            <button onclick="markReady('${order._id}')" style="padding: 0.6rem 1.5rem; background: #17a2b8; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">
+                                📦 Mark Ready for Collection
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function acceptOrder(id) {
+            if (!confirm('Accept this order for preparation?')) return;
+            try {
+                const res = await fetch(`/api/inventory/orders/${id}/accept`, {
+                    method: 'PATCH',
+                    credentials: 'same-origin'
+                });
+                if (!res.ok) throw new Error();
+                showAlert('Order accepted! Customer has been notified.', 'success');
+                loadPendingOrders();
+            } catch (e) { showAlert('Error accepting order', 'error'); }
+        }
+
+        async function markReady(id) {
+            if (!confirm('Mark this order as ready for collection? Customer will be notified via email.')) return;
+            try {
+                const res = await fetch(`/api/inventory/orders/${id}/ready`, {
+                    method: 'PATCH',
+                    credentials: 'same-origin'
+                });
+                if (!res.ok) throw new Error();
+                showAlert('Order marked as ready! Customer has been notified to collect from shop.', 'success');
+                loadPendingOrders();
+            } catch (e) { showAlert('Error updating order', 'error'); }
+        }
+
+        // ===== UTILITIES =====
         function showAlert(msg, type) {
             const alert = document.getElementById('alert');
             alert.textContent = msg;
@@ -329,9 +575,24 @@
         }
 
         function logout() { authManager.logout(); }
-        window.logout = logout;
 
-        (async () => { const auth = await checkAuth(); if (auth) { loadGoldRates(); loadInventory(); } })();
+        // Make functions available globally for onclick/onchange handlers
+        window.logout = logout;
+        window.switchTab = switchTab;
+        window.openEditModal = openEditModal;
+        window.closeEditModal = closeEditModal;
+        window.filterLowStock = filterLowStock;
+        window.loadInventory = loadInventory;
+        window.acceptOrder = acceptOrder;
+        window.markReady = markReady;
+
+        (async () => {
+            const auth = await checkAuth();
+            if (auth) {
+                loadGoldRates();
+                loadInventory();
+            }
+        })();
     </script>
 </body>
 </html>

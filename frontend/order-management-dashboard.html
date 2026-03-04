@@ -31,22 +31,26 @@
         </div>
 
         <!-- Stats Cards -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
-            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center;">
-                <h3 style="font-size: 2.5rem; color: #ffc107; margin: 0 0 0.5rem;" id="pending">0</h3>
-                <p style="margin: 0; color: #666;">Pending Orders</p>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+            <div style="background: white; padding: 1.2rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center;">
+                <h3 style="font-size: 2rem; color: #ffc107; margin: 0 0 0.3rem;" id="pending">0</h3>
+                <p style="margin: 0; color: #666; font-size: 0.85rem;">Pending</p>
             </div>
-            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center;">
-                <h3 style="font-size: 2.5rem; color: #17a2b8; margin: 0 0 0.5rem;" id="processing">0</h3>
-                <p style="margin: 0; color: #666;">Processing</p>
+            <div style="background: white; padding: 1.2rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center;">
+                <h3 style="font-size: 2rem; color: #17a2b8; margin: 0 0 0.3rem;" id="confirmed">0</h3>
+                <p style="margin: 0; color: #666; font-size: 0.85rem;">Confirmed</p>
             </div>
-            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center;">
-                <h3 style="font-size: 2.5rem; color: #28a745; margin: 0 0 0.5rem;" id="completed">0</h3>
-                <p style="margin: 0; color: #666;">Completed</p>
+            <div style="background: white; padding: 1.2rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center;">
+                <h3 style="font-size: 2rem; color: #e0bf63; margin: 0 0 0.3rem;" id="invoiced">0</h3>
+                <p style="margin: 0; color: #666; font-size: 0.85rem;">Invoice Created</p>
             </div>
-            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center;">
-                <h3 style="font-size: 2.5rem; color: #6f0022; margin: 0 0 0.5rem;" id="revenue">Rs. 0</h3>
-                <p style="margin: 0; color: #666;">Total Revenue</p>
+            <div style="background: white; padding: 1.2rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center;">
+                <h3 style="font-size: 2rem; color: #28a745; margin: 0 0 0.3rem;" id="completed">0</h3>
+                <p style="margin: 0; color: #666; font-size: 0.85rem;">Completed</p>
+            </div>
+            <div style="background: white; padding: 1.2rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center;">
+                <h3 style="font-size: 2rem; color: #6f0022; margin: 0 0 0.3rem;" id="revenue">Rs. 0</h3>
+                <p style="margin: 0; color: #666; font-size: 0.85rem;">Total Revenue</p>
             </div>
         </div>
 
@@ -54,21 +58,23 @@
         <div style="background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
                 <h2 style="margin: 0; font-family: 'Cormorant Garamond', serif;">Orders</h2>
-                <button onclick="openCreateModal()" style="background: #6f0022; color: white; padding: 0.8rem 1.5rem; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">+ Create Order</button>
             </div>
 
             <!-- Alert -->
             <div id="alert" style="padding: 1rem; border-radius: 4px; margin-bottom: 1rem; display: none;"></div>
 
             <!-- Status Filter -->
-            <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+            <div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
                 <button class="filter-btn active" onclick="filterOrders('all')">All</button>
                 <button class="filter-btn" onclick="filterOrders('Pending')">Pending</button>
-                <button class="filter-btn" onclick="filterOrders('Processing')">Processing</button>
-                <button class="filter-btn" onclick="filterOrders('Shipped')">Shipped</button>
-                <button class="filter-btn" onclick="filterOrders('Delivered')">Delivered</button>
+                <button class="filter-btn" onclick="filterOrders('Confirmed')">Confirmed</button>
+                <button class="filter-btn" onclick="filterOrders('Invoice Created')">Invoice Created</button>
+                <button class="filter-btn" onclick="filterOrders('Payment Received')">Payment Received</button>
+                <button class="filter-btn" onclick="filterOrders('Preparing')">Preparing</button>
+                <button class="filter-btn" onclick="filterOrders('Ready for Collection')">Ready</button>
                 <button class="filter-btn" onclick="filterOrders('Completed')">Completed</button>
                 <button class="filter-btn" onclick="filterOrders('Cancelled')">Cancelled</button>
+                <button class="filter-btn" onclick="filterOrders('Refunded')">Refunded</button>
             </div>
 
             <!-- Orders Table -->
@@ -79,14 +85,16 @@
                             <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Order ID</th>
                             <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Customer</th>
                             <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Date</th>
+                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Items</th>
                             <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Amount</th>
                             <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Status</th>
                             <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Payment</th>
-                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Actions</th>
+                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Invoice</th>
+                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9; min-width: 200px;">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="ordersTable">
-                        <tr><td colspan="7" style="padding: 2rem; text-align: center; color: #999;">Loading orders...</td></tr>
+                        <tr><td colspan="9" style="padding: 2rem; text-align: center; color: #999;">Loading orders...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -95,64 +103,43 @@
         <!-- Order Status Flow Info -->
         <div style="background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-top: 2rem;">
             <h3 style="font-family: 'Cormorant Garamond', serif; margin-bottom: 1rem;">Order Status Flow</h3>
-            <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
-                <span style="padding: 0.5rem 1rem; background: #fff3cd; border-radius: 4px;">Pending</span>
+            <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                <span style="padding: 0.4rem 0.8rem; background: #fff3cd; border-radius: 4px; font-size: 0.85rem;">Pending</span>
                 <span>→</span>
-                <span style="padding: 0.5rem 1rem; background: #d1ecf1; border-radius: 4px;">Processing</span>
+                <span style="padding: 0.4rem 0.8rem; background: #d1ecf1; border-radius: 4px; font-size: 0.85rem;">Confirmed</span>
                 <span>→</span>
-                <span style="padding: 0.5rem 1rem; background: #cce5ff; border-radius: 4px;">Shipped</span>
+                <span style="padding: 0.4rem 0.8rem; background: #e0d4f5; border-radius: 4px; font-size: 0.85rem;">Invoice Created</span>
                 <span>→</span>
-                <span style="padding: 0.5rem 1rem; background: #d4edda; border-radius: 4px;">Delivered</span>
+                <span style="padding: 0.4rem 0.8rem; background: #d4edda; border-radius: 4px; font-size: 0.85rem;">Payment Received</span>
                 <span>→</span>
-                <span style="padding: 0.5rem 1rem; background: #d4edda; border-radius: 4px;">Completed</span>
+                <span style="padding: 0.4rem 0.8rem; background: #cce5ff; border-radius: 4px; font-size: 0.85rem;">Preparing (Inventory)</span>
+                <span>→</span>
+                <span style="padding: 0.4rem 0.8rem; background: #d4edda; border-radius: 4px; font-size: 0.85rem;">Ready for Collection</span>
+                <span>→</span>
+                <span style="padding: 0.4rem 0.8rem; background: #c3e6cb; border-radius: 4px; font-size: 0.85rem;">Completed</span>
             </div>
-            <p style="margin-top: 1rem; color: #666;">Note: Orders can be cancelled at any stage before completion</p>
+            <p style="margin-top: 1rem; color: #666; font-size: 0.9rem;">
+                After confirming an order → Create invoice → Mark payment received → Notify inventory to prepare → Inventory prepares & marks ready → Customer collects from shop
+            </p>
         </div>
     </div>
 
-    <!-- Create Order Modal -->
-    <div id="createModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000;">
-        <div style="background: white; padding: 2rem; border-radius: 8px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto;">
+    <!-- Order Detail Modal -->
+    <div id="orderDetailModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000;">
+        <div style="background: white; padding: 2rem; border-radius: 8px; max-width: 700px; width: 90%; max-height: 90vh; overflow-y: auto;">
             <div style="display: flex; justify-content: space-between; margin-bottom: 1.5rem;">
-                <h3 style="margin: 0;">Create New Order</h3>
-                <button onclick="closeCreateModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+                <h3 style="margin: 0;">Order Details</h3>
+                <button onclick="closeDetailModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
             </div>
-            <form id="createOrderForm">
-                <div style="margin-bottom: 1rem;">
-                    <label style="display: block; margin-bottom: 0.5rem;">Customer Email *</label>
-                    <input type="email" id="customerEmail" required style="width: 95%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
-                </div>
-                <div style="margin-bottom: 1rem;">
-                    <label style="display: block; margin-bottom: 0.5rem;">Product IDs (comma-separated) *</label>
-                    <input type="text" id="productIds" required placeholder="e.g., 507f1f77bcf86cd799439011, 507f..." style="width: 95%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
-                </div>
-                <div style="margin-bottom: 1rem;">
-                    <label style="display: block; margin-bottom: 0.5rem;">Total Amount (Rs.) *</label>
-                    <input type="number" id="totalAmount" step="0.01" required style="width: 95%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
-                </div>
-                <div style="margin-bottom: 1rem;">
-                    <label style="display: block; margin-bottom: 0.5rem;">Payment Method *</label>
-                    <select id="paymentMethod" required style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
-                        <option value="">Select</option>
-                        <option value="Cash">Cash</option>
-                        <option value="Card">Card</option>
-                        <option value="UPI">UPI</option>
-                        <option value="Net Banking">Net Banking</option>
-                    </select>
-                </div>
-                <div style="margin-bottom: 1rem;">
-                    <label style="display: block; margin-bottom: 0.5rem;">Delivery Address *</label>
-                    <textarea id="deliveryAddress" required rows="3" style="width: 95%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;"></textarea>
-                </div>
-                <button type="submit" style="width: 100%; background: #6f0022; color: white; padding: 0.8rem; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Create Order</button>
-            </form>
+            <div id="orderDetailContent">Loading...</div>
         </div>
     </div>
 
     <style>
-        .filter-btn { padding: 0.6rem 1.2rem; border: 1px solid #6f0022; background: white; color: #6f0022; cursor: pointer; border-radius: 4px; font-weight: 500; transition: all 0.3s; }
+        .filter-btn { padding: 0.5rem 1rem; border: 1px solid #6f0022; background: white; color: #6f0022; cursor: pointer; border-radius: 4px; font-weight: 500; transition: all 0.3s; font-size: 0.85rem; }
         .filter-btn:hover { background: #f5f5f5; }
         .filter-btn.active { background: #6f0022; color: white; }
+        .action-btn { padding: 0.4rem 0.8rem; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8rem; font-weight: 600; margin: 0.2rem; white-space: nowrap; }
     </style>
 
     <script type="module">
@@ -174,7 +161,7 @@
 
         async function loadOrders() {
             try {
-                const res = await fetch('/api/orders');
+                const res = await fetch('/api/orders', { credentials: 'same-origin' });
                 if (!res.ok) throw new Error();
                 orders = await res.json();
                 updateStats();
@@ -184,51 +171,82 @@
 
         function updateStats() {
             document.getElementById('pending').textContent = orders.filter(o => o.status === 'Pending').length;
-            document.getElementById('processing').textContent = orders.filter(o => o.status === 'Processing').length;
-            document.getElementById('completed').textContent = orders.filter(o => ['Completed', 'Delivered'].includes(o.status)).length;
-            const total = orders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+            document.getElementById('confirmed').textContent = orders.filter(o => o.status === 'Confirmed').length;
+            document.getElementById('invoiced').textContent = orders.filter(o => o.status === 'Invoice Created').length;
+            document.getElementById('completed').textContent = orders.filter(o => ['Completed', 'Ready for Collection'].includes(o.status)).length;
+            const total = orders.filter(o => !['Cancelled', 'Refunded'].includes(o.status)).reduce((sum, o) => sum + (o.total || o.totalAmount || 0), 0);
             document.getElementById('revenue').textContent = 'Rs. ' + total.toLocaleString();
+        }
+
+        function getStatusColor(status) {
+            const colors = {
+                'Pending': '#fff3cd',
+                'Confirmed': '#d1ecf1',
+                'Invoice Created': '#e0d4f5',
+                'Payment Received': '#d4edda',
+                'Preparing': '#cce5ff',
+                'Ready for Collection': '#c3e6cb',
+                'Completed': '#d4edda',
+                'Cancelled': '#f8d7da',
+                'Refunded': '#fce4ec'
+            };
+            return colors[status] || '#e9ecef';
+        }
+
+        function getActionButtons(order) {
+            const o = order;
+            let btns = '';
+
+            btns += `<button class="action-btn" style="background: #6c757d; color: white;" onclick="viewOrder('${o._id}')">👁️ View</button>`;
+
+            if (o.status === 'Pending') {
+                btns += `<button class="action-btn" style="background: #17a2b8; color: white;" onclick="confirmOrder('${o._id}')">✅ Confirm</button>`;
+                btns += `<button class="action-btn" style="background: #dc3545; color: white;" onclick="changeStatus('${o._id}', 'Cancelled')">❌ Cancel</button>`;
+            }
+            if (o.status === 'Confirmed') {
+                btns += `<button class="action-btn" style="background: #6f42c1; color: white;" onclick="createInvoice('${o._id}')">🧾 Create Invoice</button>`;
+                btns += `<button class="action-btn" style="background: #dc3545; color: white;" onclick="changeStatus('${o._id}', 'Cancelled')">❌ Cancel</button>`;
+            }
+            if (o.status === 'Invoice Created') {
+                btns += `<button class="action-btn" style="background: #28a745; color: white;" onclick="changeStatus('${o._id}', 'Payment Received')">💰 Payment Received</button>`;
+                btns += `<button class="action-btn" style="background: #dc3545; color: white;" onclick="changeStatus('${o._id}', 'Cancelled')">❌ Cancel</button>`;
+            }
+            if (o.status === 'Payment Received') {
+                btns += `<button class="action-btn" style="background: #007bff; color: white;" onclick="notifyInventory('${o._id}')">📦 Notify Inventory</button>`;
+            }
+            if (o.status === 'Ready for Collection') {
+                btns += `<button class="action-btn" style="background: #28a745; color: white;" onclick="changeStatus('${o._id}', 'Completed')">✔️ Complete</button>`;
+            }
+            if (['Completed', 'Payment Received'].includes(o.status)) {
+                btns += `<button class="action-btn" style="background: #e83e8c; color: white;" onclick="changeStatus('${o._id}', 'Refunded')">↩️ Refund</button>`;
+            }
+            return btns;
         }
 
         function displayOrders() {
             const tbody = document.getElementById('ordersTable');
             let filtered = currentFilter === 'all' ? orders : orders.filter(o => o.status === currentFilter);
             if (filtered.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" style="padding: 2rem; text-align: center; color: #999;">No orders found</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="9" style="padding: 2rem; text-align: center; color: #999;">No orders found</td></tr>';
                 return;
             }
             tbody.innerHTML = filtered.map(o => `
                 <tr>
-                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">${o.orderId || o._id}</td>
-                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">${o.customerEmail || o.customer?.email || 'N/A'}</td>
-                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">${new Date(o.createdAt).toLocaleDateString()}</td>
-                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">Rs. ${(o.totalAmount || 0).toLocaleString()}</td>
-                    <td style="padding: 1rem; border-bottom: 1px solid #eee;"><span style="padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.85rem; background: ${getStatusColor(o.status)};">${o.status}</span></td>
-                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">${o.paymentStatus || 'Pending'}</td>
-                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">
-                        <select onchange="updateStatus('${o._id}', this.value)" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
-                            <option value="">Change Status</option>
-                            <option value="Processing">Processing</option>
-                            <option value="Shipped">Shipped</option>
-                            <option value="Delivered">Delivered</option>
-                            <option value="Completed">Completed</option>
-                            <option value="Cancelled">Cancelled</option>
-                        </select>
+                    <td style="padding: 0.8rem; border-bottom: 1px solid #eee; font-size: 0.9rem;">${o.orderNumber || o._id?.slice(-8)}</td>
+                    <td style="padding: 0.8rem; border-bottom: 1px solid #eee; font-size: 0.9rem;">${o.customerName || o.customerEmail || 'N/A'}</td>
+                    <td style="padding: 0.8rem; border-bottom: 1px solid #eee; font-size: 0.9rem;">${new Date(o.createdAt).toLocaleDateString()}</td>
+                    <td style="padding: 0.8rem; border-bottom: 1px solid #eee; font-size: 0.9rem;">${o.items?.length || 0} items</td>
+                    <td style="padding: 0.8rem; border-bottom: 1px solid #eee; font-size: 0.9rem; font-weight: 600;">Rs. ${(o.totalAmount || o.total || 0).toLocaleString()}</td>
+                    <td style="padding: 0.8rem; border-bottom: 1px solid #eee;">
+                        <span style="padding: 0.3rem 0.6rem; border-radius: 20px; font-size: 0.75rem; background: ${getStatusColor(o.status)};">${o.status}</span>
                     </td>
+                    <td style="padding: 0.8rem; border-bottom: 1px solid #eee;">
+                        <span style="font-size: 0.85rem; color: ${o.paymentStatus === 'Paid' ? '#28a745' : o.paymentStatus === 'Refunded' ? '#dc3545' : '#666'};">${o.paymentStatus || 'Pending'}</span>
+                    </td>
+                    <td style="padding: 0.8rem; border-bottom: 1px solid #eee; font-size: 0.85rem;">${o.invoiceNumber || '-'}</td>
+                    <td style="padding: 0.8rem; border-bottom: 1px solid #eee;">${getActionButtons(o)}</td>
                 </tr>
             `).join('');
-        }
-
-        function getStatusColor(status) {
-            const colors = {
-                'Pending': '#fff3cd',
-                'Processing': '#d1ecf1',
-                'Shipped': '#cce5ff',
-                'Delivered': '#d4edda',
-                'Completed': '#d4edda',
-                'Cancelled': '#f8d7da'
-            };
-            return colors[status] || '#e9ecef';
         }
 
         function filterOrders(status) {
@@ -238,44 +256,112 @@
             displayOrders();
         }
 
-        async function updateStatus(id, newStatus) {
-            if (!newStatus) return;
+        async function confirmOrder(id) {
+            if (!confirm('Confirm this order?')) return;
             try {
                 const res = await fetch(`/api/orders/${id}/status`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ status: newStatus })
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ status: 'Confirmed' })
                 });
-                if (!res.ok) throw new Error();
-                showAlert('Status updated', 'success');
+                if (!res.ok) { const e = await res.json(); throw new Error(e.message); }
+                showAlert('Order confirmed! Customer notified.', 'success');
                 loadOrders();
-            } catch (e) { showAlert('Error updating status', 'error'); }
+            } catch (e) { showAlert(e.message || 'Error', 'error'); }
         }
 
-        function openCreateModal() { document.getElementById('createModal').style.display = 'flex'; }
-        function closeCreateModal() { document.getElementById('createModal').style.display = 'none'; document.getElementById('createOrderForm').reset(); }
-
-        document.getElementById('createOrderForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const data = {
-                customerEmail: document.getElementById('customerEmail').value,
-                products: document.getElementById('productIds').value.split(',').map(id => id.trim()),
-                totalAmount: parseFloat(document.getElementById('totalAmount').value),
-                paymentMethod: document.getElementById('paymentMethod').value,
-                deliveryAddress: document.getElementById('deliveryAddress').value
-            };
+        async function createInvoice(id) {
+            if (!confirm('Create payment invoice for this order?')) return;
             try {
-                const res = await fetch('/api/orders', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
+                const res = await fetch(`/api/orders/${id}/invoice`, {
+                    method: 'PATCH',
+                    credentials: 'same-origin'
                 });
-                if (!res.ok) { const err = await res.json(); throw new Error(err.message); }
-                showAlert('Order created', 'success');
-                closeCreateModal();
+                if (!res.ok) { const e = await res.json(); throw new Error(e.message); }
+                const data = await res.json();
+                showAlert(`Invoice ${data.invoiceNumber} created! Customer emailed.`, 'success');
                 loadOrders();
-            } catch (e) { showAlert(e.message, 'error'); }
-        });
+            } catch (e) { showAlert(e.message || 'Error creating invoice', 'error'); }
+        }
+
+        async function notifyInventory(id) {
+            if (!confirm('Notify inventory team to prepare this order?')) return;
+            try {
+                const res = await fetch(`/api/orders/${id}/notify-inventory`, {
+                    method: 'PATCH',
+                    credentials: 'same-origin'
+                });
+                if (!res.ok) { const e = await res.json(); throw new Error(e.message); }
+                showAlert('Inventory team notified! Order is now being prepared.', 'success');
+                loadOrders();
+            } catch (e) { showAlert(e.message || 'Error', 'error'); }
+        }
+
+        async function changeStatus(id, newStatus) {
+            const confirmMsg = newStatus === 'Cancelled' ? 'Cancel this order? Stock will be restored.' :
+                              newStatus === 'Refunded' ? 'Refund this order? Stock will be restored.' :
+                              `Change status to "${newStatus}"?`;
+            if (!confirm(confirmMsg)) return;
+            try {
+                const res = await fetch(`/api/orders/${id}/status`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ status: newStatus })
+                });
+                if (!res.ok) { const e = await res.json(); throw new Error(e.message); }
+                showAlert(`Status updated to ${newStatus}`, 'success');
+                loadOrders();
+            } catch (e) { showAlert(e.message || 'Error', 'error'); }
+        }
+
+        async function viewOrder(id) {
+            try {
+                const res = await fetch(`/api/orders/${id}`, { credentials: 'same-origin' });
+                if (!res.ok) throw new Error();
+                const o = await res.json();
+                document.getElementById('orderDetailContent').innerHTML = `
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+                        <div>
+                            <p><strong>Order #:</strong> ${o.orderNumber}</p>
+                            <p><strong>Customer:</strong> ${o.customerName || o.customerEmail}</p>
+                            <p><strong>Date:</strong> ${new Date(o.createdAt).toLocaleString()}</p>
+                            <p><strong>Status:</strong> <span style="padding: 0.25rem 0.6rem; border-radius: 20px; background: ${getStatusColor(o.status)};">${o.status}</span></p>
+                        </div>
+                        <div>
+                            <p><strong>Payment:</strong> ${o.paymentStatus || 'Pending'} (${o.paymentMethod || 'N/A'})</p>
+                            <p><strong>Invoice:</strong> ${o.invoiceNumber || 'Not created'}</p>
+                            ${o.invoiceDate ? `<p><strong>Invoice Date:</strong> ${new Date(o.invoiceDate).toLocaleDateString()}</p>` : ''}
+                            <p><strong>Inventory Notified:</strong> ${o.inventoryNotified ? '✅ Yes' : '❌ No'}</p>
+                        </div>
+                    </div>
+                    <h4 style="margin: 0 0 0.5rem;">Items</h4>
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 1rem;">
+                        ${o.items.map(item => `
+                            <tr>
+                                <td style="padding: 0.5rem; border-bottom: 1px solid #eee;">${item.name}</td>
+                                <td style="padding: 0.5rem; border-bottom: 1px solid #eee;">x${item.quantity}</td>
+                                <td style="padding: 0.5rem; border-bottom: 1px solid #eee; text-align: right;">Rs. ${(item.price * item.quantity).toLocaleString()}</td>
+                            </tr>
+                        `).join('')}
+                        <tr>
+                            <td colspan="2" style="padding: 0.5rem; font-weight: 700;">Total</td>
+                            <td style="padding: 0.5rem; font-weight: 700; text-align: right; color: #6f0022;">Rs. ${(o.totalAmount || o.total || 0).toLocaleString()}</td>
+                        </tr>
+                    </table>
+                    <p><strong>Phone:</strong> ${o.phoneNumber || 'N/A'}</p>
+                    <p><strong>Collection:</strong> Shop Collection</p>
+                    ${o.paymentReceipt ? `<p><strong>Payment Receipt:</strong> <a href="${o.paymentReceipt}" target="_blank" style="color: #6f0022; font-weight: 600;">View Receipt</a></p>` : '<p><strong>Payment Receipt:</strong> Not uploaded</p>'}
+                    ${o.orderNotes ? `<p><strong>Notes:</strong> ${o.orderNotes}</p>` : ''}
+                `;
+                document.getElementById('orderDetailModal').style.display = 'flex';
+            } catch (e) { showAlert('Error loading order', 'error'); }
+        }
+
+        function closeDetailModal() {
+            document.getElementById('orderDetailModal').style.display = 'none';
+        }
 
         function showAlert(msg, type) {
             const alert = document.getElementById('alert');
@@ -288,7 +374,16 @@
         }
 
         function logout() { authManager.logout(); }
+
+        // Make functions available globally for onclick/onchange handlers
         window.logout = logout;
+        window.filterOrders = filterOrders;
+        window.confirmOrder = confirmOrder;
+        window.createInvoice = createInvoice;
+        window.notifyInventory = notifyInventory;
+        window.changeStatus = changeStatus;
+        window.viewOrder = viewOrder;
+        window.closeDetailModal = closeDetailModal;
 
         (async () => { const auth = await checkAuth(); if (auth) loadOrders(); })();
     </script>

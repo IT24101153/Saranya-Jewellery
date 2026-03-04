@@ -161,13 +161,13 @@
                     <img src="${product.imageUrl || '/SaranyaLOGO.jpg'}" alt="${product.name}" style="width: 100%; height: 250px; object-fit: cover; border-radius: 4px;">
                     <h3 style="margin: 1rem 0 0.5rem; color: var(--brand-burgundy);">${product.name}</h3>
                     <p style="color: #666; font-size: 0.9rem; margin: 0.5rem 0;">${product.category} - ${product.karat}</p>
-                    <p style="color: var(--brand-gold-strong); font-weight: 600; font-size: 1.1rem; margin: 0.5rem 0;">₹${product.price?.toLocaleString() || 'N/A'}</p>
+                    <p style="color: var(--brand-gold-strong); font-weight: 600; font-size: 1.1rem; margin: 0.5rem 0;">Rs. ${product.price?.toLocaleString() || 'N/A'}</p>
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
                         <span style="font-size: 0.85rem; color: ${product.isAvailable ? '#28a745' : '#dc3545'};">
                             ${product.isAvailable ? '✓ In Stock' : '✗ Out of Stock'}
                         </span>
                         ${product.isAvailable ? `
-                            <button onclick="event.stopPropagation(); addToCart('${product._id}')" style="background: var(--brand-burgundy); color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; font-size: 0.9rem;">
+                            <button onclick="event.stopPropagation(); addToCart('${product._id}', event)" style="background: var(--brand-burgundy); color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; font-size: 0.9rem;">
                                 <i class="fas fa-cart-plus"></i> Add to Cart
                             </button>
                         ` : ''}
@@ -190,7 +190,7 @@
                         </div>
                         <div>
                             <h2 style="margin: 0 0 1rem; color: var(--brand-burgundy); font-family: 'Cormorant Garamond', serif;">${product.name}</h2>
-                            <p style="color: var(--brand-gold-strong); font-size: 1.5rem; font-weight: 600; margin: 1rem 0;">₹${product.price?.toLocaleString() || 'N/A'}</p>
+                            <p style="color: var(--brand-gold-strong); font-size: 1.5rem; font-weight: 600; margin: 1rem 0;">Rs. ${product.price?.toLocaleString() || 'N/A'}</p>
                             
                             <div style="margin: 1.5rem 0;">
                                 <p style="margin: 0.5rem 0;"><strong>Category:</strong> ${product.category}</p>
@@ -210,7 +210,7 @@
                             </div>
 
                             ${product.isAvailable ? `
-                                <button onclick="addToCartFromModal('${product._id}')" style="background: var(--brand-burgundy); color: white; border: none; padding: 1rem 2rem; border-radius: 4px; cursor: pointer; font-size: 1rem; width: 100%; margin-top: 1rem;">
+                                <button onclick="addToCartFromModal('${product._id}', event)" style="background: var(--brand-burgundy); color: white; border: none; padding: 1rem 2rem; border-radius: 4px; cursor: pointer; font-size: 1rem; width: 100%; margin-top: 1rem;">
                                     <i class="fas fa-cart-plus"></i> Add to Cart
                                 </button>
                             ` : ''}
@@ -229,7 +229,9 @@
             document.getElementById('productModal').style.display = 'none';
         }
 
-        async function addToCart(productId) {
+        async function addToCart(productId, e) {
+            // Capture button reference immediately before any await
+            const btn = e ? (e.target.closest ? e.target.closest('button') : e.target) : null;
             try {
                 const res = await authManager.apiRequest(`/api/products/${productId}`);
                 if (!res.ok) throw new Error('Failed to load product');
@@ -254,23 +256,24 @@
                 localStorage.setItem('saranyaCart', JSON.stringify(cart));
                 updateCartBadge();
                 
-                // Show success message
-                const btn = event.target.closest('button');
-                const originalText = btn.innerHTML;
-                btn.innerHTML = '<i class="fas fa-check"></i> Added!';
-                btn.style.background = '#28a745';
-                setTimeout(() => {
-                    btn.innerHTML = originalText;
-                    btn.style.background = '';
-                }, 1000);
+                // Show success message on button
+                if (btn) {
+                    const originalText = btn.innerHTML;
+                    btn.innerHTML = '<i class="fas fa-check"></i> Added!';
+                    btn.style.background = '#28a745';
+                    setTimeout(() => {
+                        btn.innerHTML = originalText;
+                        btn.style.background = '';
+                    }, 1000);
+                }
             } catch (error) {
                 console.error('Error adding to cart:', error);
                 alert('Failed to add to cart');
             }
         }
 
-        function addToCartFromModal(productId) {
-            addToCart(productId);
+        function addToCartFromModal(productId, e) {
+            addToCart(productId, e);
             setTimeout(() => closeModal(), 1200);
         }
 

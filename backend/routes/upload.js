@@ -4,6 +4,14 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { isAuthenticated, isProductManager } from '../middleware/auth.js';
 
+// Middleware to check if customer is authenticated
+const isCustomerAuthenticated = (req, res, next) => {
+  if (!req.session.customerId) {
+    return res.status(401).json({ message: 'Please login to continue' });
+  }
+  next();
+};
+
 const router = express.Router();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -67,13 +75,37 @@ router.post('/', isAuthenticated, isProductManager, upload.single('image'), (req
   }
 });
 
-// Error handling middleware for multer
+// POST /api/upload/receipt - Upload payment receipt (requires customer login)
+router.post('/receipt', isCustomerAuthenticated, upload.single('receipt'), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    const imagePath = `/src/${req.file.filename}`;
+    
+    res.json({
+      message: 'Receipt uploaded successfully',
+      imagePath: imagePath,
+      filename: req.file.filename
+    });
+  } catch (error) {
+    console.error('Receipt upload error:', error);
+    res.status(500).json({ message: 'Error uploading receipt', error: error.message });
+  }
+});
+
+// Error handling middleware for multer and file filter errors
 router.use((error, req, res, next) => {
   if (error instanceof multer.MulterError) {
     if (error.code === 'LIMIT_FILE_SIZE') {
       return res.status(400).json({ message: 'File size too large. Maximum 5MB allowed.' });
     }
     return res.status(400).json({ message: error.message });
+  }
+  // Handle file filter errors and other upload errors
+  if (error) {
+    return res.status(400).json({ message: error.message || 'Error processing file upload' });
   }
   next(error);
 });

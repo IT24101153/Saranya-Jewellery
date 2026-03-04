@@ -76,6 +76,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Create new product (protected route - requires Product Manager role)
+// Product Manager can ONLY set: name, description, image, category, featured
 router.post('/', isProductManager, async (req, res) => {
   try {
     const {
@@ -83,26 +84,19 @@ router.post('/', isProductManager, async (req, res) => {
       description,
       image,
       category,
-      price,
-      weight,
-      kType,
-      karatRate,
-      stockQuantity,
-      sku,
-      availabilityStatus,
       featured
     } = req.body;
 
     // Debug logging
     console.log('Creating product with data:', {
-      name, category, price, weight, kType, karatRate,
+      name, category,
       createdBy: req.session.staffId,
       sessionData: req.session
     });
 
-    // Validate required fields
-    if (!name || !description || !image || !category || !price || !weight || !kType || !karatRate) {
-      return res.status(400).json({ message: 'Please provide all required fields' });
+    // Validate required fields (only basic info from Product Manager)
+    if (!name || !description || !image || !category) {
+      return res.status(400).json({ message: 'Please provide name, description, image, and category' });
     }
 
     // Check if staff exists
@@ -120,14 +114,8 @@ router.post('/', isProductManager, async (req, res) => {
       description,
       image,
       category,
-      price,
-      weight,
-      kType,
-      karatRate,
-      stockQuantity: stockQuantity || 0,
-      sku: sku || '',
-      availabilityStatus: availabilityStatus || 'In Stock',
       featured: featured || false,
+      productStatus: 'Draft',
       createdBy: req.session.staffId
     });
 
@@ -144,7 +132,8 @@ router.post('/', isProductManager, async (req, res) => {
   }
 });
 
-// Update product (protected route - requires Product Manager role)
+// Update product basic info (protected route - requires Product Manager role)
+// Product Manager can ONLY update: name, description, image, category, featured
 router.put('/:id', isProductManager, async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
@@ -158,13 +147,6 @@ router.put('/:id', isProductManager, async (req, res) => {
       description,
       image,
       category,
-      price,
-      weight,
-      kType,
-      karatRate,
-      stockQuantity,
-      sku,
-      availabilityStatus,
       featured
     } = req.body;
 
@@ -172,13 +154,6 @@ router.put('/:id', isProductManager, async (req, res) => {
     if (description) product.description = description;
     if (image) product.image = image;
     if (category) product.category = category;
-    if (price !== undefined) product.price = price;
-    if (weight !== undefined) product.weight = weight;
-    if (kType) product.kType = kType;
-    if (karatRate !== undefined) product.karatRate = karatRate;
-    if (stockQuantity !== undefined) product.stockQuantity = stockQuantity;
-    if (sku !== undefined) product.sku = sku;
-    if (availabilityStatus) product.availabilityStatus = availabilityStatus;
     if (featured !== undefined) product.featured = featured;
 
     await product.save();

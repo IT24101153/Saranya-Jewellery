@@ -360,7 +360,9 @@
         // Message Functions
         async function loadMessages() {
             try {
-                const res = await fetch('/api/messages');
+                const res = await fetch('/api/messages', {
+                    credentials: 'same-origin'
+                });
                 if (res.ok) {
                     messages = await res.json();
                     displayMessages();
@@ -377,7 +379,9 @@
 
         async function loadMessageStats() {
             try {
-                const res = await fetch('/api/messages/stats');
+                const res = await fetch('/api/messages/stats', {
+                    credentials: 'same-origin'
+                });
                 if (res.ok) {
                     const stats = await res.json();
                     document.getElementById('totalMessages').textContent = stats.totalMessages || 0;
@@ -490,7 +494,10 @@
         async function deleteMessage(id, title) {
             if (!confirm(`Delete message "${title}"?`)) return;
             try {
-                const res = await fetch(`/api/messages/${id}`, { method: 'DELETE' });
+                const res = await fetch(`/api/messages/${id}`, { 
+                    method: 'DELETE',
+                    credentials: 'same-origin'
+                });
                 if (!res.ok) throw new Error();
                 showAlert('Message deleted successfully', 'success');
                 loadMessages();
@@ -504,7 +511,10 @@
             
             try {
                 showAlert('Broadcasting message... Please wait', 'info');
-                const res = await fetch(`/api/messages/broadcast/${id}`, { method: 'POST' });
+                const res = await fetch(`/api/messages/broadcast/${id}`, { 
+                    method: 'POST',
+                    credentials: 'same-origin'
+                });
                 
                 const result = await res.json();
                 console.log('Broadcast response:', result);
@@ -540,12 +550,14 @@
                     res = await fetch(`/api/messages/${editingMessageId}`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
+                        credentials: 'same-origin',
                         body: JSON.stringify(data)
                     });
                 } else {
                     res = await fetch('/api/messages', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
+                        credentials: 'same-origin',
                         body: JSON.stringify(data)
                     });
                 }
@@ -565,7 +577,9 @@
 
         async function loadCampaigns() {
             try {
-                const res = await fetch('/api/campaigns');
+                const res = await fetch('/api/campaigns', {
+                    credentials: 'same-origin'
+                });
                 if (res.ok) {
                     campaigns = await res.json();
                     displayCampaigns();
@@ -611,7 +625,9 @@
 
         async function loadFeedback() {
             try {
-                const res = await fetch('/api/feedback');
+                const res = await fetch('/api/feedback', {
+                    credentials: 'same-origin'
+                });
                 if (res.ok) {
                     feedback = await res.json();
                     displayFeedback();
@@ -671,7 +687,10 @@
         async function deleteCampaign(id, name) {
             if (!confirm(`Delete campaign "${name}"?`)) return;
             try {
-                const res = await fetch(`/api/campaigns/${id}`, { method: 'DELETE' });
+                const res = await fetch(`/api/campaigns/${id}`, { 
+                    method: 'DELETE',
+                    credentials: 'same-origin'
+                });
                 if (!res.ok) throw new Error();
                 showAlert('Campaign deleted', 'success');
                 loadCampaigns();
@@ -695,12 +714,14 @@
                     res = await fetch(`/api/campaigns/${editingCampaignId}`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
+                        credentials: 'same-origin',
                         body: JSON.stringify(data)
                     });
                 } else {
                     res = await fetch('/api/campaigns', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
+                        credentials: 'same-origin',
                         body: JSON.stringify(data)
                     });
                 }
@@ -986,7 +1007,19 @@
         // ============ END CHAT SUPPORT FUNCTIONS ============
 
         function logout() { authManager.logout(); }
+
+        // Make functions available globally for onclick/onchange handlers
         window.logout = logout;
+        window.openMessageModal = openMessageModal;
+        window.closeMessageModal = closeMessageModal;
+        window.filterMessages = filterMessages;
+        window.editMessage = editMessage;
+        window.deleteMessage = deleteMessage;
+        window.broadcastMessage = broadcastMessage;
+        window.openCampaignModal = openCampaignModal;
+        window.closeCampaignModal = closeCampaignModal;
+        window.editCampaign = editCampaign;
+        window.deleteCampaign = deleteCampaign;
 
         (async () => { 
             const auth = await checkAuth(); 

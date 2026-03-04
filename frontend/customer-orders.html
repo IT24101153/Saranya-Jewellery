@@ -45,12 +45,15 @@
             <h1 style="text-align: center; margin-bottom: 2rem; font-family: 'Cormorant Garamond', serif; color: var(--brand-burgundy);">My Orders</h1>
 
             <!-- Filter Tabs -->
-            <div style="display: flex; gap: 1rem; margin-bottom: 2rem; justify-content: center; flex-wrap: wrap;">
+            <div style="display: flex; gap: 0.5rem; margin-bottom: 2rem; justify-content: center; flex-wrap: wrap;">
                 <button class="filter-btn active" onclick="filterOrders('all')">All Orders</button>
                 <button class="filter-btn" onclick="filterOrders('Pending')">Pending</button>
-                <button class="filter-btn" onclick="filterOrders('Processing')">Processing</button>
-                <button class="filter-btn" onclick="filterOrders('Shipped')">Shipped</button>
-                <button class="filter-btn" onclick="filterOrders('Delivered')">Delivered</button>
+                <button class="filter-btn" onclick="filterOrders('Confirmed')">Confirmed</button>
+                <button class="filter-btn" onclick="filterOrders('Invoice Created')">Invoice</button>
+                <button class="filter-btn" onclick="filterOrders('Payment Received')">Paid</button>
+                <button class="filter-btn" onclick="filterOrders('Preparing')">Preparing</button>
+                <button class="filter-btn" onclick="filterOrders('Ready for Collection')">Ready</button>
+                <button class="filter-btn" onclick="filterOrders('Completed')">Completed</button>
                 <button class="filter-btn" onclick="filterOrders('Cancelled')">Cancelled</button>
             </div>
 
@@ -139,14 +142,26 @@
             container.innerHTML = filteredOrders.map(order => {
                 const statusColors = {
                     'Pending': '#ffc107',
-                    'Processing': '#17a2b8',
-                    'Shipped': '#007bff',
-                    'Delivered': '#28a745',
-                    'Cancelled': '#dc3545'
+                    'Confirmed': '#17a2b8',
+                    'Invoice Created': '#6f42c1',
+                    'Payment Received': '#28a745',
+                    'Preparing': '#007bff',
+                    'Ready for Collection': '#20c997',
+                    'Completed': '#28a745',
+                    'Cancelled': '#dc3545',
+                    'Refunded': '#e83e8c'
                 };
 
+                const isReady = order.status === 'Ready for Collection';
+
                 return `
-                    <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 1rem;">
+                    <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 1rem; ${isReady ? 'border: 2px solid #20c997;' : ''}">
+                        ${isReady ? `
+                            <div style="background: #d1f2eb; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; text-align: center;">
+                                <p style="margin: 0; font-weight: 700; color: #0d6655; font-size: 1.1rem;">🎉 Your jewellery is ready!</p>
+                                <p style="margin: 0.25rem 0 0; color: #0d6655;">Please visit Saranya Jewellery to collect your order.</p>
+                            </div>
+                        ` : ''}
                         <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
                             <div>
                                 <h3 style="margin: 0 0 0.5rem; color: var(--brand-burgundy);">Order #${order.orderNumber}</h3>
@@ -156,12 +171,13 @@
                                 <p style="color: #666; margin: 0.25rem 0; font-size: 0.9rem;">
                                     <i class="fas fa-box"></i> ${order.items.length} item(s)
                                 </p>
+                                ${order.invoiceNumber ? `<p style="color: #666; margin: 0.25rem 0; font-size: 0.9rem;"><i class="fas fa-file-invoice"></i> Invoice: ${order.invoiceNumber}</p>` : ''}
                             </div>
                             <div style="text-align: right;">
-                                <span style="display: inline-block; padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600; background: ${statusColors[order.status]}; color: white;">
+                                <span style="display: inline-block; padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600; background: ${statusColors[order.status] || '#999'}; color: white;">
                                     ${order.status}
                                 </span>
-                                <p style="font-size: 1.3rem; font-weight: 600; margin: 0.5rem 0 0; color: var(--brand-gold-strong);">₹${order.total.toLocaleString()}</p>
+                                <p style="font-size: 1.3rem; font-weight: 600; margin: 0.5rem 0 0; color: var(--brand-gold-strong);">Rs. ${order.total.toLocaleString()}</p>
                             </div>
                         </div>
 
@@ -176,7 +192,7 @@
                             <button onclick="viewOrderDetails('${order._id}')" style="flex: 1; min-width: 150px; background: var(--brand-burgundy); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 4px; cursor: pointer;">
                                 <i class="fas fa-eye"></i> View Details
                             </button>
-                            ${order.status === 'Delivered' ? `
+                            ${order.status === 'Completed' ? `
                                 <button onclick="reorder('${order._id}')" style="flex: 1; min-width: 150px; background: var(--brand-gold-strong); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 4px; cursor: pointer;">
                                     <i class="fas fa-redo"></i> Reorder
                                 </button>
@@ -201,14 +217,25 @@
                 
                 const statusColors = {
                     'Pending': '#ffc107',
-                    'Processing': '#17a2b8',
-                    'Shipped': '#007bff',
-                    'Delivered': '#28a745',
-                    'Cancelled': '#dc3545'
+                    'Confirmed': '#17a2b8',
+                    'Invoice Created': '#6f42c1',
+                    'Payment Received': '#28a745',
+                    'Preparing': '#007bff',
+                    'Ready for Collection': '#20c997',
+                    'Completed': '#28a745',
+                    'Cancelled': '#dc3545',
+                    'Refunded': '#e83e8c'
                 };
 
                 document.getElementById('modalContent').innerHTML = `
                     <h2 style="margin: 0 0 1.5rem; font-family: 'Cormorant Garamond', serif; color: var(--brand-burgundy);">Order Details</h2>
+                    
+                    ${order.status === 'Ready for Collection' ? `
+                        <div style="background: #d1f2eb; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem; text-align: center;">
+                            <h3 style="margin: 0 0 0.5rem; color: #0d6655;">🎉 Ready for Collection!</h3>
+                            <p style="margin: 0; color: #0d6655;">Your jewellery is ready. Please visit <strong>Saranya Jewellery</strong> to collect your order.</p>
+                        </div>
+                    ` : ''}
                     
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
                         <div>
@@ -216,17 +243,20 @@
                             <p style="margin: 0.5rem 0;"><strong>Order Number:</strong> ${order.orderNumber}</p>
                             <p style="margin: 0.5rem 0;"><strong>Order Date:</strong> ${new Date(order.createdAt).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
                             <p style="margin: 0.5rem 0;"><strong>Status:</strong> 
-                                <span style="display: inline-block; padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600; background: ${statusColors[order.status]}; color: white; margin-left: 0.5rem;">
+                                <span style="display: inline-block; padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600; background: ${statusColors[order.status] || '#999'}; color: white; margin-left: 0.5rem;">
                                     ${order.status}
                                 </span>
                             </p>
-                            <p style="margin: 0.5rem 0;"><strong>Payment Method:</strong> ${order.paymentMethod}</p>
+                            <p style="margin: 0.5rem 0;"><strong>Payment:</strong> ${order.paymentStatus || 'Pending'} (${order.paymentMethod})</p>
+                            ${order.invoiceNumber ? `<p style="margin: 0.5rem 0;"><strong>Invoice:</strong> ${order.invoiceNumber}</p>` : ''}
                         </div>
                         
                         <div>
-                            <h3 style="margin: 0 0 1rem; color: #333;">Delivery Information</h3>
+                            <h3 style="margin: 0 0 1rem; color: #333;">Collection Information</h3>
                             <p style="margin: 0.5rem 0;"><strong>Phone:</strong> ${order.phoneNumber}</p>
-                            <p style="margin: 0.5rem 0;"><strong>Address:</strong><br>${order.deliveryAddress}</p>
+                            <p style="margin: 0.5rem 0;"><strong>Collection:</strong> Visit Saranya Jewellery shop</p>
+                            <p style="margin: 0.5rem 0;"><strong>Payment:</strong> Bank Transfer</p>
+                            ${order.paymentReceipt ? `<p style="margin: 0.5rem 0;"><strong>Receipt:</strong> <a href="${order.paymentReceipt}" target="_blank" style="color: var(--brand-burgundy);">View Receipt</a></p>` : ''}
                             ${order.orderNotes ? `<p style="margin: 0.5rem 0;"><strong>Notes:</strong> ${order.orderNotes}</p>` : ''}
                         </div>
                     </div>
@@ -239,10 +269,10 @@
                                 <div style="flex: 1;">
                                     <h4 style="margin: 0 0 0.5rem; color: var(--brand-burgundy);">${item.name}</h4>
                                     <p style="color: #666; margin: 0.25rem 0; font-size: 0.9rem;">Quantity: ${item.quantity}</p>
-                                    <p style="color: var(--brand-gold-strong); font-weight: 600; margin: 0.25rem 0;">₹${item.price.toLocaleString()} each</p>
+                                    <p style="color: var(--brand-gold-strong); font-weight: 600; margin: 0.25rem 0;">Rs. ${item.price.toLocaleString()} each</p>
                                 </div>
                                 <div style="text-align: right;">
-                                    <p style="font-weight: 600; font-size: 1.1rem; margin: 0;">₹${(item.price * item.quantity).toLocaleString()}</p>
+                                    <p style="font-weight: 600; font-size: 1.1rem; margin: 0;">Rs. ${(item.price * item.quantity).toLocaleString()}</p>
                                 </div>
                             </div>
                         `).join('')}
@@ -251,15 +281,15 @@
                     <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 4px;">
                         <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
                             <span>Subtotal:</span>
-                            <span>₹${order.subtotal.toLocaleString()}</span>
+                            <span>Rs. ${order.subtotal.toLocaleString()}</span>
                         </div>
                         <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
                             <span>Tax:</span>
-                            <span>₹${order.tax.toLocaleString()}</span>
+                            <span>Rs. ${order.tax.toLocaleString()}</span>
                         </div>
                         <div style="display: flex; justify-content: space-between; font-size: 1.2rem; font-weight: 600; padding-top: 0.5rem; border-top: 2px solid #ddd; margin-top: 0.5rem;">
                             <span>Total:</span>
-                            <span style="color: var(--brand-gold-strong);">₹${order.total.toLocaleString()}</span>
+                            <span style="color: var(--brand-gold-strong);">Rs. ${order.total.toLocaleString()}</span>
                         </div>
                     </div>
                 `;

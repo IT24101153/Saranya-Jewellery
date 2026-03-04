@@ -41,7 +41,7 @@
             </div>
             <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center;">
                 <h3 style="font-size: 2.5rem; color: #28a745; margin: 0 0 0.5rem;" id="inStock">0</h3>
-                <p style="margin: 0; color: #666;">In Stock</p>
+                <p style="margin: 0; color: #666;">Active (Inventory Done)</p>
             </div>
             <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center;">
                 <h3 style="font-size: 2.5rem; color: #e0bf63; margin: 0 0 0.5rem;" id="featured">0</h3>
@@ -78,17 +78,6 @@
                     <option value="Bangles">Bangles</option>
                     <option value="Anklet">Anklet</option>
                 </select>
-                <select id="karatFilter" onchange="loadProducts()" style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
-                    <option value="">All Karats</option>
-                    <option value="18K">18K</option>
-                    <option value="22K">22K</option>
-                    <option value="24K">24K</option>
-                </select>
-                <select id="availabilityFilter" onchange="loadProducts()" style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
-                    <option value="">All Availability</option>
-                    <option value="true">In Stock</option>
-                    <option value="false">Out of Stock</option>
-                </select>
             </div>
 
             <!-- Products Table -->
@@ -99,15 +88,13 @@
                             <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Image</th>
                             <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Name</th>
                             <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Category</th>
-                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Karat</th>
-                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Price</th>
-                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Stock</th>
+                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Status</th>
                             <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Featured</th>
                             <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="productsTable">
-                        <tr><td colspan="8" style="padding: 2rem; text-align: center; color: #999;">Loading...</td></tr>
+                        <tr><td colspan="6" style="padding: 2rem; text-align: center; color: #999;">Loading...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -130,54 +117,19 @@
                     <label style="display: block; margin-bottom: 0.5rem;">Description *</label>
                     <textarea id="description" required rows="3" style="width: 95%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;"></textarea>
                 </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                    <div>
-                        <label style="display: block; margin-bottom: 0.5rem;">Category *</label>
-                        <select id="category" required style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
-                            <option value="">Select</option>
-                            <option value="Ring">Ring</option>
-                            <option value="Necklace">Necklace</option>
-                            <option value="Bracelet">Bracelet</option>
-                            <option value="Earring">Earring</option>
-                            <option value="Pendant">Pendant</option>
-                            <option value="Chain">Chain</option>
-                            <option value="Bangles">Bangles</option>
-                            <option value="Anklet">Anklet</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label style="display: block; margin-bottom: 0.5rem;">Karat *</label>
-                        <select id="karat" required style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
-                            <option value="">Select</option>
-                            <option value="18K">18K</option>
-                            <option value="22K">22K</option>
-                            <option value="24K">24K</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label style="display: block; margin-bottom: 0.5rem;">Karat Rate (Rs./g) *</label>
-                        <input type="number" id="karatRate" step="0.01" required style="width: 90%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
-                    </div>
-                </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                    <div>
-                        <label style="display: block; margin-bottom: 0.5rem;">Weight (g) *</label>
-                        <input type="number" id="weight" step="0.01" required style="width: 90%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
-                    </div>
-                    <div>
-                        <label style="display: block; margin-bottom: 0.5rem;">Price (Rs.) *</label>
-                        <input type="number" id="price" step="0.01" required style="width: 90%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
-                    </div>
-                </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                    <div>
-                        <label style="display: block; margin-bottom: 0.5rem;">Stock Quantity *</label>
-                        <input type="number" id="stockQuantity" required style="width: 90%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
-                    </div>
-                    <div>
-                        <label style="display: block; margin-bottom: 0.5rem;">SKU</label>
-                        <input type="text" id="sku" style="width: 90%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
-                    </div>
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem;">Category *</label>
+                    <select id="category" required style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
+                        <option value="">Select</option>
+                        <option value="Ring">Ring</option>
+                        <option value="Necklace">Necklace</option>
+                        <option value="Bracelet">Bracelet</option>
+                        <option value="Earring">Earring</option>
+                        <option value="Pendant">Pendant</option>
+                        <option value="Chain">Chain</option>
+                        <option value="Bangles">Bangles</option>
+                        <option value="Anklet">Anklet</option>
+                    </select>
                 </div>
                 <div style="margin-bottom: 1rem;">
                     <label style="display: block; margin-bottom: 0.5rem;">Product Image *</label>
@@ -194,6 +146,7 @@
                         <span>Featured Product</span>
                     </label>
                 </div>
+                <p style="color: #888; font-size: 0.85rem; margin-bottom: 1rem;">Note: Weight, karat, price, and stock details will be added by the Inventory team.</p>
                 <button type="submit" style="width: 100%; background: #6f0022; color: white; padding: 0.8rem; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">
                     Save Product
                 </button>
@@ -222,14 +175,12 @@
             try {
                 let url = '/api/products?';
                 const cat = document.getElementById('categoryFilter').value;
-                const kar = document.getElementById('karatFilter').value;
-                const avail = document.getElementById('availabilityFilter').value;
                 
                 if (cat) url += `category=${cat}&`;
-                if (kar) url += `karat=${kar}&`;
-                if (avail) url += `isAvailable=${avail}&`;
 
-                const res = await fetch(url);
+                const res = await fetch(url, {
+                    credentials: 'same-origin'
+                });
                 if (!res.ok) throw new Error();
                 products = await res.json();
                 updateStats();
@@ -241,8 +192,8 @@
 
         function updateStats() {
             document.getElementById('totalProducts').textContent = products.length;
-            document.getElementById('inStock').textContent = products.filter(p => p.isAvailable).length;
-            document.getElementById('featured').textContent = products.filter(p => p.isFeatured).length;
+            document.getElementById('inStock').textContent = products.filter(p => p.productStatus === 'Active').length;
+            document.getElementById('featured').textContent = products.filter(p => p.featured).length;
             const uniqueCats = [...new Set(products.map(p => p.category))];
             document.getElementById('categories').textContent = uniqueCats.length;
         }
@@ -250,7 +201,7 @@
         function displayProducts() {
             const tbody = document.getElementById('productsTable');
             if (products.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" style="padding: 2rem; text-align: center; color: #999;">No products found</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" style="padding: 2rem; text-align: center; color: #999;">No products found</td></tr>';
                 return;
             }
             tbody.innerHTML = products.map(p => `
@@ -260,10 +211,12 @@
                     </td>
                     <td style="padding: 1rem; border-bottom: 1px solid #eee;">${p.name}</td>
                     <td style="padding: 1rem; border-bottom: 1px solid #eee;">${p.category}</td>
-                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">${p.karat}</td>
-                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">Rs. ${p.price.toLocaleString()}</td>
-                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">${p.stockQuantity}</td>
-                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">${p.isFeatured ? '⭐' : '-'}</td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">
+                        <span style="padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.85rem; background: ${p.productStatus === 'Active' ? '#d4edda' : '#fff3cd'}; color: ${p.productStatus === 'Active' ? '#155724' : '#856404'};">
+                            ${p.productStatus || 'Draft'}
+                        </span>
+                    </td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">${p.featured ? '⭐' : '-'}</td>
                     <td style="padding: 1rem; border-bottom: 1px solid #eee;">
                         <div style="display: flex; gap: 0.5rem;">
                             <button onclick="editProduct('${p._id}')" style="padding: 0.4rem 0.8rem; background: #17a2b8; color: white; border: none; border-radius: 4px; cursor: pointer;">✏</button>
@@ -289,12 +242,6 @@
             document.getElementById('name').value = product.name;
             document.getElementById('description').value = product.description;
             document.getElementById('category').value = product.category;
-            document.getElementById('karat').value = product.kType;
-            document.getElementById('karatRate').value = product.karatRate;
-            document.getElementById('weight').value = product.weight;
-            document.getElementById('price').value = product.price;
-            document.getElementById('stockQuantity').value = product.stockQuantity;
-            document.getElementById('sku').value = product.sku || '';
             document.getElementById('image').value = product.image || '';
             
             // Show current image if exists
@@ -304,7 +251,7 @@
                 document.getElementById('imagePreview').style.display = 'block';
             }
             
-            document.getElementById('isFeatured').checked = product.isFeatured;
+            document.getElementById('isFeatured').checked = product.featured;
             document.getElementById('productModal').style.display = 'flex';
         }
 
@@ -319,7 +266,10 @@
         async function deleteProduct(id, name) {
             if (!confirm(`Delete ${name}?`)) return;
             try {
-                const res = await fetch(`/api/products/${id}`, { method: 'DELETE' });
+                const res = await fetch(`/api/products/${id}`, { 
+                    method: 'DELETE',
+                    credentials: 'same-origin'
+                });
                 if (!res.ok) throw new Error();
                 showAlert('Product deleted', 'success');
                 loadProducts();
@@ -356,6 +306,7 @@
                     
                     const uploadRes = await fetch('/api/upload', {
                         method: 'POST',
+                        credentials: 'same-origin',
                         body: formData
                     });
                     
@@ -382,12 +333,6 @@
                 name: document.getElementById('name').value,
                 description: document.getElementById('description').value,
                 category: document.getElementById('category').value,
-                kType: document.getElementById('karat').value,
-                karatRate: parseFloat(document.getElementById('karatRate').value),
-                weight: parseFloat(document.getElementById('weight').value),
-                price: parseFloat(document.getElementById('price').value),
-                stockQuantity: parseInt(document.getElementById('stockQuantity').value),
-                sku: document.getElementById('sku').value,
                 image: imagePath,
                 featured: document.getElementById('isFeatured').checked
             };
@@ -398,12 +343,14 @@
                     res = await fetch(`/api/products/${editingId}`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
+                        credentials: 'same-origin',
                         body: JSON.stringify(data)
                     });
                 } else {
                     res = await fetch('/api/products', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
+                        credentials: 'same-origin',
                         body: JSON.stringify(data)
                     });
                 }
@@ -433,8 +380,13 @@
             authManager.logout();
         }
 
-        // Make logout available globally
+        // Make functions available globally for onclick/onchange handlers
         window.logout = logout;
+        window.openAddModal = openAddModal;
+        window.closeModal = closeModal;
+        window.editProduct = editProduct;
+        window.deleteProduct = deleteProduct;
+        window.loadProducts = loadProducts;
 
         (async () => {
             const auth = await checkAuth();

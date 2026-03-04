@@ -21,22 +21,22 @@ const productSchema = new mongoose.Schema({
   },
   price: {
     type: Number,
-    required: true,
+    default: 0,
     min: 0
   },
   weight: {
     type: Number,
-    required: true,
+    default: 0,
     min: 0
   },
   kType: {
     type: String,
-    required: true,
-    enum: ['18K', '22K', '24K']
+    enum: ['18K', '22K', '24K'],
+    default: null
   },
   karatRate: {
     type: Number,
-    required: true,
+    default: 0,
     min: 0
   },
   stockQuantity: {
@@ -50,9 +50,13 @@ const productSchema = new mongoose.Schema({
   },
   availabilityStatus: {
     type: String,
-    required: true,
     enum: ['In Stock', 'Out of Stock', 'Pre-Order'],
-    default: 'In Stock'
+    default: 'Out of Stock'
+  },
+  productStatus: {
+    type: String,
+    enum: ['Draft', 'Active'],
+    default: 'Draft'
   },
   featured: {
     type: Boolean,
@@ -97,10 +101,19 @@ productSchema.set('toJSON', {
 
 productSchema.set('toObject', { virtuals: true });
 
-// Update the updatedAt timestamp before saving
-productSchema.pre('save', function(next) {
+// Auto-calculate price and update timestamp before saving
+productSchema.pre('save', function() {
+  // Auto-calculate price = weight × karatRate
+  if (this.weight > 0 && this.karatRate > 0) {
+    this.price = this.weight * this.karatRate;
+  }
+  // Auto-set availability based on stock
+  if (this.stockQuantity > 0 && this.productStatus === 'Active') {
+    this.availabilityStatus = 'In Stock';
+  } else if (this.stockQuantity === 0) {
+    this.availabilityStatus = 'Out of Stock';
+  }
   this.updatedAt = Date.now();
-  next();
 });
 
 const Product = mongoose.model('Product', productSchema);

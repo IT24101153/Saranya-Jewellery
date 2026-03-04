@@ -27,7 +27,6 @@ const orderItemSchema = new mongoose.Schema({
 const orderSchema = new mongoose.Schema({
   orderNumber: {
     type: String,
-    required: true,
     unique: true
   },
   customerId: {
@@ -58,7 +57,7 @@ const orderSchema = new mongoose.Schema({
   },
   deliveryAddress: {
     type: String,
-    required: true
+    default: 'Shop Collection - Visit Saranya Jewellery'
   },
   phoneNumber: {
     type: String,
@@ -66,14 +65,41 @@ const orderSchema = new mongoose.Schema({
   },
   paymentMethod: {
     type: String,
-    required: true,
-    enum: ['COD', 'Card', 'UPI', 'Bank Transfer']
+    default: 'Bank Transfer',
+    enum: ['Bank Transfer']
+  },
+  paymentReceipt: {
+    type: String,
+    default: null
   },
   orderNotes: String,
   status: {
     type: String,
-    enum: ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'],
+    enum: ['Pending', 'Confirmed', 'Invoice Created', 'Payment Received', 'Preparing', 'Ready for Collection', 'Completed', 'Cancelled', 'Refunded'],
     default: 'Pending'
+  },
+  // Invoice fields
+  invoiceNumber: {
+    type: String,
+    default: null
+  },
+  invoiceDate: {
+    type: Date,
+    default: null
+  },
+  paymentStatus: {
+    type: String,
+    enum: ['Pending', 'Invoice Sent', 'Paid', 'Refunded'],
+    default: 'Pending'
+  },
+  // Inventory notification fields
+  inventoryNotified: {
+    type: Boolean,
+    default: false
+  },
+  inventoryAccepted: {
+    type: Boolean,
+    default: false
   },
   createdAt: {
     type: Date,
@@ -86,7 +112,7 @@ const orderSchema = new mongoose.Schema({
 });
 
 // Generate order number before saving
-orderSchema.pre('save', async function(next) {
+orderSchema.pre('save', async function() {
   if (this.isNew) {
     // Generate order number: ORD-YYYYMMDD-XXXXX
     const date = new Date();
@@ -95,7 +121,6 @@ orderSchema.pre('save', async function(next) {
     this.orderNumber = `ORD-${dateStr}-${randomNum}`;
   }
   this.updatedAt = Date.now();
-  next();
 });
 
 const Order = mongoose.model('Order', orderSchema);

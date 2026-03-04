@@ -60,21 +60,21 @@
                         <div style="margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid #eee;">
                             <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
                                 <span>Subtotal (<span id="itemCount">0</span> items):</span>
-                                <span id="subtotal">₹0</span>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                                <span>Shipping:</span>
-                                <span id="shipping">Free</span>
+                                <span id="subtotal">Rs. 0</span>
                             </div>
                             <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
                                 <span>Tax (3%):</span>
-                                <span id="tax">₹0</span>
+                                <span id="tax">Rs. 0</span>
                             </div>
                         </div>
 
-                        <div style="display: flex; justify-content: space-between; font-size: 1.2rem; font-weight: 600; margin-bottom: 1.5rem;">
+                        <div style="display: flex; justify-content: space-between; font-size: 1.2rem; font-weight: 600; margin-bottom: 1rem;">
                             <span>Total:</span>
-                            <span id="total" style="color: var(--brand-gold-strong);">₹0</span>
+                            <span id="total" style="color: var(--brand-gold-strong);">Rs. 0</span>
+                        </div>
+
+                        <div style="background: #d1f2eb; padding: 0.8rem; border-radius: 4px; margin-bottom: 1rem; text-align: center;">
+                            <p style="margin: 0; color: #0d6655; font-size: 0.9rem;">🏪 <strong>Shop Collection Only</strong> — Visit our store to collect</p>
                         </div>
 
                         <button id="checkoutBtn" onclick="proceedToCheckout()" style="width: 100%; background: var(--brand-burgundy); color: white; border: none; padding: 1rem; border-radius: 4px; cursor: pointer; font-size: 1rem; font-weight: 600; margin-bottom: 1rem;">
@@ -96,26 +96,32 @@
             <div style="padding: 2rem;">
                 <h2 style="margin: 0 0 1.5rem; font-family: 'Cormorant Garamond', serif; color: var(--brand-burgundy);">Checkout</h2>
                 
-                <form id="checkoutForm">
-                    <div style="margin-bottom: 1.5rem;">
-                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Delivery Address *</label>
-                        <textarea id="deliveryAddress" required style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; font-family: inherit; min-height: 100px;"></textarea>
-                    </div>
+                <div style="background: #d1f2eb; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; text-align: center;">
+                    <p style="margin: 0; font-weight: 600; color: #0d6655;">🏪 Shop Collection</p>
+                    <p style="margin: 0.25rem 0 0; font-size: 0.9rem; color: #0d6655;">Your order will be prepared for collection at Saranya Jewellery</p>
+                </div>
 
+                <form id="checkoutForm">
                     <div style="margin-bottom: 1.5rem;">
                         <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Phone Number *</label>
                         <input type="tel" id="phoneNumber" required style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px;">
                     </div>
 
                     <div style="margin-bottom: 1.5rem;">
-                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Payment Method *</label>
-                        <select id="paymentMethod" required style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px;">
-                            <option value="">Select payment method</option>
-                            <option value="COD">Cash on Delivery</option>
-                            <option value="Card">Credit/Debit Card</option>
-                            <option value="UPI">UPI</option>
-                            <option value="Bank Transfer">Bank Transfer</option>
-                        </select>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Payment Method</label>
+                        <div style="background: #f8f9fa; padding: 1rem; border-radius: 4px; border: 1px solid #ddd;">
+                            <p style="margin: 0; font-weight: 600;">🏦 Bank Transfer</p>
+                            <p style="margin: 0.5rem 0 0; font-size: 0.85rem; color: #666;">Please transfer the total amount to our bank account and upload the receipt/screenshot below.</p>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 1.5rem;">
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Payment Receipt / Screenshot (Optional)</label>
+                        <input type="file" id="receiptFile" accept="image/*" style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px;">
+                        <p style="margin: 0.5rem 0 0; font-size: 0.8rem; color: #666;">Upload a screenshot or photo of your bank transfer receipt (max 5MB). You can also submit this later.</p>
+                        <div id="receiptPreview" style="display: none; margin-top: 0.5rem;">
+                            <img id="receiptImg" src="" alt="Receipt preview" style="max-width: 200px; border-radius: 4px; border: 1px solid #ddd;">
+                        </div>
                     </div>
 
                     <div style="margin-bottom: 1.5rem;">
@@ -127,7 +133,7 @@
                         <h3 style="margin: 0 0 0.5rem; font-size: 1rem;">Order Summary</h3>
                         <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
                             <span>Total Amount:</span>
-                            <strong id="checkoutTotal" style="color: var(--brand-gold-strong);">₹0</strong>
+                            <strong id="checkoutTotal" style="color: var(--brand-gold-strong);">Rs. 0</strong>
                         </div>
                     </div>
 
@@ -135,7 +141,7 @@
                         <button type="button" onclick="closeCheckoutModal()" style="flex: 1; background: #6c757d; color: white; border: none; padding: 1rem; border-radius: 4px; cursor: pointer;">
                             Cancel
                         </button>
-                        <button type="submit" style="flex: 1; background: var(--brand-burgundy); color: white; border: none; padding: 1rem; border-radius: 4px; cursor: pointer; font-weight: 600;">
+                        <button type="submit" id="placeOrderBtn" style="flex: 1; background: var(--brand-burgundy); color: white; border: none; padding: 1rem; border-radius: 4px; cursor: pointer; font-weight: 600;">
                             Place Order
                         </button>
                     </div>
@@ -157,14 +163,9 @@
             const points = customer.loyaltyPoints || 0;
             document.getElementById('loyaltyPoints').textContent = `⭐ ${points} Points`;
             
-            // Pre-fill checkout form
+            // Pre-fill phone
             if (customer.phone) {
                 document.getElementById('phoneNumber').value = customer.phone;
-            }
-            if (customer.address) {
-                const addr = customer.address;
-                const fullAddress = [addr.street, addr.city, addr.state, addr.zipCode, addr.country].filter(Boolean).join(', ');
-                document.getElementById('deliveryAddress').value = fullAddress;
             }
         }
 
@@ -204,7 +205,7 @@
                     <div style="flex: 1;">
                         <h3 style="margin: 0 0 0.5rem; color: var(--brand-burgundy);">${item.name}</h3>
                         <p style="color: #666; margin: 0.25rem 0; font-size: 0.9rem;">${item.category} - ${item.karat}</p>
-                        <p style="color: var(--brand-gold-strong); font-weight: 600; font-size: 1.1rem; margin: 0.5rem 0;">₹${item.price.toLocaleString()}</p>
+                        <p style="color: var(--brand-gold-strong); font-weight: 600; font-size: 1.1rem; margin: 0.5rem 0;">Rs. ${item.price.toLocaleString()}</p>
                         
                         <div style="display: flex; align-items: center; gap: 1rem; margin-top: 1rem;">
                             <div style="display: flex; align-items: center; gap: 0.5rem;">
@@ -220,7 +221,7 @@
                     </div>
                     
                     <div style="text-align: right;">
-                        <p style="font-weight: 600; font-size: 1.2rem; color: var(--brand-burgundy); margin: 0;">₹${(item.price * item.quantity).toLocaleString()}</p>
+                        <p style="font-weight: 600; font-size: 1.2rem; color: var(--brand-burgundy); margin: 0;">Rs. ${(item.price * item.quantity).toLocaleString()}</p>
                     </div>
                 </div>
             `).join('');
@@ -255,10 +256,10 @@
             const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
             document.getElementById('itemCount').textContent = itemCount;
-            document.getElementById('subtotal').textContent = `₹${subtotal.toLocaleString()}`;
-            document.getElementById('tax').textContent = `₹${tax.toLocaleString()}`;
-            document.getElementById('total').textContent = `₹${total.toLocaleString()}`;
-            document.getElementById('checkoutTotal').textContent = `₹${total.toLocaleString()}`;
+            document.getElementById('subtotal').textContent = `Rs. ${subtotal.toLocaleString()}`;
+            document.getElementById('tax').textContent = `Rs. ${Math.round(tax).toLocaleString()}`;
+            document.getElementById('total').textContent = `Rs. ${Math.round(total).toLocaleString()}`;
+            document.getElementById('checkoutTotal').textContent = `Rs. ${Math.round(total).toLocaleString()}`;
         }
 
         function proceedToCheckout() {
@@ -273,16 +274,70 @@
             document.getElementById('checkoutModal').style.display = 'none';
         }
 
+        // Receipt preview
+        document.getElementById('receiptFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const preview = document.getElementById('receiptPreview');
+            const img = document.getElementById('receiptImg');
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    img.src = ev.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            } else {
+                preview.style.display = 'none';
+            }
+        });
+
         document.getElementById('checkoutForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const submitBtn = document.getElementById('placeOrderBtn');
             submitBtn.disabled = true;
             submitBtn.textContent = 'Placing Order...';
 
             try {
+                // Validate cart has items
+                if (!cart || cart.length === 0) {
+                    throw new Error('Your cart is empty. Please add items first.');
+                }
+
+                // Validate cart items have required fields
+                for (const item of cart) {
+                    if (!item.productId || !item.name || !item.price) {
+                        throw new Error('Invalid cart data. Please clear your cart and add items again.');
+                    }
+                }
+
+                // Upload receipt if provided
+                let receiptPath = null;
+                const receiptFile = document.getElementById('receiptFile').files[0];
+                if (receiptFile) {
+                    const formData = new FormData();
+                    formData.append('receipt', receiptFile);
+                    const uploadRes = await fetch('/api/upload/receipt', {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        body: formData
+                    });
+                    if (!uploadRes.ok) {
+                        let errMsg = 'Failed to upload receipt';
+                        try {
+                            const err = await uploadRes.json();
+                            errMsg = err.message || errMsg;
+                        } catch (parseErr) {
+                            errMsg = 'Failed to upload receipt (server error)';
+                        }
+                        throw new Error(errMsg);
+                    }
+                    const uploadData = await uploadRes.json();
+                    receiptPath = uploadData.imagePath;
+                }
+
                 const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-                const tax = subtotal * 0.03;
+                const tax = Math.round(subtotal * 0.03);
                 const total = subtotal + tax;
 
                 const orderData = {
@@ -291,12 +346,11 @@
                         name: item.name,
                         price: item.price,
                         quantity: item.quantity,
-                        imageUrl: item.imageUrl
+                        imageUrl: item.imageUrl || null
                     })),
-                    deliveryAddress: document.getElementById('deliveryAddress').value,
-                    phoneNumber: document.getElementById('phoneNumber').value,
-                    paymentMethod: document.getElementById('paymentMethod').value,
-                    orderNotes: document.getElementById('orderNotes').value,
+                    phoneNumber: document.getElementById('phoneNumber').value.trim(),
+                    paymentReceipt: receiptPath,
+                    orderNotes: document.getElementById('orderNotes').value.trim(),
                     subtotal,
                     tax,
                     total
@@ -308,8 +362,14 @@
                 });
 
                 if (!res.ok) {
-                    const error = await res.json();
-                    throw new Error(error.message || 'Failed to place order');
+                    let errMsg = 'Failed to place order';
+                    try {
+                        const error = await res.json();
+                        errMsg = error.message || errMsg;
+                    } catch (parseErr) {
+                        errMsg = `Server error (${res.status})`;
+                    }
+                    throw new Error(errMsg);
                 }
 
                 const order = await res.json();
@@ -319,7 +379,7 @@
                 localStorage.setItem('saranyaCart', JSON.stringify(cart));
                 
                 // Show success and redirect
-                alert('Order placed successfully! Order ID: ' + order.orderNumber);
+                alert('Order placed successfully! Order #' + order.orderNumber + '\nYou will be notified when your order is ready for collection.');
                 window.location.href = '/customer-orders';
             } catch (error) {
                 console.error('Error placing order:', error);
