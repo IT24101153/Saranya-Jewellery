@@ -1,598 +1,1385 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inventory Management - Saranya Jewellery</title>
-    <link rel="icon" href="/favicon.png">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Cormorant+Garamond:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Inventory Management – Saranya Jewellers</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --gold: #C9A84C;
+      --gold-light: #E8C96A;
+      --gold-dark: #9A7A30;
+      --bg: #0F0E0C;
+      --bg2: #161410;
+      --bg3: #1E1B16;
+      --surface: #231F18;
+      --surface2: #2C2820;
+      --border: rgba(201,168,76,0.18);
+      --text: #F5EDD8;
+      --text-muted: #8A7F6A;
+      --red: #C94C4C;
+      --green: #4CAF7A;
+      --blue: #4C8EC9;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+    }
+
+    /* ─── SIDEBAR ─── */
+    .sidebar {
+      width: 240px;
+      background: var(--bg2);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+      position: fixed;
+      height: 100vh;
+      z-index: 100;
+    }
+
+    .sidebar-logo {
+      padding: 28px 24px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .sidebar-logo .brand {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--gold);
+      letter-spacing: 0.04em;
+    }
+
+    .sidebar-logo .sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+
+    .nav-section {
+      padding: 20px 12px 8px;
+    }
+
+    .nav-label {
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      padding: 0 12px;
+      margin-bottom: 6px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13.5px;
+      color: var(--text-muted);
+      transition: all 0.18s;
+      text-decoration: none;
+    }
+
+    .nav-item:hover { background: var(--surface); color: var(--text); }
+    .nav-item.active { background: rgba(201,168,76,0.12); color: var(--gold); }
+    .nav-item svg { opacity: 0.7; flex-shrink: 0; }
+    .nav-item.active svg { opacity: 1; }
+
+    .sidebar-footer {
+      margin-top: auto;
+      padding: 16px 12px;
+      border-top: 1px solid var(--border);
+    }
+
+    .staff-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: var(--surface);
+    }
+
+    .staff-avatar {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--gold-dark), var(--gold));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 600; color: #000;
+      flex-shrink: 0;
+    }
+
+    .staff-name { font-size: 13px; font-weight: 500; }
+    .staff-role { font-size: 11px; color: var(--text-muted); }
+
+    /* ─── MAIN ─── */
+    .main {
+      margin-left: 240px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* ─── TOPBAR ─── */
+    .topbar {
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .page-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .gold-rate-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(201,168,76,0.1);
+      border: 1px solid rgba(201,168,76,0.3);
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 13px;
+    }
+
+    .gold-rate-badge .label { color: var(--text-muted); }
+    .gold-rate-badge .value { color: var(--gold); font-weight: 600; font-size: 14px; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      transition: all 0.18s;
+      font-family: 'DM Sans', sans-serif;
+    }
+
+    .btn-gold {
+      background: var(--gold);
+      color: #000;
+    }
+    .btn-gold:hover { background: var(--gold-light); }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+    .btn-outline:hover { background: var(--surface); }
+
+    .btn-ghost {
+      background: var(--surface);
+      color: var(--text);
+    }
+    .btn-ghost:hover { background: var(--surface2); }
+
+    .btn-danger {
+      background: rgba(201,76,76,0.15);
+      color: var(--red);
+      border: 1px solid rgba(201,76,76,0.3);
+    }
+    .btn-danger:hover { background: rgba(201,76,76,0.25); }
+
+    /* ─── CONTENT ─── */
+    .content {
+      padding: 28px 32px;
+      flex: 1;
+    }
+
+    /* ─── TABS ─── */
+    .tab-bar {
+      display: flex;
+      gap: 4px;
+      background: var(--surface);
+      padding: 4px;
+      border-radius: 10px;
+      width: fit-content;
+      margin-bottom: 28px;
+    }
+
+    .tab {
+      padding: 8px 20px;
+      border-radius: 7px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      color: var(--text-muted);
+      transition: all 0.18s;
+      border: none;
+      background: none;
+      font-family: 'DM Sans', sans-serif;
+    }
+
+    .tab:hover { color: var(--text); }
+    .tab.active { background: var(--bg2); color: var(--gold); box-shadow: 0 1px 4px rgba(0,0,0,0.4); }
+
+    /* ─── STATS ─── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--gold-dark), var(--gold-light));
+      opacity: 0.7;
+    }
+
+    .stat-icon {
+      width: 36px; height: 36px;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 14px;
+      font-size: 18px;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 6px;
+    }
+
+    .stat-value {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 28px;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1;
+    }
+
+    .stat-sub {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+
+    .stat-sub.up { color: var(--green); }
+    .stat-sub.down { color: var(--red); }
+    .stat-sub.warn { color: #E8A84C; }
+
+    /* ─── TABLE ─── */
+    .table-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+
+    .table-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .table-title {
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .table-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .search-box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 7px 12px;
+    }
+
+    .search-box input {
+      background: none;
+      border: none;
+      outline: none;
+      color: var(--text);
+      font-size: 13px;
+      width: 180px;
+      font-family: 'DM Sans', sans-serif;
+    }
+
+    .search-box input::placeholder { color: var(--text-muted); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead th {
+      padding: 12px 24px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      background: var(--bg3);
+      border-bottom: 1px solid var(--border);
+    }
+
+    tbody tr {
+      border-bottom: 1px solid rgba(201,168,76,0.07);
+      transition: background 0.15s;
+    }
+
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--bg3); }
+
+    tbody td {
+      padding: 14px 24px;
+      font-size: 13.5px;
+    }
+
+    .serial-badge {
+      background: rgba(201,168,76,0.1);
+      border: 1px solid rgba(201,168,76,0.25);
+      color: var(--gold);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 5px;
+      letter-spacing: 0.06em;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12px;
+      font-weight: 500;
+      padding: 3px 10px;
+      border-radius: 20px;
+    }
+
+    .status-badge.in-stock { background: rgba(76,175,122,0.15); color: var(--green); }
+    .status-badge.low { background: rgba(232,168,76,0.15); color: #E8A84C; }
+    .status-badge.out { background: rgba(201,76,76,0.15); color: var(--red); }
+
+    .status-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .row-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .icon-btn {
+      width: 30px; height: 30px;
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: none;
+      color: var(--text-muted);
+      transition: all 0.15s;
+    }
+
+    .icon-btn:hover { background: var(--surface2); color: var(--text); }
+    .icon-btn.danger:hover { background: rgba(201,76,76,0.15); color: var(--red); border-color: rgba(201,76,76,0.3); }
+
+    /* ─── ALERTS ─── */
+    .alerts-section { margin-bottom: 24px; }
+
+    .alert-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 18px;
+      border-radius: 10px;
+      margin-bottom: 8px;
+      font-size: 13.5px;
+    }
+
+    .alert-item.warning {
+      background: rgba(232,168,76,0.1);
+      border: 1px solid rgba(232,168,76,0.25);
+      color: #F0C870;
+    }
+
+    .alert-item.danger {
+      background: rgba(201,76,76,0.1);
+      border: 1px solid rgba(201,76,76,0.25);
+      color: #E08080;
+    }
+
+    .alert-item .alert-msg { flex: 1; }
+    .alert-item .alert-time { font-size: 12px; opacity: 0.7; }
+
+    /* ─── MODAL ─── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      width: 480px;
+      max-width: 95vw;
+      padding: 28px;
+      animation: modalIn 0.2s ease;
+    }
+
+    @keyframes modalIn {
+      from { transform: translateY(16px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .modal-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      color: var(--gold);
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    .form-group.full { grid-column: 1 / -1; }
+
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 9px 12px;
+      color: var(--text);
+      font-size: 13.5px;
+      font-family: 'DM Sans', sans-serif;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--gold);
+    }
+
+    select option { background: var(--bg2); }
+    textarea { resize: vertical; min-height: 70px; }
+
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    /* ─── TWO COLUMN LAYOUT ─── */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 20px;
+    }
+
+    /* ─── GOLD RATE CARD ─── */
+    .gold-rate-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 22px;
+      margin-bottom: 20px;
+    }
+
+    .gold-rate-card .card-title {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+
+    .rate-display {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+
+    .rate-display .currency { font-size: 20px; color: var(--gold); }
+    .rate-display .amount {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 42px;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1;
+    }
+    .rate-display .per { color: var(--text-muted); font-size: 13px; }
+
+    .rate-history {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .rate-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      color: var(--text-muted);
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(201,168,76,0.08);
+    }
+
+    .rate-row .date { }
+    .rate-row .rate-val { color: var(--text); font-weight: 500; }
+
+    /* ─── SUPPLIER CARD ─── */
+    .supplier-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      transition: background 0.15s;
+    }
+    .supplier-card:hover { background: var(--surface2); }
+
+    .supplier-info .name { font-size: 14px; font-weight: 500; }
+    .supplier-info .contact { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+    /* Tabs content */
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* ─── TOAST ─── */
+    .toast {
+      position: fixed;
+      bottom: 28px;
+      right: 28px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 20px;
+      font-size: 13.5px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      z-index: 999;
+      transform: translateY(60px);
+      opacity: 0;
+      transition: all 0.25s;
+      pointer-events: none;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.success { border-color: rgba(76,175,122,0.4); }
+    .toast.error { border-color: rgba(201,76,76,0.4); }
+
+    /* ─── RESPONSIVE ─── */
+    @media (max-width: 1100px) {
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .two-col { grid-template-columns: 1fr; }
+    }
+  </style>
 </head>
-<body style="font-family: 'Poppins', sans-serif; background-color: #f5f5f5; margin: 0; padding: 0;">
+<body>
 
-    <!-- Pending Approval Overlay -->
-    <div id="pendingOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 9999; align-items: center; justify-content: center;">
-        <div style="background: white; padding: 3rem; border-radius: 8px; text-align: center; max-width: 500px;">
-            <h2 style="color: #6f0022; margin-bottom: 1rem;">⏳ Pending Approval</h2>
-            <p style="color: #666; margin-bottom: 2rem;">Your account is awaiting admin approval. Please check back later.</p>
-            <button onclick="logout()" style="background: #6f0022; color: white; padding: 0.8rem 2rem; border: none; border-radius: 4px; cursor: pointer;">Logout</button>
-        </div>
+<!-- ─── SIDEBAR ─── -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="brand">✦ Saranya</div>
+    <div class="sub">Jewellers Management</div>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-label">Navigation</div>
+    <a href="admin-dashboard.html" class="nav-item">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      Dashboard
+    </a>
+    <a href="inventory-dashboard.html" class="nav-item active">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3h18v5H3zM3 10h18v5H3zM3 17h18v5H3z"/></svg>
+      Inventory
+    </a>
+    <a href="product-management-dashboard.html" class="nav-item">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+      Products
+    </a>
+    <a href="order-management-dashboard.html" class="nav-item">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      Orders
+    </a>
+    <a href="loyalty-management-dashboard.html" class="nav-item">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      Loyalty
+    </a>
+    <a href="customer-care-dashboard.html" class="nav-item">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Customer Care
+    </a>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="staff-info">
+      <div class="staff-avatar">IM</div>
+      <div>
+        <div class="staff-name">Inventory Mgr</div>
+        <div class="staff-role">Inventory Manager</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- ─── MAIN CONTENT ─── -->
+<main class="main">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="page-title">Inventory Management</div>
+    <div class="topbar-right">
+      <div class="gold-rate-badge">
+        <span class="label">Gold Rate (22K):</span>
+        <span class="value" id="topbarRate">₹ 6,820 /g</span>
+      </div>
+      <button class="btn btn-gold" onclick="openModal('addStockModal')">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add Stock
+      </button>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- TABS -->
+    <div class="tab-bar">
+      <button class="tab active" onclick="switchTab('stock')">Stock</button>
+      <button class="tab" onclick="switchTab('goldrate')">Gold Rates</button>
+      <button class="tab" onclick="switchTab('suppliers')">Suppliers</button>
+      <button class="tab" onclick="switchTab('alerts')">Alerts <span id="alertCount" style="background:var(--red);color:#fff;font-size:10px;padding:1px 6px;border-radius:10px;margin-left:4px;">3</span></button>
     </div>
 
-    <div style="max-width: 1400px; margin: 0 auto; padding: 2rem;">
-        
-        <!-- Header -->
-        <div style="display: flex; justify-content: space-between; align-items: center; background: #6f0022; color: white; padding: 1.5rem 2rem; border-radius: 8px; margin-bottom: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-            <div>
-                <h1 style="margin: 0; font-family: 'Cormorant Garamond', serif; font-size: 2rem;">📊 Inventory Management</h1>
-                <p style="margin: 0.5rem 0 0; opacity: 0.9;">Welcome, <span id="userName">Manager</span></p>
-            </div>
-            <button onclick="logout()" style="background: white; color: #6f0022; border: none; padding: 0.75rem 1.5rem; border-radius: 4px; cursor: pointer; font-weight: 600;">Logout</button>
+    <!-- ─── STOCK TAB ─── -->
+    <div id="tab-stock" class="tab-content active">
+
+      <!-- Stats -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon" style="background:rgba(201,168,76,0.12);">💍</div>
+          <div class="stat-label">Total Items</div>
+          <div class="stat-value">247</div>
+          <div class="stat-sub up">↑ 12 added this week</div>
         </div>
-
-        <!-- Tab Navigation -->
-        <div style="display: flex; gap: 0.5rem; margin-bottom: 2rem; flex-wrap: wrap;">
-            <button class="tab-btn active" onclick="switchTab('products')">📦 Products</button>
-            <button class="tab-btn" onclick="switchTab('goldRates')">💰 Gold Rates</button>
-            <button class="tab-btn" onclick="switchTab('orders')">🛍️ Order Fulfillment</button>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:rgba(76,175,122,0.12);">✅</div>
+          <div class="stat-label">In Stock</div>
+          <div class="stat-value">198</div>
+          <div class="stat-sub">80% of inventory</div>
         </div>
-
-        <!-- Alert -->
-        <div id="alert" style="padding: 1rem; border-radius: 4px; margin-bottom: 1rem; display: none;"></div>
-
-        <!-- ===== PRODUCTS TAB ===== -->
-        <div id="productsTab">
-            <!-- Gold Rates Summary -->
-            <div style="background: linear-gradient(135deg, #e0bf63 0%, #d4a747 100%); padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                <h3 style="margin: 0 0 1rem; color: #3e2723; font-family: 'Cormorant Garamond', serif;">Current Gold Rates</h3>
-                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
-                    <div style="background: rgba(255,255,255,0.9); padding: 1rem; border-radius: 8px; text-align: center;">
-                        <h4 style="margin: 0; color: #6f0022;">18K</h4>
-                        <p style="font-size: 1.3rem; margin: 0.3rem 0; font-weight: 700; color: #3e2723;" id="rate18K">Rs. 0</p>
-                        <span style="font-size: 0.8rem; color: #666;">per gram</span>
-                    </div>
-                    <div style="background: rgba(255,255,255,0.9); padding: 1rem; border-radius: 8px; text-align: center;">
-                        <h4 style="margin: 0; color: #6f0022;">22K</h4>
-                        <p style="font-size: 1.3rem; margin: 0.3rem 0; font-weight: 700; color: #3e2723;" id="rate22K">Rs. 0</p>
-                        <span style="font-size: 0.8rem; color: #666;">per gram</span>
-                    </div>
-                    <div style="background: rgba(255,255,255,0.9); padding: 1rem; border-radius: 8px; text-align: center;">
-                        <h4 style="margin: 0; color: #6f0022;">24K</h4>
-                        <p style="font-size: 1.3rem; margin: 0.3rem 0; font-weight: 700; color: #3e2723;" id="rate24K">Rs. 0</p>
-                        <span style="font-size: 0.8rem; color: #666;">per gram</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Stats Cards -->
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
-                <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center;">
-                    <h3 style="font-size: 2.5rem; color: #6f0022; margin: 0 0 0.5rem;" id="totalItems">0</h3>
-                    <p style="margin: 0; color: #666;">Total Products</p>
-                </div>
-                <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center;">
-                    <h3 style="font-size: 2.5rem; color: #ffc107; margin: 0 0 0.5rem;" id="draftCount">0</h3>
-                    <p style="margin: 0; color: #666;">Draft (Needs Details)</p>
-                </div>
-                <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center;">
-                    <h3 style="font-size: 2.5rem; color: #28a745; margin: 0 0 0.5rem;" id="activeCount">0</h3>
-                    <p style="margin: 0; color: #666;">Active</p>
-                </div>
-                <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center;">
-                    <h3 style="font-size: 2.5rem; color: #dc3545; margin: 0 0 0.5rem;" id="lowStock">0</h3>
-                    <p style="margin: 0; color: #666;">Low Stock</p>
-                </div>
-            </div>
-
-            <!-- Filter -->
-            <div style="background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                <h2 style="margin: 0 0 1.5rem; font-family: 'Cormorant Garamond', serif;">Product Inventory</h2>
-                <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
-                    <select id="categoryFilter" onchange="loadInventory()" style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
-                        <option value="">All Categories</option>
-                        <option value="Ring">Ring</option>
-                        <option value="Necklace">Necklace</option>
-                        <option value="Bracelet">Bracelet</option>
-                        <option value="Earring">Earring</option>
-                        <option value="Pendant">Pendant</option>
-                        <option value="Chain">Chain</option>
-                        <option value="Bangles">Bangles</option>
-                        <option value="Anklet">Anklet</option>
-                    </select>
-                    <select id="statusFilter" onchange="loadInventory()" style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
-                        <option value="">All Statuses</option>
-                        <option value="Draft">Draft (Needs Details)</option>
-                        <option value="Active">Active</option>
-                    </select>
-                    <button onclick="filterLowStock()" style="padding: 0.8rem 1.2rem; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">⚠️ Low Stock</button>
-                </div>
-
-                <!-- Inventory Table -->
-                <div style="overflow-x: auto;">
-                    <table style="width: 100%; border-collapse: collapse;">
-                        <thead>
-                            <tr>
-                                <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Product</th>
-                                <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Category</th>
-                                <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Status</th>
-                                <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">SKU</th>
-                                <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Karat</th>
-                                <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Weight</th>
-                                <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Price</th>
-                                <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Stock</th>
-                                <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="inventoryTable">
-                            <tr><td colspan="9" style="padding: 2rem; text-align: center; color: #999;">Loading inventory...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:rgba(232,168,76,0.12);">⚠️</div>
+          <div class="stat-label">Low Stock</div>
+          <div class="stat-value">32</div>
+          <div class="stat-sub warn">Needs reorder</div>
         </div>
-
-        <!-- ===== GOLD RATES TAB ===== -->
-        <div id="goldRatesTab" style="display: none;">
-            <div style="background: linear-gradient(135deg, #e0bf63 0%, #d4a747 100%); padding: 2rem; border-radius: 8px; margin-bottom: 2rem;">
-                <h2 style="margin: 0 0 1.5rem; color: #3e2723; font-family: 'Cormorant Garamond', serif;">Daily Gold Rates</h2>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem;">
-                    <div style="background: rgba(255,255,255,0.95); padding: 2rem; border-radius: 8px; text-align: center;">
-                        <h3 style="margin: 0; color: #6f0022; font-size: 1.3rem;">18 Karat</h3>
-                        <p style="font-size: 2.5rem; margin: 0.5rem 0; font-weight: 700; color: #3e2723;" id="rateDisplay18K">Rs. 0</p>
-                        <p style="margin: 0; color: #666;">per gram</p>
-                    </div>
-                    <div style="background: rgba(255,255,255,0.95); padding: 2rem; border-radius: 8px; text-align: center;">
-                        <h3 style="margin: 0; color: #6f0022; font-size: 1.3rem;">22 Karat</h3>
-                        <p style="font-size: 2.5rem; margin: 0.5rem 0; font-weight: 700; color: #3e2723;" id="rateDisplay22K">Rs. 0</p>
-                        <p style="margin: 0; color: #666;">per gram</p>
-                    </div>
-                    <div style="background: rgba(255,255,255,0.95); padding: 2rem; border-radius: 8px; text-align: center;">
-                        <h3 style="margin: 0; color: #6f0022; font-size: 1.3rem;">24 Karat</h3>
-                        <p style="font-size: 2.5rem; margin: 0.5rem 0; font-weight: 700; color: #3e2723;" id="rateDisplay24K">Rs. 0</p>
-                        <p style="margin: 0; color: #666;">per gram</p>
-                    </div>
-                </div>
-                <p style="margin: 0; color: #3e2723; text-align: center; font-size: 0.9rem;">Last updated: <span id="lastUpdated">N/A</span></p>
-            </div>
-
-            <div style="background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                <h3 style="margin: 0 0 1.5rem; font-family: 'Cormorant Garamond', serif;">Update Gold Rates</h3>
-                <p style="color: #666; margin-bottom: 1.5rem;">Updating gold rates will automatically recalculate prices for all products based on their weight and karat type.</p>
-                <form id="goldRateForm">
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
-                        <div>
-                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">18K Rate (Rs./gram) *</label>
-                            <input type="number" id="goldRate18K" step="0.01" required style="width: 90%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
-                        </div>
-                        <div>
-                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">22K Rate (Rs./gram) *</label>
-                            <input type="number" id="goldRate22K" step="0.01" required style="width: 90%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
-                        </div>
-                        <div>
-                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">24K Rate (Rs./gram) *</label>
-                            <input type="number" id="goldRate24K" step="0.01" required style="width: 90%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
-                        </div>
-                    </div>
-                    <button type="submit" style="background: #6f0022; color: white; padding: 0.8rem 2rem; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">
-                        Update Rates & Recalculate Prices
-                    </button>
-                </form>
-            </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:rgba(201,76,76,0.12);">🚫</div>
+          <div class="stat-label">Out of Stock</div>
+          <div class="stat-value">17</div>
+          <div class="stat-sub down">Action required</div>
         </div>
+      </div>
 
-        <!-- ===== ORDERS TAB ===== -->
-        <div id="ordersTab" style="display: none;">
-            <div style="background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                <h2 style="margin: 0 0 1.5rem; font-family: 'Cormorant Garamond', serif;">Orders Awaiting Fulfillment</h2>
-                <p style="color: #666; margin-bottom: 1.5rem;">These orders have been sent by the Order Manager and need to be prepared for the customer.</p>
-                
-                <div id="ordersList">
-                    <div style="text-align: center; padding: 3rem; color: #999;">Loading orders...</div>
-                </div>
+      <!-- Stock Table -->
+      <div class="table-card">
+        <div class="table-header">
+          <div class="table-title">Stock Inventory</div>
+          <div class="table-actions">
+            <div class="search-box">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" placeholder="Search items..." id="stockSearch" oninput="filterTable()"/>
             </div>
+            <select class="btn btn-ghost" id="categoryFilter" onchange="filterTable()" style="padding:8px 12px;border:1px solid var(--border);">
+              <option value="">All Categories</option>
+              <option value="Ring">Ring</option>
+              <option value="Necklace">Necklace</option>
+              <option value="Bangle">Bangle</option>
+              <option value="Earring">Earring</option>
+              <option value="Pendant">Pendant</option>
+              <option value="Chain">Chain</option>
+            </select>
+            <button class="btn btn-outline" onclick="exportCSV()">
+              <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Export
+            </button>
+          </div>
         </div>
+        <table id="stockTable">
+          <thead>
+            <tr>
+              <th>Serial No.</th>
+              <th>Item Name</th>
+              <th>Category</th>
+              <th>Karat</th>
+              <th>Weight (g)</th>
+              <th>Qty</th>
+              <th>Status</th>
+              <th>Supplier</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="stockBody"></tbody>
+        </table>
+      </div>
+
     </div>
 
-    <!-- Edit Product Modal -->
-    <div id="editModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000;">
-        <div style="background: white; padding: 2rem; border-radius: 8px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto;">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 1.5rem;">
-                <h3 style="margin: 0;">Update Product Details</h3>
-                <button onclick="closeEditModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+    <!-- ─── GOLD RATE TAB ─── -->
+    <div id="tab-goldrate" class="tab-content">
+      <div class="two-col">
+        <div>
+          <div class="gold-rate-card">
+            <div class="card-title">Current Gold Rate</div>
+            <div class="rate-display">
+              <span class="currency">₹</span>
+              <span class="amount" id="currentRateDisplay">6,820</span>
+              <span class="per">per gram (22K)</span>
             </div>
-            
-            <!-- Product Info (read-only) -->
-            <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
-                <p style="margin: 0.25rem 0;"><strong>Product:</strong> <span id="editProductName">-</span></p>
-                <p style="margin: 0.25rem 0;"><strong>Category:</strong> <span id="editProductCategory">-</span></p>
-                <p style="margin: 0.25rem 0;"><strong>Description:</strong> <span id="editProductDesc">-</span></p>
+            <div style="display:flex;gap:12px;margin-bottom:20px;font-size:13px;color:var(--text-muted);">
+              <span>18K: <strong style="color:var(--text);" id="rate18k">₹ 5,578</strong></span>
+              <span>24K: <strong style="color:var(--text);" id="rate24k">₹ 7,440</strong></span>
             </div>
+            <div style="display:flex;gap:10px;">
+              <div style="flex:1;">
+                <label>Update Today's Rate (22K, ₹/g)</label>
+                <input type="number" id="newGoldRate" placeholder="e.g. 6820" />
+              </div>
+              <div style="display:flex;align-items:flex-end;">
+                <button class="btn btn-gold" onclick="updateGoldRate()">Update Rate</button>
+              </div>
+            </div>
+          </div>
 
-            <form id="editProductForm">
-                <input type="hidden" id="editProductId">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                    <div>
-                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Karat Type *</label>
-                        <select id="editKType" required style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
-                            <option value="">Select</option>
-                            <option value="18K">18K</option>
-                            <option value="22K">22K</option>
-                            <option value="24K">24K</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Karat Rate (Rs./g)</label>
-                        <input type="number" id="editKaratRate" step="0.01" readonly style="width: 90%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px; background: #f0f0f0;">
-                        <p style="font-size: 0.75rem; color: #888; margin: 0.25rem 0 0;">Auto-filled from gold rates</p>
-                    </div>
-                </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                    <div>
-                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Weight (grams) *</label>
-                        <input type="number" id="editWeight" step="0.01" required style="width: 90%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
-                    </div>
-                    <div>
-                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Calculated Price</label>
-                        <input type="text" id="editPrice" readonly style="width: 90%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px; background: #f0f0f0; font-weight: 700; color: #6f0022;">
-                        <p style="font-size: 0.75rem; color: #888; margin: 0.25rem 0 0;">Weight × Karat Rate</p>
-                    </div>
-                </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                    <div>
-                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">SKU *</label>
-                        <input type="text" id="editSku" required style="width: 90%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
-                    </div>
-                    <div>
-                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Stock Quantity *</label>
-                        <input type="number" id="editStockQuantity" min="0" required style="width: 90%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
-                    </div>
-                </div>
-                <button type="submit" style="width: 100%; background: #6f0022; color: white; padding: 0.8rem; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">
-                    Save Inventory Details
-                </button>
-            </form>
+          <div class="table-card">
+            <div class="table-header">
+              <div class="table-title">Rate History</div>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>22K Rate (₹/g)</th>
+                  <th>18K Rate (₹/g)</th>
+                  <th>24K Rate (₹/g)</th>
+                  <th>Change</th>
+                </tr>
+              </thead>
+              <tbody id="rateHistoryBody"></tbody>
+            </table>
+          </div>
         </div>
+
+        <div>
+          <div class="gold-rate-card">
+            <div class="card-title">Quick Calculator</div>
+            <div style="display:flex;flex-direction:column;gap:12px;">
+              <div>
+                <label>Weight (grams)</label>
+                <input type="number" id="calcWeight" placeholder="Enter weight" oninput="calculate()"/>
+              </div>
+              <div>
+                <label>Karat</label>
+                <select id="calcKarat" onchange="calculate()">
+                  <option value="22">22K</option>
+                  <option value="18">18K</option>
+                  <option value="24">24K</option>
+                </select>
+              </div>
+              <div>
+                <label>Making Charges (%)</label>
+                <input type="number" id="calcMaking" value="12" oninput="calculate()"/>
+              </div>
+              <div style="background:var(--bg3);border-radius:8px;padding:16px;border:1px solid var(--border);">
+                <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.08em;">Estimated Price</div>
+                <div style="font-family:'Cormorant Garamond',serif;font-size:30px;color:var(--gold);" id="calcResult">₹ 0</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <style>
-        .tab-btn {
-            padding: 0.8rem 1.5rem;
-            border: 2px solid #6f0022;
-            background: white;
-            color: #6f0022;
-            cursor: pointer;
-            border-radius: 4px;
-            font-weight: 600;
-            font-size: 0.95rem;
-            transition: all 0.3s;
-        }
-        .tab-btn:hover { background: #f5f5f5; }
-        .tab-btn.active { background: #6f0022; color: white; }
-    </style>
+    <!-- ─── SUPPLIERS TAB ─── -->
+    <div id="tab-suppliers" class="tab-content">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+        <div></div>
+        <button class="btn btn-gold" onclick="openModal('addSupplierModal')">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add Supplier
+        </button>
+      </div>
 
-    <script type="module">
-        import authManager from '/src/auth.js';
+      <div class="table-card">
+        <div class="table-header">
+          <div class="table-title">Supplier Directory</div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Supplier ID</th>
+              <th>Name</th>
+              <th>Contact</th>
+              <th>Email</th>
+              <th>Location</th>
+              <th>Items Supplied</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="supplierBody"></tbody>
+        </table>
+      </div>
+    </div>
 
-        let inventory = [];
-        let goldRates = { '18K': 0, '22K': 0, '24K': 0, lastUpdated: null };
-        let pendingOrders = [];
+    <!-- ─── ALERTS TAB ─── -->
+    <div id="tab-alerts" class="tab-content">
+      <div style="margin-bottom:20px;font-size:14px;color:var(--text-muted);">
+        Real-time alerts for low stock and out-of-stock items.
+      </div>
+      <div id="alertsContainer"></div>
+    </div>
 
-        async function checkAuth() {
-            const user = await authManager.checkStaffAuth('Inventory');
-            if (!user) return false;
-            if (user.needsApproval) {
-                document.getElementById('pendingOverlay').style.display = 'flex';
-                return false;
-            }
-            document.getElementById('userName').textContent = user.fullName || user.email;
-            return true;
-        }
+  </div><!-- end .content -->
+</main>
 
-        // ===== TAB SWITCHING =====
-        function switchTab(tab) {
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            event.target.classList.add('active');
-            document.getElementById('productsTab').style.display = tab === 'products' ? 'block' : 'none';
-            document.getElementById('goldRatesTab').style.display = tab === 'goldRates' ? 'block' : 'none';
-            document.getElementById('ordersTab').style.display = tab === 'orders' ? 'block' : 'none';
-            
-            if (tab === 'orders') loadPendingOrders();
-        }
+<!-- ─── MODAL: Add Stock ─── -->
+<div class="modal-overlay" id="addStockModal">
+  <div class="modal">
+    <div class="modal-title">✦ Add New Stock Entry</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Item Name *</label>
+        <input type="text" id="si_name" placeholder="e.g. Gold Ring Floral"/>
+      </div>
+      <div class="form-group">
+        <label>Category *</label>
+        <select id="si_cat">
+          <option value="">Select...</option>
+          <option>Ring</option>
+          <option>Necklace</option>
+          <option>Bangle</option>
+          <option>Earring</option>
+          <option>Pendant</option>
+          <option>Chain</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Karat</label>
+        <select id="si_karat">
+          <option>22K</option>
+          <option>18K</option>
+          <option>24K</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Weight (g) *</label>
+        <input type="number" id="si_weight" placeholder="e.g. 5.4"/>
+      </div>
+      <div class="form-group">
+        <label>Quantity *</label>
+        <input type="number" id="si_qty" placeholder="e.g. 10"/>
+      </div>
+      <div class="form-group">
+        <label>Supplier</label>
+        <select id="si_supplier">
+          <option value="">Select...</option>
+          <option>Rajan Gold Suppliers</option>
+          <option>Chennai Gold Traders</option>
+          <option>Sri Balaji Jewels</option>
+        </select>
+      </div>
+      <div class="form-group full">
+        <label>Notes</label>
+        <textarea id="si_notes" placeholder="Any additional notes..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('addStockModal')">Cancel</button>
+      <button class="btn btn-gold" onclick="addStock()">Add Stock Entry</button>
+    </div>
+  </div>
+</div>
 
-        // ===== GOLD RATES =====
-        async function loadGoldRates() {
-            try {
-                const res = await fetch('/api/inventory/gold-rates', { credentials: 'same-origin' });
-                if (res.ok) {
-                    goldRates = await res.json();
-                    document.getElementById('rate18K').textContent = 'Rs. ' + (goldRates['18K'] || 0).toLocaleString();
-                    document.getElementById('rate22K').textContent = 'Rs. ' + (goldRates['22K'] || 0).toLocaleString();
-                    document.getElementById('rate24K').textContent = 'Rs. ' + (goldRates['24K'] || 0).toLocaleString();
-                    document.getElementById('rateDisplay18K').textContent = 'Rs. ' + (goldRates['18K'] || 0).toLocaleString();
-                    document.getElementById('rateDisplay22K').textContent = 'Rs. ' + (goldRates['22K'] || 0).toLocaleString();
-                    document.getElementById('rateDisplay24K').textContent = 'Rs. ' + (goldRates['24K'] || 0).toLocaleString();
-                    document.getElementById('lastUpdated').textContent = goldRates.lastUpdated ? new Date(goldRates.lastUpdated).toLocaleString() : 'Never';
-                    document.getElementById('goldRate18K').value = goldRates['18K'] || '';
-                    document.getElementById('goldRate22K').value = goldRates['22K'] || '';
-                    document.getElementById('goldRate24K').value = goldRates['24K'] || '';
-                }
-            } catch (e) { console.error('Error loading gold rates'); }
-        }
+<!-- ─── MODAL: Edit Stock ─── -->
+<div class="modal-overlay" id="editStockModal">
+  <div class="modal">
+    <div class="modal-title">✦ Edit Stock Entry</div>
+    <input type="hidden" id="edit_idx"/>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Item Name</label>
+        <input type="text" id="edit_name"/>
+      </div>
+      <div class="form-group">
+        <label>Category</label>
+        <select id="edit_cat">
+          <option>Ring</option><option>Necklace</option><option>Bangle</option>
+          <option>Earring</option><option>Pendant</option><option>Chain</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Karat</label>
+        <select id="edit_karat">
+          <option>22K</option><option>18K</option><option>24K</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Weight (g)</label>
+        <input type="number" id="edit_weight"/>
+      </div>
+      <div class="form-group">
+        <label>Quantity</label>
+        <input type="number" id="edit_qty"/>
+      </div>
+      <div class="form-group">
+        <label>Supplier</label>
+        <input type="text" id="edit_supplier"/>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('editStockModal')">Cancel</button>
+      <button class="btn btn-gold" onclick="saveEdit()">Save Changes</button>
+    </div>
+  </div>
+</div>
 
-        document.getElementById('goldRateForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const data = {
-                '18K': parseFloat(document.getElementById('goldRate18K').value),
-                '22K': parseFloat(document.getElementById('goldRate22K').value),
-                '24K': parseFloat(document.getElementById('goldRate24K').value)
-            };
-            try {
-                const res = await fetch('/api/inventory/gold-rates', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'same-origin',
-                    body: JSON.stringify(data)
-                });
-                if (!res.ok) throw new Error();
-                const result = await res.json();
-                showAlert(`Gold rates updated! ${result.productsUpdated} product prices recalculated.`, 'success');
-                loadGoldRates();
-                loadInventory();
-            } catch (e) { showAlert('Error updating rates', 'error'); }
-        });
+<!-- ─── MODAL: Add Supplier ─── -->
+<div class="modal-overlay" id="addSupplierModal">
+  <div class="modal">
+    <div class="modal-title">✦ Add Supplier</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Supplier Name *</label>
+        <input type="text" id="sup_name" placeholder="Company name"/>
+      </div>
+      <div class="form-group">
+        <label>Contact No. *</label>
+        <input type="text" id="sup_contact" placeholder="+91 XXXXX XXXXX"/>
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="sup_email" placeholder="email@example.com"/>
+      </div>
+      <div class="form-group">
+        <label>Location</label>
+        <input type="text" id="sup_location" placeholder="City, State"/>
+      </div>
+      <div class="form-group full">
+        <label>Items Supplied</label>
+        <input type="text" id="sup_items" placeholder="e.g. Rings, Necklaces"/>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('addSupplierModal')">Cancel</button>
+      <button class="btn btn-gold" onclick="addSupplier()">Add Supplier</button>
+    </div>
+  </div>
+</div>
 
-        // ===== INVENTORY =====
-        async function loadInventory() {
-            try {
-                let url = '/api/inventory/products?';
-                const cat = document.getElementById('categoryFilter').value;
-                const status = document.getElementById('statusFilter').value;
-                if (cat) url += `category=${cat}&`;
-                if (status) url += `status=${status}&`;
-                
-                const res = await fetch(url, { credentials: 'same-origin' });
-                if (!res.ok) throw new Error();
-                inventory = await res.json();
-                updateStats();
-                displayInventory();
-            } catch (e) { showAlert('Error loading inventory', 'error'); }
-        }
+<!-- ─── TOAST ─── -->
+<div class="toast" id="toast">
+  <span id="toastMsg"></span>
+</div>
 
-        function updateStats() {
-            document.getElementById('totalItems').textContent = inventory.length;
-            document.getElementById('draftCount').textContent = inventory.filter(i => i.productStatus === 'Draft').length;
-            document.getElementById('activeCount').textContent = inventory.filter(i => i.productStatus === 'Active').length;
-            document.getElementById('lowStock').textContent = inventory.filter(i => i.stockQuantity > 0 && i.stockQuantity < 5).length;
-        }
+<script>
+// ─── DATA ───
+let stockData = [
+  { serial: 'SJI-001', name: 'Floral Gold Ring', cat: 'Ring', karat: '22K', weight: 4.2, qty: 12, supplier: 'Rajan Gold Suppliers' },
+  { serial: 'SJI-002', name: 'Bridal Necklace Set', cat: 'Necklace', karat: '22K', weight: 42.5, qty: 3, supplier: 'Chennai Gold Traders' },
+  { serial: 'SJI-003', name: 'Kada Bangle Pair', cat: 'Bangle', karat: '22K', weight: 28.0, qty: 0, supplier: 'Sri Balaji Jewels' },
+  { serial: 'SJI-004', name: 'Jhumka Earrings', cat: 'Earring', karat: '18K', weight: 6.8, qty: 8, supplier: 'Rajan Gold Suppliers' },
+  { serial: 'SJI-005', name: 'Lakshmi Pendant', cat: 'Pendant', karat: '22K', weight: 3.5, qty: 2, supplier: 'Chennai Gold Traders' },
+  { serial: 'SJI-006', name: 'Singapore Chain', cat: 'Chain', karat: '22K', weight: 10.2, qty: 5, supplier: 'Sri Balaji Jewels' },
+  { serial: 'SJI-007', name: 'Diamond-cut Ring', cat: 'Ring', karat: '18K', weight: 3.8, qty: 0, supplier: 'Rajan Gold Suppliers' },
+  { serial: 'SJI-008', name: 'Antique Necklace', cat: 'Necklace', karat: '22K', weight: 35.0, qty: 1, supplier: 'Sri Balaji Jewels' },
+];
 
-        function displayInventory() {
-            const tbody = document.getElementById('inventoryTable');
-            if (inventory.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="9" style="padding: 2rem; text-align: center; color: #999;">No products found</td></tr>';
-                return;
-            }
-            tbody.innerHTML = inventory.map(item => {
-                const isDraft = item.productStatus === 'Draft';
-                const isLow = item.stockQuantity > 0 && item.stockQuantity < 5;
-                return `
-                <tr style="background: ${isDraft ? '#fff8e1' : isLow ? '#fff3cd' : 'white'};">
-                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">
-                        <div style="display: flex; align-items: center; gap: 0.5rem;">
-                            <img src="${item.image || '/placeholder.jpg'}" alt="${item.name}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;">
-                            <span>${item.name}</span>
-                        </div>
-                    </td>
-                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">${item.category}</td>
-                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">
-                        <span style="padding: 0.3rem 0.7rem; border-radius: 20px; font-size: 0.8rem; background: ${isDraft ? '#fff3cd' : '#d4edda'}; color: ${isDraft ? '#856404' : '#155724'};">
-                            ${item.productStatus || 'Draft'}
-                        </span>
-                    </td>
-                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">${item.sku || '<span style="color:#dc3545;">Not set</span>'}</td>
-                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">${item.kType || '<span style="color:#dc3545;">Not set</span>'}</td>
-                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">${item.weight ? item.weight + 'g' : '<span style="color:#dc3545;">Not set</span>'}</td>
-                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">${item.price > 0 ? 'Rs. ' + item.price.toLocaleString() : '<span style="color:#999;">-</span>'}</td>
-                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">
-                        <span style="font-weight: 600; color: ${isLow ? '#dc3545' : item.stockQuantity > 0 ? '#28a745' : '#999'};">
-                            ${item.stockQuantity}${isLow ? ' ⚠️' : ''}
-                        </span>
-                    </td>
-                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">
-                        <button onclick="openEditModal('${item._id}')" style="padding: 0.5rem 1rem; background: ${isDraft ? '#ffc107' : '#17a2b8'}; color: ${isDraft ? '#333' : 'white'}; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">
-                            ${isDraft ? '✏️ Add Details' : '✏️ Edit'}
-                        </button>
-                    </td>
-                </tr>`;
-            }).join('');
-        }
+let supplierData = [
+  { id: 'SUP-001', name: 'Rajan Gold Suppliers', contact: '+91 98400 12345', email: 'rajan@goldsupp.in', location: 'Chennai, TN', items: 'Rings, Earrings' },
+  { id: 'SUP-002', name: 'Chennai Gold Traders', contact: '+91 94440 67890', email: 'cgt@goldtrade.in', location: 'Chennai, TN', items: 'Necklaces, Pendants' },
+  { id: 'SUP-003', name: 'Sri Balaji Jewels', contact: '+91 90000 11223', email: 'balaji@sbjewels.in', location: 'Coimbatore, TN', items: 'Bangles, Chains' },
+];
 
-        function filterLowStock() {
-            document.getElementById('statusFilter').value = '';
-            document.getElementById('categoryFilter').value = '';
-            loadInventory().then(() => {
-                inventory = inventory.filter(i => i.stockQuantity > 0 && i.stockQuantity < 5);
-                displayInventory();
-            });
-        }
+let goldRates = [
+  { date: '14 Mar 2026', r22: 6820, r18: 5578, r24: 7440, change: +80 },
+  { date: '13 Mar 2026', r22: 6740, r18: 5516, r24: 7352, change: -20 },
+  { date: '12 Mar 2026', r22: 6760, r18: 5532, r24: 7376, change: +50 },
+  { date: '11 Mar 2026', r22: 6710, r18: 5495, r24: 7320, change: -30 },
+  { date: '10 Mar 2026', r22: 6740, r18: 5516, r24: 7352, change: +10 },
+];
 
-        // ===== EDIT PRODUCT MODAL =====
-        function openEditModal(id) {
-            const item = inventory.find(i => i._id === id);
-            if (!item) return;
-            
-            document.getElementById('editProductId').value = id;
-            document.getElementById('editProductName').textContent = item.name;
-            document.getElementById('editProductCategory').textContent = item.category;
-            document.getElementById('editProductDesc').textContent = item.description || '-';
-            document.getElementById('editKType').value = item.kType || '';
-            document.getElementById('editKaratRate').value = item.karatRate || '';
-            document.getElementById('editWeight').value = item.weight || '';
-            document.getElementById('editSku').value = item.sku || '';
-            document.getElementById('editStockQuantity').value = item.stockQuantity || 0;
-            
-            updatePricePreview();
-            document.getElementById('editModal').style.display = 'flex';
-        }
+let serialCounter = 9;
 
-        function closeEditModal() {
-            document.getElementById('editModal').style.display = 'none';
-        }
+// ─── RENDER STOCK ───
+function getStatus(qty) {
+  if (qty === 0) return { label: 'Out of Stock', cls: 'out' };
+  if (qty <= 3)  return { label: 'Low Stock', cls: 'low' };
+  return { label: 'In Stock', cls: 'in-stock' };
+}
 
-        document.getElementById('editKType').addEventListener('change', function() {
-            const kType = this.value;
-            if (kType && goldRates[kType]) {
-                document.getElementById('editKaratRate').value = goldRates[kType];
-            } else {
-                document.getElementById('editKaratRate').value = '';
-            }
-            updatePricePreview();
-        });
+function renderStock(data) {
+  const body = document.getElementById('stockBody');
+  body.innerHTML = data.map((item, i) => {
+    const st = getStatus(item.qty);
+    return `<tr>
+      <td><span class="serial-badge">${item.serial}</span></td>
+      <td>${item.name}</td>
+      <td>${item.cat}</td>
+      <td>${item.karat}</td>
+      <td>${item.weight}g</td>
+      <td><strong>${item.qty}</strong></td>
+      <td><span class="status-badge ${st.cls}"><span class="status-dot"></span>${st.label}</span></td>
+      <td>${item.supplier}</td>
+      <td>
+        <div class="row-actions">
+          <button class="icon-btn" title="Edit" onclick="editStock(${i})">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
+          <button class="icon-btn danger" title="Remove" onclick="deleteStock(${i})">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+          </button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
 
-        document.getElementById('editWeight').addEventListener('input', updatePricePreview);
+function filterTable() {
+  const q = document.getElementById('stockSearch').value.toLowerCase();
+  const cat = document.getElementById('categoryFilter').value;
+  const filtered = stockData.filter(item =>
+    (item.name.toLowerCase().includes(q) || item.serial.toLowerCase().includes(q)) &&
+    (cat === '' || item.cat === cat)
+  );
+  renderStock(filtered);
+}
 
-        function updatePricePreview() {
-            const weight = parseFloat(document.getElementById('editWeight').value) || 0;
-            const rate = parseFloat(document.getElementById('editKaratRate').value) || 0;
-            const price = weight * rate;
-            document.getElementById('editPrice').value = price > 0 ? 'Rs. ' + price.toLocaleString() : '-';
-        }
+// ─── ADD STOCK ───
+function addStock() {
+  const name = document.getElementById('si_name').value.trim();
+  const cat  = document.getElementById('si_cat').value;
+  const karat= document.getElementById('si_karat').value;
+  const weight = parseFloat(document.getElementById('si_weight').value);
+  const qty  = parseInt(document.getElementById('si_qty').value);
+  const supplier = document.getElementById('si_supplier').value;
 
-        document.getElementById('editProductForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const id = document.getElementById('editProductId').value;
-            const data = {
-                kType: document.getElementById('editKType').value,
-                karatRate: parseFloat(document.getElementById('editKaratRate').value),
-                weight: parseFloat(document.getElementById('editWeight').value),
-                sku: document.getElementById('editSku').value,
-                stockQuantity: parseInt(document.getElementById('editStockQuantity').value)
-            };
+  if (!name || !cat || isNaN(weight) || isNaN(qty)) {
+    showToast('Please fill required fields.', 'error'); return;
+  }
 
-            try {
-                const res = await fetch(`/api/inventory/products/${id}`, {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'same-origin',
-                    body: JSON.stringify(data)
-                });
-                if (!res.ok) { const err = await res.json(); throw new Error(err.message); }
-                showAlert('Product inventory details updated!', 'success');
-                closeEditModal();
-                loadInventory();
-            } catch (e) { showAlert(e.message || 'Error updating product', 'error'); }
-        });
+  const serial = `SJI-${String(serialCounter).padStart(3,'0')}`;
+  serialCounter++;
+  stockData.push({ serial, name, cat, karat, weight, qty, supplier });
+  renderStock(stockData);
+  closeModal('addStockModal');
+  document.getElementById('si_name').value = '';
+  document.getElementById('si_weight').value = '';
+  document.getElementById('si_qty').value = '';
+  showToast(`✓ Stock entry ${serial} added.`, 'success');
+  updateAlerts();
+}
 
-        // ===== ORDER FULFILLMENT =====
-        async function loadPendingOrders() {
-            try {
-                const res = await fetch('/api/inventory/orders', { credentials: 'same-origin' });
-                if (!res.ok) throw new Error();
-                pendingOrders = await res.json();
-                displayPendingOrders();
-            } catch (e) { 
-                document.getElementById('ordersList').innerHTML = '<div style="text-align: center; padding: 3rem; color: #999;">Error loading orders</div>';
-            }
-        }
+// ─── EDIT STOCK ───
+function editStock(i) {
+  const item = stockData[i];
+  document.getElementById('edit_idx').value = i;
+  document.getElementById('edit_name').value = item.name;
+  document.getElementById('edit_cat').value = item.cat;
+  document.getElementById('edit_karat').value = item.karat;
+  document.getElementById('edit_weight').value = item.weight;
+  document.getElementById('edit_qty').value = item.qty;
+  document.getElementById('edit_supplier').value = item.supplier;
+  openModal('editStockModal');
+}
 
-        function displayPendingOrders() {
-            const container = document.getElementById('ordersList');
-            if (pendingOrders.length === 0) {
-                container.innerHTML = '<div style="text-align: center; padding: 3rem; color: #999;">✅ No orders awaiting fulfillment</div>';
-                return;
-            }
-            container.innerHTML = pendingOrders.map(order => `
-                <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 8px; margin-bottom: 1rem; border-left: 4px solid ${order.status === 'Preparing' ? '#17a2b8' : '#ffc107'};">
-                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
-                        <div>
-                            <h3 style="margin: 0; color: #6f0022;">Order #${order.orderNumber}</h3>
-                            <p style="color: #666; margin: 0.25rem 0;">Customer: ${order.customerName} (${order.customerEmail})</p>
-                            <p style="color: #666; margin: 0.25rem 0;">Date: ${new Date(order.createdAt).toLocaleDateString()}</p>
-                        </div>
-                        <div style="text-align: right;">
-                            <span style="display: inline-block; padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.85rem; background: ${order.status === 'Preparing' ? '#d1ecf1' : '#fff3cd'}; color: ${order.status === 'Preparing' ? '#0c5460' : '#856404'};">
-                                ${order.status}
-                            </span>
-                            <p style="font-size: 1.2rem; font-weight: 700; margin: 0.5rem 0 0; color: #6f0022;">Rs. ${order.total.toLocaleString()}</p>
-                        </div>
-                    </div>
-                    <div style="margin-bottom: 1rem;">
-                        <strong>Items:</strong>
-                        <ul style="margin: 0.5rem 0; padding-left: 1.5rem;">
-                            ${order.items.map(item => `<li>${item.name} x ${item.quantity} (Rs. ${item.price.toLocaleString()})</li>`).join('')}
-                        </ul>
-                    </div>
-                    <div style="display: flex; gap: 1rem;">
-                        ${order.status === 'Confirmed' ? `
-                            <button onclick="acceptOrder('${order._id}')" style="padding: 0.6rem 1.5rem; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">
-                                ✅ Accept & Start Preparing
-                            </button>
-                        ` : ''}
-                        ${order.status === 'Preparing' ? `
-                            <button onclick="markReady('${order._id}')" style="padding: 0.6rem 1.5rem; background: #17a2b8; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">
-                                📦 Mark Ready for Collection
-                            </button>
-                        ` : ''}
-                    </div>
-                </div>
-            `).join('');
-        }
+function saveEdit() {
+  const i = parseInt(document.getElementById('edit_idx').value);
+  stockData[i].name = document.getElementById('edit_name').value;
+  stockData[i].cat  = document.getElementById('edit_cat').value;
+  stockData[i].karat= document.getElementById('edit_karat').value;
+  stockData[i].weight= parseFloat(document.getElementById('edit_weight').value);
+  stockData[i].qty  = parseInt(document.getElementById('edit_qty').value);
+  stockData[i].supplier = document.getElementById('edit_supplier').value;
+  renderStock(stockData);
+  closeModal('editStockModal');
+  showToast('✓ Stock entry updated.', 'success');
+  updateAlerts();
+}
 
-        async function acceptOrder(id) {
-            if (!confirm('Accept this order for preparation?')) return;
-            try {
-                const res = await fetch(`/api/inventory/orders/${id}/accept`, {
-                    method: 'PATCH',
-                    credentials: 'same-origin'
-                });
-                if (!res.ok) throw new Error();
-                showAlert('Order accepted! Customer has been notified.', 'success');
-                loadPendingOrders();
-            } catch (e) { showAlert('Error accepting order', 'error'); }
-        }
+// ─── DELETE STOCK ───
+function deleteStock(i) {
+  if (!confirm(`Remove "${stockData[i].name}" from inventory?`)) return;
+  stockData.splice(i, 1);
+  renderStock(stockData);
+  showToast('✓ Stock entry removed.', 'success');
+  updateAlerts();
+}
 
-        async function markReady(id) {
-            if (!confirm('Mark this order as ready for collection? Customer will be notified via email.')) return;
-            try {
-                const res = await fetch(`/api/inventory/orders/${id}/ready`, {
-                    method: 'PATCH',
-                    credentials: 'same-origin'
-                });
-                if (!res.ok) throw new Error();
-                showAlert('Order marked as ready! Customer has been notified to collect from shop.', 'success');
-                loadPendingOrders();
-            } catch (e) { showAlert('Error updating order', 'error'); }
-        }
+// ─── GOLD RATE ───
+function renderGoldRates() {
+  const body = document.getElementById('rateHistoryBody');
+  body.innerHTML = goldRates.map(r => {
+    const chg = r.change >= 0
+      ? `<span style="color:var(--green)">↑ +${r.change}</span>`
+      : `<span style="color:var(--red)">↓ ${r.change}</span>`;
+    return `<tr>
+      <td>${r.date}</td>
+      <td>₹ ${r.r22.toLocaleString()}</td>
+      <td>₹ ${r.r18.toLocaleString()}</td>
+      <td>₹ ${r.r24.toLocaleString()}</td>
+      <td>${chg}</td>
+    </tr>`;
+  }).join('');
+}
 
-        // ===== UTILITIES =====
-        function showAlert(msg, type) {
-            const alert = document.getElementById('alert');
-            alert.textContent = msg;
-            alert.style.display = 'block';
-            alert.style.background = type === 'success' ? '#d4edda' : '#f8d7da';
-            alert.style.color = type === 'success' ? '#155724' : '#721c24';
-            alert.style.border = `1px solid ${type === 'success' ? '#c3e6cb' : '#f5c6cb'}`;
-            setTimeout(() => alert.style.display = 'none', 5000);
-        }
+function updateGoldRate() {
+  const val = parseFloat(document.getElementById('newGoldRate').value);
+  if (!val || val < 1000) { showToast('Enter a valid gold rate.', 'error'); return; }
+  const prev = goldRates[0].r22;
+  const r18 = Math.round(val * 0.818);
+  const r24 = Math.round(val * 1.091);
+  goldRates.unshift({
+    date: new Date().toLocaleDateString('en-IN', {day:'2-digit',month:'short',year:'numeric'}),
+    r22: val, r18, r24,
+    change: val - prev
+  });
+  document.getElementById('currentRateDisplay').textContent = val.toLocaleString();
+  document.getElementById('rate18k').textContent = `₹ ${r18.toLocaleString()}`;
+  document.getElementById('rate24k').textContent = `₹ ${r24.toLocaleString()}`;
+  document.getElementById('topbarRate').textContent = `₹ ${val.toLocaleString()} /g`;
+  renderGoldRates();
+  document.getElementById('newGoldRate').value = '';
+  showToast('✓ Gold rate updated for today.', 'success');
+}
 
-        function logout() { authManager.logout(); }
+function calculate() {
+  const w = parseFloat(document.getElementById('calcWeight').value) || 0;
+  const k = document.getElementById('calcKarat').value;
+  const making = parseFloat(document.getElementById('calcMaking').value) || 0;
+  const baseRate = goldRates[0].r22;
+  let rate = k === '22' ? baseRate : k === '18' ? Math.round(baseRate*0.818) : Math.round(baseRate*1.091);
+  const base = w * rate;
+  const total = base + (base * making / 100);
+  document.getElementById('calcResult').textContent = `₹ ${Math.round(total).toLocaleString()}`;
+}
 
-        // Make functions available globally for onclick/onchange handlers
-        window.logout = logout;
-        window.switchTab = switchTab;
-        window.openEditModal = openEditModal;
-        window.closeEditModal = closeEditModal;
-        window.filterLowStock = filterLowStock;
-        window.loadInventory = loadInventory;
-        window.acceptOrder = acceptOrder;
-        window.markReady = markReady;
+// ─── SUPPLIERS ───
+function renderSuppliers() {
+  const body = document.getElementById('supplierBody');
+  body.innerHTML = supplierData.map((s, i) => `<tr>
+    <td><span class="serial-badge">${s.id}</span></td>
+    <td><strong>${s.name}</strong></td>
+    <td>${s.contact}</td>
+    <td>${s.email}</td>
+    <td>${s.location}</td>
+    <td>${s.items}</td>
+    <td>
+      <div class="row-actions">
+        <button class="icon-btn" title="Edit" onclick="editSupplier(${i})">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
+        <button class="icon-btn danger" title="Remove" onclick="deleteSupplier(${i})">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+        </button>
+      </div>
+    </td>
+  </tr>`).join('');
+}
 
-        (async () => {
-            const auth = await checkAuth();
-            if (auth) {
-                loadGoldRates();
-                loadInventory();
-            }
-        })();
-    </script>
+function addSupplier() {
+  const name = document.getElementById('sup_name').value.trim();
+  const contact = document.getElementById('sup_contact').value.trim();
+  if (!name || !contact) { showToast('Name and contact are required.', 'error'); return; }
+  const id = `SUP-${String(supplierData.length + 1).padStart(3,'0')}`;
+  supplierData.push({
+    id, name, contact,
+    email: document.getElementById('sup_email').value || '-',
+    location: document.getElementById('sup_location').value || '-',
+    items: document.getElementById('sup_items').value || '-'
+  });
+  renderSuppliers();
+  closeModal('addSupplierModal');
+  showToast('✓ Supplier added.', 'success');
+  ['sup_name','sup_contact','sup_email','sup_location','sup_items'].forEach(id => document.getElementById(id).value = '');
+}
+
+function editSupplier(i) {
+  const s = supplierData[i];
+  const name = prompt('Supplier Name:', s.name);
+  if (!name) return;
+  const contact = prompt('Contact:', s.contact);
+  const email = prompt('Email:', s.email);
+  const location = prompt('Location:', s.location);
+  const items = prompt('Items Supplied:', s.items);
+  supplierData[i] = { ...s, name: name||s.name, contact: contact||s.contact, email: email||s.email, location: location||s.location, items: items||s.items };
+  renderSuppliers();
+  showToast('✓ Supplier updated.', 'success');
+}
+
+function deleteSupplier(i) {
+  if (!confirm(`Remove supplier "${supplierData[i].name}"?`)) return;
+  supplierData.splice(i, 1);
+  renderSuppliers();
+  showToast('✓ Supplier removed.', 'success');
+}
+
+// ─── ALERTS ───
+function updateAlerts() {
+  const lowItems  = stockData.filter(s => s.qty > 0 && s.qty <= 3);
+  const outItems  = stockData.filter(s => s.qty === 0);
+  const container = document.getElementById('alertsContainer');
+  let html = '';
+
+  outItems.forEach(item => {
+    html += `<div class="alert-item danger">
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+      <span class="alert-msg"><strong>${item.name}</strong> (${item.serial}) — OUT OF STOCK. Please reorder immediately.</span>
+      <span class="alert-time">Today</span>
+    </div>`;
+  });
+
+  lowItems.forEach(item => {
+    html += `<div class="alert-item warning">
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <span class="alert-msg"><strong>${item.name}</strong> (${item.serial}) — Only <strong>${item.qty}</strong> unit(s) remaining. Consider restocking.</span>
+      <span class="alert-time">Today</span>
+    </div>`;
+  });
+
+  if (!html) html = `<div style="padding:30px;text-align:center;color:var(--text-muted);font-size:14px;">✓ All stock levels are healthy.</div>`;
+  container.innerHTML = html;
+  document.getElementById('alertCount').textContent = outItems.length + lowItems.length;
+}
+
+// ─── EXPORT ───
+function exportCSV() {
+  const headers = ['Serial','Name','Category','Karat','Weight(g)','Qty','Status','Supplier'];
+  const rows = stockData.map(s => [s.serial, s.name, s.cat, s.karat, s.weight, s.qty, getStatus(s.qty).label, s.supplier]);
+  const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv,' + encodeURIComponent(csv);
+  a.download = 'inventory_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+  showToast('✓ CSV exported.', 'success');
+}
+
+// ─── TABS ───
+function switchTab(name) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// ─── MODAL ───
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(o => {
+  o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); });
+});
+
+// ─── TOAST ───
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  t.className = `toast ${type} show`;
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ─── INIT ───
+renderStock(stockData);
+renderGoldRates();
+renderSuppliers();
+updateAlerts();
+</script>
 </body>
 </html>
