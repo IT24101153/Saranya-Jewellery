@@ -16,7 +16,7 @@
         </div>
 
         <div class="info-note">
-            ✨ Join us to enjoy exclusive collections and earn loyalty rewards!
+            Join us to enjoy exclusive collections and earn loyalty rewards.
         </div>
 
         <div id="alert" class="alert"></div>
@@ -61,6 +61,16 @@
         const registerForm = document.getElementById('registerForm');
         const registerBtn = document.getElementById('registerBtn');
         const alertDiv = document.getElementById('alert');
+        const loginLink = document.querySelector('a[href="/customer-login"]');
+        const redirectTarget = new URLSearchParams(window.location.search).get('redirect');
+
+        const safeRedirect = redirectTarget && redirectTarget.startsWith('/') && !redirectTarget.startsWith('//')
+            ? redirectTarget
+            : null;
+
+        if (loginLink && safeRedirect) {
+            loginLink.href = `/customer-login?redirect=${encodeURIComponent(safeRedirect)}`;
+        }
 
         function showAlert(message, type = 'error') {
             alertDiv.textContent = message;
@@ -134,7 +144,10 @@
                     registerForm.reset();
                     
                     setTimeout(() => {
-                        window.location.href = '/customer-login';
+                        const loginPath = safeRedirect
+                            ? `/customer-login?redirect=${encodeURIComponent(safeRedirect)}`
+                            : '/customer-login';
+                        window.location.href = loginPath;
                     }, 1500);
                 } else {
                     showAlert(data.message || 'Registration failed');

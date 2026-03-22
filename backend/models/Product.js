@@ -48,6 +48,11 @@ const productSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
+  supplier: {
+    type: String,
+    trim: true,
+    default: ''
+  },
   availabilityStatus: {
     type: String,
     enum: ['In Stock', 'Out of Stock', 'Pre-Order'],

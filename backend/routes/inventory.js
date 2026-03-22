@@ -2,10 +2,34 @@ import express from 'express';
 import Product from '../models/Product.js';
 import GoldRate from '../models/GoldRate.js';
 import Order from '../models/Order.js';
+import Supplier from '../models/Supplier.js';
 import { isInventoryManager } from '../middleware/auth.js';
 import emailService from '../utils/emailService.js';
 
 const router = express.Router();
+
+const CATEGORY_MAP = {
+  Bangle: 'Bangles'
+};
+
+function normalizeCategory(category) {
+  if (!category) return category;
+  return CATEGORY_MAP[category] || category;
+}
+
+function buildStockRow(product) {
+  return {
+    _id: product._id,
+    serial: product.sku || `SKU-${String(product._id).slice(-6).toUpperCase()}`,
+    name: product.name,
+    category: product.category,
+    karat: product.kType,
+    weight: product.weight,
+    quantity: product.stockQuantity,
+    supplier: product.supplier || '-',
+    status: product.availabilityStatus
+  };
+}
 
 // ===== GOLD RATE MANAGEMENT =====
 
@@ -67,6 +91,117 @@ router.post('/gold-rates', isInventoryManager, async (req, res) => {
 });
 
 // ===== PRODUCT INVENTORY MANAGEMENT =====
+
+// GET /api/inventory/stock - Get stock rows for inventory dashboard
+router.get('/stock', isInventoryManager, async (req, res) => {
+  try {
+    const products = await Product.find()
+      .sort({ createdAt: -1 })
+      .select('name category kType weight stockQuantity sku supplier availabilityStatus');
+
+    res.json({
+      success: true,
+      data: products.map(buildStockRow)
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching stock', error: error.message });
+  }
+});
+
+// POST /api/inventory/stock - Create a stock item from inventory dashboard
+router.post('/stock', isInventoryManager, async (req, res) => {
+  try {
+    const { name, category, karat, weight, quantity, supplier } = req.body;
+
+    if (!name || !category || weight === undefined || quantity === undefined) {
+      return res.status(400).json({ message: 'name, category, weight and quantity are required' });
+    }
+
+    const normalizedCategory = normalizeCategory(category);
+    const latestRates = await GoldRate.findOne().sort({ lastUpdated: -1 });
+    const karatRate = latestRates?.[karat] || 0;
+    const count = await Product.countDocuments();
+    const sku = `INV-${String(count + 1).padStart(4, '0')}`;
+
+    const product = new Product({
+      name,
+      description: `${name} inventory entry`,
+      image: '/assets/placeholder-product.jpg',
+      category: normalizedCategory,
+      weight: Number(weight),
+      kType: karat,
+      karatRate,
+      stockQuantity: Number(quantity),
+      supplier: supplier || '',
+      sku,
+      productStatus: 'Active',
+      createdBy: req.session.staffId
+    });
+
+    await product.save();
+
+    res.status(201).json({
+      success: true,
+      message: 'Stock added successfully',
+      data: buildStockRow(product)
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error adding stock', error: error.message });
+  }
+});
+
+// PUT /api/inventory/stock/:id - Update a stock item
+router.put('/stock/:id', isInventoryManager, async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+    if (!product) {
+      return res.status(404).json({ message: 'Stock item not found' });
+    }
+
+    const { name, category, karat, weight, quantity, supplier } = req.body;
+
+    if (name !== undefined) product.name = name;
+    if (category !== undefined) product.category = normalizeCategory(category);
+    if (karat !== undefined) {
+      product.kType = karat;
+      const latestRates = await GoldRate.findOne().sort({ lastUpdated: -1 });
+      if (latestRates?.[karat]) {
+        product.karatRate = latestRates[karat];
+      }
+    }
+    if (weight !== undefined) product.weight = Number(weight);
+    if (quantity !== undefined) product.stockQuantity = Number(quantity);
+    if (supplier !== undefined) product.supplier = supplier;
+
+    if (product.weight > 0 && product.kType && product.karatRate >= 0) {
+      product.productStatus = 'Active';
+    }
+
+    await product.save();
+
+    res.json({
+      success: true,
+      message: 'Stock updated successfully',
+      data: buildStockRow(product)
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error updating stock', error: error.message });
+  }
+});
+
+// DELETE /api/inventory/stock/:id - Delete a stock item
+router.delete('/stock/:id', isInventoryManager, async (req, res) => {
+  try {
+    const product = await Product.findByIdAndDelete(req.params.id);
+    if (!product) {
+      return res.status(404).json({ message: 'Stock item not found' });
+    }
+
+    res.json({ success: true, message: 'Stock deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error deleting stock', error: error.message });
+  }
+});
 
 // GET /api/inventory/products - Get all products for inventory view
 router.get('/products', isInventoryManager, async (req, res) => {
@@ -178,7 +313,7 @@ router.patch('/orders/:id/accept', isInventoryManager, async (req, res) => {
             <div style="background: white; padding: 1.5rem; border-radius: 8px; margin: 1rem 0;">
               <p><strong>Order Number:</strong> ${order.orderNumber}</p>
               <p><strong>Status:</strong> Preparing</p>
-              <p><strong>Total:</strong> Rs. ${order.total.toLocaleString()}</p>
+              <p><strong>Total:</strong> LKR ${order.total.toLocaleString()}</p>
             </div>
             <p style="color: #666;">Thank you for choosing Saranya Jewellery!</p>
           </div>
@@ -225,7 +360,7 @@ router.patch('/orders/:id/ready', isInventoryManager, async (req, res) => {
             <div style="background: white; padding: 1.5rem; border-radius: 8px; margin: 1rem 0;">
               <p><strong>Order Number:</strong> ${order.orderNumber}</p>
               <p><strong>Status:</strong> Ready for Collection</p>
-              <p><strong>Total:</strong> Rs. ${order.total.toLocaleString()}</p>
+              <p><strong>Total:</strong> LKR ${order.total.toLocaleString()}</p>
             </div>
             <div style="background: #d4edda; padding: 1.5rem; border-radius: 8px; margin: 1rem 0;">
               <h3 style="color: #155724; margin-top: 0;">📍 Collection Details</h3>
@@ -242,6 +377,82 @@ router.patch('/orders/:id/ready', isInventoryManager, async (req, res) => {
     res.json({ message: 'Order marked as ready for collection', order });
   } catch (error) {
     res.status(500).json({ message: 'Error updating order', error: error.message });
+  }
+});
+
+// ===== SUPPLIER MANAGEMENT =====
+
+// GET /api/inventory/suppliers - list suppliers for inventory manager
+router.get('/suppliers', isInventoryManager, async (req, res) => {
+  try {
+    const suppliers = await Supplier.find().sort({ createdAt: -1 });
+    res.json({ success: true, data: suppliers });
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching suppliers', error: error.message });
+  }
+});
+
+// POST /api/inventory/suppliers - create supplier
+router.post('/suppliers', isInventoryManager, async (req, res) => {
+  try {
+    const { name, contact, email, location, itemsSupplied } = req.body;
+
+    if (!name || !contact) {
+      return res.status(400).json({ message: 'Name and contact are required' });
+    }
+
+    const count = await Supplier.countDocuments();
+    const supplierId = `SUP-${String(count + 1).padStart(3, '0')}`;
+
+    const supplier = new Supplier({
+      supplierId,
+      name,
+      contact,
+      email,
+      location,
+      itemsSupplied
+    });
+
+    await supplier.save();
+    res.status(201).json({ success: true, data: supplier, message: 'Supplier added successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error adding supplier', error: error.message });
+  }
+});
+
+// PUT /api/inventory/suppliers/:id - update supplier
+router.put('/suppliers/:id', isInventoryManager, async (req, res) => {
+  try {
+    const supplier = await Supplier.findById(req.params.id);
+    if (!supplier) {
+      return res.status(404).json({ message: 'Supplier not found' });
+    }
+
+    const { name, contact, email, location, itemsSupplied } = req.body;
+    if (name !== undefined) supplier.name = name;
+    if (contact !== undefined) supplier.contact = contact;
+    if (email !== undefined) supplier.email = email;
+    if (location !== undefined) supplier.location = location;
+    if (itemsSupplied !== undefined) supplier.itemsSupplied = itemsSupplied;
+
+    await supplier.save();
+    res.json({ success: true, data: supplier, message: 'Supplier updated successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error updating supplier', error: error.message });
+  }
+});
+
+// DELETE /api/inventory/suppliers/:id - remove supplier
+router.delete('/suppliers/:id', isInventoryManager, async (req, res) => {
+  try {
+    const supplier = await Supplier.findByIdAndDelete(req.params.id);
+    if (!supplier) {
+      return res.status(404).json({ message: 'Supplier not found' });
+    }
+
+    res.json({ success: true, message: 'Supplier deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error deleting supplier', error: error.message });
   }
 });
 

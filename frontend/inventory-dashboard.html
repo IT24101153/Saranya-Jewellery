@@ -28,29 +28,10 @@
       --shadow-md:    0 4px 24px rgba(122,21,48,0.12);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; }
-
-    /* SIDEBAR */
-    .sidebar { width: 240px; background: var(--maroon-dark); display: flex; flex-direction: column; position: fixed; height: 100vh; z-index: 100; }
-    .sidebar-logo { padding: 24px 20px 18px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 10px; }
-    .logo-gem { width: 38px; height: 38px; flex-shrink: 0; }
-    .brand { font-family: 'Cormorant Garamond', serif; font-size: 19px; font-weight: 700; color: var(--gold-light); letter-spacing: 0.1em; line-height: 1.1; }
-    .sub-brand { font-size: 9px; color: rgba(255,255,255,0.45); letter-spacing: 0.16em; text-transform: uppercase; }
-    .nav-section { padding: 16px 10px 8px; }
-    .nav-label { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.3); padding: 0 12px; margin-bottom: 6px; }
-    .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; cursor: pointer; font-size: 13.5px; color: rgba(255,255,255,0.6); transition: all 0.18s; text-decoration: none; }
-    .nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
-    .nav-item.active { background: rgba(201,168,76,0.18); color: var(--gold-light); }
-    .nav-item svg { opacity: 0.8; flex-shrink: 0; }
-    .nav-item.active svg { opacity: 1; }
-    .sidebar-footer { margin-top: auto; padding: 14px 10px; border-top: 1px solid rgba(255,255,255,0.1); }
-    .staff-info { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; background: rgba(255,255,255,0.07); }
-    .staff-avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--gold-dark), var(--gold-light)); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: var(--maroon-dark); flex-shrink: 0; }
-    .staff-name { font-size: 13px; font-weight: 500; color: #fff; }
-    .staff-role { font-size: 11px; color: rgba(255,255,255,0.4); }
+    body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
     /* MAIN */
-    .main { margin-left: 240px; flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+    .main { flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
 
     /* TOPBAR */
     .topbar { background: var(--maroon); padding: 0 32px; display: flex; align-items: center; justify-content: space-between; height: 60px; position: sticky; top: 0; z-index: 50; box-shadow: 0 2px 16px rgba(92,15,35,0.3); }
@@ -169,62 +150,6 @@
 </head>
 <body>
 
-<!-- SIDEBAR -->
-<aside class="sidebar">
-  <div class="sidebar-logo">
-      <polygon points="20,2 36,14 20,40 4,14" fill="rgba(232,201,106,0.15)" stroke="#E8C96A" stroke-width="1.6"/>
-      <polygon points="20,2 36,14 20,17 4,14"  fill="rgba(232,201,106,0.2)"  stroke="#E8C96A" stroke-width="1"/>
-      <line x1="4" y1="14" x2="36" y2="14" stroke="#E8C96A" stroke-width="1"/>
-      <line x1="20" y1="2"  x2="4"  y2="14" stroke="#E8C96A" stroke-width="0.8" opacity="0.6"/>
-      <line x1="20" y1="2"  x2="36" y2="14" stroke="#E8C96A" stroke-width="0.8" opacity="0.6"/>
-      <line x1="12" y1="14" x2="20" y2="2"  stroke="#E8C96A" stroke-width="0.8" opacity="0.5"/>
-      <line x1="28" y1="14" x2="20" y2="2"  stroke="#E8C96A" stroke-width="0.8" opacity="0.5"/>
-    </svg>
-    <div>
-      <div class="brand">SARANYA</div>
-      <div class="sub-brand">The Symbol of Love</div>
-    </div>
-  </div>
-
-  <div class="nav-section">
-    <div class="nav-label">Navigation</div>
-    <a href="admin-dashboard.html" class="nav-item">
-      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-      Dashboard
-    </a>
-    <a href="inventory-dashboard.html" class="nav-item active">
-      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3h18v5H3zM3 10h18v5H3zM3 17h18v5H3z"/></svg>
-      Inventory
-    </a>
-    <a href="product-management-dashboard.html" class="nav-item">
-      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
-      Products
-    </a>
-    <a href="order-management-dashboard.html" class="nav-item">
-      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-      Orders
-    </a>
-    <a href="loyalty-management-dashboard.html" class="nav-item">
-      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-      Loyalty
-    </a>
-    <a href="customer-care-dashboard.html" class="nav-item">
-      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/></svg>
-      Customer Care
-    </a>
-  </div>
-
-  <div class="sidebar-footer">
-    <div class="staff-info">
-      <div class="staff-avatar">IM</div>
-      <div>
-        <div class="staff-name">Inventory Manager</div>
-        <div class="staff-role">Staff · Inventory</div>
-      </div>
-    </div>
-  </div>
-</aside>
-
 <!-- MAIN -->
 <main class="main">
   <div class="topbar">
@@ -237,6 +162,9 @@
       <button class="btn btn-gold" onclick="openModal('addStockModal')">
         <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Add Stock
+      </button>
+      <button class="btn btn-outline" onclick="logout()" style="color:#fff;border-color:rgba(255,255,255,0.45);background:transparent;">
+        Logout
       </button>
     </div>
   </div>
@@ -393,7 +321,7 @@
       <div class="form-group"><label>Karat</label><select id="si_karat"><option>22K</option><option>18K</option><option>24K</option></select></div>
       <div class="form-group"><label>Weight (g) *</label><input type="number" id="si_weight" placeholder="e.g. 5.4"/></div>
       <div class="form-group"><label>Quantity *</label><input type="number" id="si_qty" placeholder="e.g. 10"/></div>
-      <div class="form-group"><label>Supplier</label><select id="si_supplier"><option value="">Select...</option><option>Raja Jewellers/option><option>Swarnamahal Jewellers Ltd</option><option>Vogue Jewellers Ltd</option></select></div>
+      <div class="form-group"><label>Supplier</label><select id="si_supplier"><option value="">Select...</option><option>Raja Jewellers</option><option>Swarnamahal Jewellers Ltd</option><option>Vogue Jewellers Ltd</option></select></div>
       <div class="form-group full"><label>Notes</label><textarea id="si_notes" placeholder="Any additional notes..."></textarea></div>
     </div>
     <div class="modal-footer">
@@ -444,21 +372,8 @@
 <div class="toast" id="toast"><span id="toastMsg"></span></div>
 
 <script>
-let stockData = [
-  {serial:'SJI-001',name:'Floral Gold Ring',   cat:'Ring',    karat:'22K',weight:4.2, qty:12,supplier:'Raja Jewellers'},
-  {serial:'SJI-002',name:'Bridal Necklace Set',cat:'Necklace',karat:'22K',weight:42.5,qty:3, supplier:'Vouge Jewellers'},
-  {serial:'SJI-003',name:'Kada Bangle Pair',   cat:'Bangle',  karat:'22K',weight:28.0,qty:0, supplier:'Swarnamahal Jewellers'},
-  {serial:'SJI-004',name:'Jhumka Earrings',    cat:'Earring', karat:'18K',weight:6.8, qty:8, supplier:'Raja Jewellers'},
-  {serial:'SJI-005',name:'Lakshmi Pendant',    cat:'Pendant', karat:'22K',weight:3.5, qty:2, supplier:'Swarnamahal Jewellers'},
-  {serial:'SJI-006',name:'Singapore Chain',    cat:'Chain',   karat:'22K',weight:10.2,qty:5, supplier:'Vouge Jewellers'},
-  {serial:'SJI-007',name:'Diamond-cut Ring',   cat:'Ring',    karat:'18K',weight:3.8, qty:0, supplier:'Raja Jewellers'},
-  {serial:'SJI-008',name:'Antique Necklace',   cat:'Necklace',karat:'22K',weight:35.0,qty:1, supplier:'Swarnamahal Jewellers'},
-];
-let supplierData = [
-  {id:'SUP-001',name:'Raja Jewellers', contact:'+94 112 3458456',email:'raja@jew.in', location:'Colombo, TN',    items:'Rings, Earrings'},
-  {id:'SUP-002',name:'Vouge Jewellers', contact:'+94 813 847839',email:'vouge@abc.in',  location:'Colombo, TN',    items:'Necklaces, Pendants'},
-  {id:'SUP-003',name:'Swarnamahal Jewellers',contact:'+94 777 4767856',email:'Swarnamahal@bbc.in',location:'Negegoda, TN', items:'Bangles, Chains'},
-];
+let stockData = [];
+let supplierData = [];
 let goldRates = [
   {date:'14 Mar 2026',r22:6820,r18:5578,r24:7440,change:+80},
   {date:'13 Mar 2026',r22:6740,r18:5516,r24:7352,change:-20},
@@ -493,62 +408,11 @@ function filterTable(){
   renderStock(stockData.filter(item=>(item.name.toLowerCase().includes(q)||item.serial.toLowerCase().includes(q))&&(cat===''||item.cat===cat)));
 }
 
-function addStock(){
-  const name=document.getElementById('si_name').value.trim();
-  const cat=document.getElementById('si_cat').value;
-  const karat=document.getElementById('si_karat').value;
-  const weight=parseFloat(document.getElementById('si_weight').value);
-  const qty=parseInt(document.getElementById('si_qty').value);
-  const supplier=document.getElementById('si_supplier').value;
-  if(!name||!cat||isNaN(weight)||isNaN(qty)){showToast('Please fill required fields.','error');return;}
-  const serial=`SJI-${String(serialCounter).padStart(3,'0')}`;
-  serialCounter++;
-  stockData.push({serial,name,cat,karat,weight,qty,supplier});
-  renderStock(stockData); closeModal('addStockModal');
-  ['si_name','si_weight','si_qty'].forEach(id=>document.getElementById(id).value='');
-  showToast(`✓ ${serial} added.`,'success'); updateAlerts();
-}
-
-function editStock(i){
-  const item=stockData[i];
-  document.getElementById('edit_idx').value=i;
-  document.getElementById('edit_name').value=item.name;
-  document.getElementById('edit_cat').value=item.cat;
-  document.getElementById('edit_karat').value=item.karat;
-  document.getElementById('edit_weight').value=item.weight;
-  document.getElementById('edit_qty').value=item.qty;
-  document.getElementById('edit_supplier').value=item.supplier;
-  openModal('editStockModal');
-}
-
-function saveEdit(){
-  const i=parseInt(document.getElementById('edit_idx').value);
-  stockData[i]={...stockData[i],name:document.getElementById('edit_name').value,cat:document.getElementById('edit_cat').value,karat:document.getElementById('edit_karat').value,weight:parseFloat(document.getElementById('edit_weight').value),qty:parseInt(document.getElementById('edit_qty').value),supplier:document.getElementById('edit_supplier').value};
-  renderStock(stockData); closeModal('editStockModal'); showToast('✓ Updated.','success'); updateAlerts();
-}
-
-function deleteStock(i){
-  if(!confirm(`Remove "${stockData[i].name}"?`))return;
-  stockData.splice(i,1); renderStock(stockData); showToast('✓ Removed.','success'); updateAlerts();
-}
-
 function renderGoldRates(){
   document.getElementById('rateHistoryBody').innerHTML=goldRates.map(r=>{
     const chg=r.change>=0?`<span style="color:var(--green);font-weight:600">↑ +${r.change}</span>`:`<span style="color:var(--red);font-weight:600">↓ ${r.change}</span>`;
     return`<tr><td>${r.date}</td><td>LKR ${r.r22.toLocaleString()}</td><td>LKR ${r.r18.toLocaleString()}</td><td>LKR ${r.r24.toLocaleString()}</td><td>${chg}</td></tr>`;
   }).join('');
-}
-
-function updateGoldRate(){
-  const val=parseFloat(document.getElementById('newGoldRate').value);
-  if(!val||val<1000){showToast('Enter a valid rate.','error');return;}
-  const prev=goldRates[0].r22; const r18=Math.round(val*0.818); const r24=Math.round(val*1.091);
-  goldRates.unshift({date:new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}),r22:val,r18,r24,change:val-prev});
-  document.getElementById('currentRateDisplay').textContent=val.toLocaleString();
-  document.getElementById('rate18k').textContent=`LKR ${r18.toLocaleString()}`;
-  document.getElementById('rate24k').textContent=`LKR ${r24.toLocaleString()}`;
-  document.getElementById('topbarRate').textContent=`LKR ${val.toLocaleString()} /g`;
-  renderGoldRates(); document.getElementById('newGoldRate').value=''; showToast('✓ Gold rate updated.','success');
 }
 
 function calculate(){
@@ -632,7 +496,16 @@ function showToast(msg,type='success'){
   t.className=`toast ${type} show`; setTimeout(()=>t.classList.remove('show'),3200);
 }
 
-renderStock(stockData); renderGoldRates(); renderSuppliers(); updateAlerts();
+async function logout() {
+  try {
+    await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
+  } catch (err) {
+    console.error('Logout failed:', err);
+  } finally {
+    window.location.href = '/staff-login';
+  }
+}
+
 </script>
 </body>
 </html>
@@ -650,9 +523,9 @@ async function loadGoldRate() {
       const r18 = data['18K'];
       const r24 = data['24K'];
       document.getElementById('currentRateDisplay').textContent = r22.toLocaleString();
-      document.getElementById('rate18k').textContent = `₹ ${r18.toLocaleString()}`;
-      document.getElementById('rate24k').textContent = `₹ ${r24.toLocaleString()}`;
-      document.getElementById('topbarRate').textContent = `₹ ${r22.toLocaleString()} /g`;
+      document.getElementById('rate18k').textContent = `LKR ${r18.toLocaleString()}`;
+      document.getElementById('rate24k').textContent = `LKR ${r24.toLocaleString()}`;
+      document.getElementById('topbarRate').textContent = `LKR ${r22.toLocaleString()} /g`;
       // Seed into goldRates array for calculator
       goldRates[0] = { date: new Date(data.lastUpdated).toLocaleDateString('en-IN'), r22, r18, r24, change: 0 };
     }
@@ -670,15 +543,16 @@ async function updateGoldRate() {
   try {
     const res = await fetch(`${API}/gold-rates`, {
       method: 'POST',
+      credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ '18K': r18, '22K': val, '24K': r24 })
     });
     const data = await res.json();
     if (res.ok) {
       document.getElementById('currentRateDisplay').textContent = val.toLocaleString();
-      document.getElementById('rate18k').textContent = `₹ ${r18.toLocaleString()}`;
-      document.getElementById('rate24k').textContent = `₹ ${r24.toLocaleString()}`;
-      document.getElementById('topbarRate').textContent = `₹ ${val.toLocaleString()} /g`;
+      document.getElementById('rate18k').textContent = `LKR ${r18.toLocaleString()}`;
+      document.getElementById('rate24k').textContent = `LKR ${r24.toLocaleString()}`;
+      document.getElementById('topbarRate').textContent = `LKR ${val.toLocaleString()} /g`;
       goldRates.unshift({ date: new Date().toLocaleDateString('en-IN'), r22: val, r18, r24, change: 0 });
       renderGoldRates();
       document.getElementById('newGoldRate').value = '';
@@ -694,7 +568,7 @@ async function updateGoldRate() {
 // ─── FETCH STOCK FROM BACKEND ───
 async function loadStock() {
   try {
-    const res = await fetch(`${API}/stock`);
+    const res = await fetch(`${API}/stock`, { credentials: 'same-origin' });
     const data = await res.json();
     if (data.success) {
       stockData = data.data.map(item => ({
@@ -711,9 +585,12 @@ async function loadStock() {
       renderStock(stockData);
       updateAlerts();
       updateStats();
+    } else {
+      showToast(data.message || 'Unable to load stock data.', 'error');
     }
   } catch (err) {
     console.error('Failed to load stock:', err);
+    showToast('Unable to load stock. Please login again.', 'error');
   }
 }
 
@@ -724,6 +601,7 @@ async function addStock() {
   const karat    = document.getElementById('si_karat').value;
   const weight   = parseFloat(document.getElementById('si_weight').value);
   const quantity = parseInt(document.getElementById('si_qty').value);
+  const supplier = document.getElementById('si_supplier').value;
   const notes    = document.getElementById('si_notes').value;
 
   if (!name || !category || isNaN(weight) || isNaN(quantity)) {
@@ -733,8 +611,9 @@ async function addStock() {
   try {
     const res = await fetch(`${API}/stock`, {
       method: 'POST',
+      credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, category, karat, weight, quantity, notes })
+      body: JSON.stringify({ name, category, karat, weight, quantity, supplier, notes })
     });
     const data = await res.json();
     if (res.ok) {
@@ -760,10 +639,12 @@ async function saveEdit() {
     karat:    document.getElementById('edit_karat').value,
     weight:   parseFloat(document.getElementById('edit_weight').value),
     quantity: parseInt(document.getElementById('edit_qty').value),
+    supplier: document.getElementById('edit_supplier').value,
   };
   try {
     const res = await fetch(`${API}/stock/${_id}`, {
       method: 'PUT',
+      credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     });
@@ -785,7 +666,7 @@ async function deleteStock(i) {
   if (!confirm(`Remove "${stockData[i].name}" from inventory?`)) return;
   const _id = stockData[i]._id;
   try {
-    const res = await fetch(`${API}/stock/${_id}`, { method: 'DELETE' });
+    const res = await fetch(`${API}/stock/${_id}`, { method: 'DELETE', credentials: 'same-origin' });
     const data = await res.json();
     if (res.ok) {
       showToast('✓ Stock entry removed.', 'success');
@@ -801,7 +682,7 @@ async function deleteStock(i) {
 // ─── FETCH SUPPLIERS FROM BACKEND ───
 async function loadSuppliers() {
   try {
-    const res = await fetch(`${API}/suppliers`);
+    const res = await fetch(`${API}/suppliers`, { credentials: 'same-origin' });
     const data = await res.json();
     if (data.success) {
       supplierData = data.data.map(s => ({
@@ -814,9 +695,13 @@ async function loadSuppliers() {
         items: s.itemsSupplied || '-'
       }));
       renderSuppliers();
+      populateSupplierSelect();
+    } else {
+      showToast(data.message || 'Unable to load suppliers.', 'error');
     }
   } catch (err) {
     console.error('Failed to load suppliers:', err);
+    showToast('Unable to load suppliers. Please login again.', 'error');
   }
 }
 
@@ -828,6 +713,7 @@ async function addSupplier() {
   try {
     const res = await fetch(`${API}/suppliers`, {
       method: 'POST',
+      credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name, contact,
@@ -855,7 +741,7 @@ async function addSupplier() {
 async function deleteSupplier(i) {
   if (!confirm(`Remove "${supplierData[i].name}"?`)) return;
   try {
-    const res = await fetch(`${API}/suppliers/${supplierData[i]._id}`, { method: 'DELETE' });
+    const res = await fetch(`${API}/suppliers/${supplierData[i]._id}`, { method: 'DELETE', credentials: 'same-origin' });
     const data = await res.json();
     if (res.ok) {
       showToast('✓ Supplier removed.', 'success');
@@ -869,10 +755,6 @@ async function deleteSupplier(i) {
 }
 
 // ─── KEEP THESE EXACTLY AS BEFORE ───
-let stockData = [];
-let supplierData = [];
-let goldRates = [{ date: 'Today', r22: 6820, r18: 5578, r24: 7440, change: 0 }];
-
 function getStatus(qty) {
   if (qty === 0) return { label: 'Out of Stock', cls: 'out' };
   if (qty <= 3)  return { label: 'Low Stock',    cls: 'low' };
@@ -884,10 +766,13 @@ function updateStats() {
   const inStock = stockData.filter(s => s.qty > 3).length;
   const low     = stockData.filter(s => s.qty > 0 && s.qty <= 3).length;
   const out     = stockData.filter(s => s.qty === 0).length;
-  document.querySelector('.stat-card.c1 .stat-value').textContent = total;
-  document.querySelector('.stat-card.c2 .stat-value').textContent = inStock;
-  document.querySelector('.stat-card.c3 .stat-value').textContent = low;
-  document.querySelector('.stat-card.c4 .stat-value').textContent = out;
+  const statValues = document.querySelectorAll('.stats-grid .stat-value');
+  if (statValues.length >= 4) {
+    statValues[0].textContent = total;
+    statValues[1].textContent = inStock;
+    statValues[2].textContent = low;
+    statValues[3].textContent = out;
+  }
 }
 
 function renderStock(data) {
@@ -905,7 +790,7 @@ function renderStock(data) {
           <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
         </button>
         <button class="icon-btn danger" onclick="deleteStock(${i})">
-          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/></svg>
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/><line x1="9" y1="6" x2="9" y2="4"/><line x1="9" y1="4" x2="15" y2="4"/><line x1="15" y1="4" x2="15" y2="6"/></svg>
         </button>
       </div></td>
     </tr>`;
@@ -938,7 +823,7 @@ function renderGoldRates() {
     const chg = r.change >= 0
       ? `<span style="color:var(--green);font-weight:600;">↑ +${r.change}</span>`
       : `<span style="color:var(--red);font-weight:600;">↓ ${r.change}</span>`;
-    return `<tr><td>${r.date}</td><td>₹ ${r.r22.toLocaleString()}</td><td>₹ ${r.r18.toLocaleString()}</td><td>₹ ${r.r24.toLocaleString()}</td><td>${chg}</td></tr>`;
+    return `<tr><td>${r.date}</td><td>LKR ${r.r22.toLocaleString()}</td><td>LKR ${r.r18.toLocaleString()}</td><td>LKR ${r.r24.toLocaleString()}</td><td>${chg}</td></tr>`;
   }).join('');
 }
 
@@ -949,7 +834,7 @@ function calculate() {
   const base22 = goldRates[0].r22;
   const rate   = k==='22' ? base22 : k==='18' ? Math.round(base22*0.818) : Math.round(base22*1.091);
   const base   = w * rate;
-  document.getElementById('calcResult').textContent = `₹ ${Math.round(base + base*making/100).toLocaleString()}`;
+  document.getElementById('calcResult').textContent = `LKR ${Math.round(base + base*making/100).toLocaleString()}`;
 }
 
 function renderSuppliers() {
@@ -962,10 +847,25 @@ function renderSuppliers() {
         <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
       </button>
       <button class="icon-btn danger" onclick="deleteSupplier(${i})">
-        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/></svg>
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/><line x1="9" y1="6" x2="9" y2="4"/><line x1="9" y1="4" x2="15" y2="4"/><line x1="15" y1="4" x2="15" y2="6"/></svg>
       </button>
     </div></td>
   </tr>`).join('');
+}
+
+function populateSupplierSelect() {
+  const select = document.getElementById('si_supplier');
+  if (!select) return;
+
+  const currentValue = select.value;
+  const uniqueNames = [...new Set(supplierData.map((s) => s.name).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+
+  select.innerHTML = '<option value="">Select...</option>' +
+    uniqueNames.map((name) => `<option value="${name}">${name}</option>`).join('');
+
+  if (currentValue && uniqueNames.includes(currentValue)) {
+    select.value = currentValue;
+  }
 }
 
 async function editSupplierPrompt(i) {
@@ -1042,9 +942,38 @@ function showToast(msg, type='success') {
   setTimeout(() => t.classList.remove('show'), 3000);
 }
 
+async function ensureInventorySession() {
+  try {
+    const res = await fetch('/api/auth/me', { credentials: 'same-origin' });
+    if (!res.ok) {
+      window.location.href = '/staff-login';
+      return false;
+    }
+
+    const me = await res.json();
+    const allowed = me && (me.role === 'Inventory' || me.role === 'Inventory Management' || me.role === 'Admin');
+    if (!allowed) {
+      showToast('Access denied for this account.', 'error');
+      setTimeout(() => {
+        window.location.href = '/staff-login';
+      }, 900);
+      return false;
+    }
+
+    return true;
+  } catch (err) {
+    window.location.href = '/staff-login';
+    return false;
+  }
+}
+
 // ─── INIT: Load everything from backend on page load ───
-loadGoldRate();
-loadStock();
-loadSuppliers();
-renderGoldRates();
+(async () => {
+  const ok = await ensureInventorySession();
+  if (!ok) return;
+  loadGoldRate();
+  loadStock();
+  loadSuppliers();
+  renderGoldRates();
+})();
 </script>

@@ -14,7 +14,7 @@
         <div><i class="fas fa-phone"></i> <a href="tel:+1234567890">Contact Us</a></div>
         <div>
             <span id="customerName" style="margin-right: 1rem; color: var(--brand-gold-strong);">Loading...</span>
-            <span id="loyaltyPoints" style="margin-right: 1rem;">⭐ 0 Points</span>
+            <span id="loyaltyPoints" style="margin-right: 1rem;">Loyalty: 0 Points</span>
             <button class="logout-btn" onclick="logout()" style="font-size: 0.85rem; padding: 0.3rem 0.8rem;">Logout</button>
         </div>
     </div>
@@ -22,10 +22,11 @@
     <!-- Header -->
     <header class="header">
         <div class="nav">
-            <a href="/customer-dashboard">Dashboard</a>
+            <a href="/">Home</a>
             <a href="/customer-shop">Shop</a>
             <a href="/customer-orders">My Orders</a>
-            <a href="#loyalty">Loyalty</a>
+            <a href="/customer-loyalty">Loyalty</a>
+            <a href="/customer-support">Support</a>
         </div>
         
         <div class="logo">SARANYA JEWELLERY</div>
@@ -74,7 +75,7 @@
                         </div>
 
                         <div style="background: #d1f2eb; padding: 0.8rem; border-radius: 4px; margin-bottom: 1rem; text-align: center;">
-                            <p style="margin: 0; color: #0d6655; font-size: 0.9rem;">🏪 <strong>Shop Collection Only</strong> — Visit our store to collect</p>
+                            <p style="margin: 0; color: #0d6655; font-size: 0.9rem;"><strong>Shop Collection Only</strong> - Visit our store to collect</p>
                         </div>
 
                         <button id="checkoutBtn" onclick="proceedToCheckout()" style="width: 100%; background: var(--brand-burgundy); color: white; border: none; padding: 1rem; border-radius: 4px; cursor: pointer; font-size: 1rem; font-weight: 600; margin-bottom: 1rem;">
@@ -97,7 +98,7 @@
                 <h2 style="margin: 0 0 1.5rem; font-family: 'Cormorant Garamond', serif; color: var(--brand-burgundy);">Checkout</h2>
                 
                 <div style="background: #d1f2eb; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; text-align: center;">
-                    <p style="margin: 0; font-weight: 600; color: #0d6655;">🏪 Shop Collection</p>
+                    <p style="margin: 0; font-weight: 600; color: #0d6655;">Shop Collection</p>
                     <p style="margin: 0.25rem 0 0; font-size: 0.9rem; color: #0d6655;">Your order will be prepared for collection at Saranya Jewellery</p>
                 </div>
 
@@ -110,7 +111,7 @@
                     <div style="margin-bottom: 1.5rem;">
                         <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Payment Method</label>
                         <div style="background: #f8f9fa; padding: 1rem; border-radius: 4px; border: 1px solid #ddd;">
-                            <p style="margin: 0; font-weight: 600;">🏦 Bank Transfer</p>
+                            <p style="margin: 0; font-weight: 600;">Bank Transfer</p>
                             <p style="margin: 0.5rem 0 0; font-size: 0.85rem; color: #666;">Please transfer the total amount to our bank account and upload the receipt/screenshot below.</p>
                         </div>
                     </div>
@@ -156,12 +157,23 @@
         let cart = JSON.parse(localStorage.getItem('saranyaCart') || '[]');
         let customer = null;
 
+        function setActiveNavLink() {
+            const currentPath = window.location.pathname;
+            document.querySelectorAll('.nav a').forEach((link) => {
+                const href = link.getAttribute('href');
+                if (!href || href.startsWith('#')) return;
+                if (href === currentPath) {
+                    link.classList.add('active');
+                }
+            });
+        }
+
         async function checkAuth() {
             customer = await authManager.checkCustomerAuth();
             if (!customer) return;
             document.getElementById('customerName').textContent = customer.fullName || customer.email;
             const points = customer.loyaltyPoints || 0;
-            document.getElementById('loyaltyPoints').textContent = `⭐ ${points} Points`;
+            document.getElementById('loyaltyPoints').textContent = `Loyalty: ${points} Points`;
             
             // Pre-fill phone
             if (customer.phone) {
@@ -401,6 +413,7 @@
         window.logout = logout;
 
         // Initialize
+        setActiveNavLink();
         checkAuth();
         updateCartBadge();
         displayCart();

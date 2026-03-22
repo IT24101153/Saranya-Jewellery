@@ -65,7 +65,7 @@ export const isOrderManager = (req, res, next) => {
 // Middleware to check if user is Inventory Manager
 export const isInventoryManager = (req, res, next) => {
   if (req.session && req.session.staffId && 
-      (req.session.role === 'Inventory' || req.session.role === 'Admin')) {
+      (req.session.role === 'Inventory' || req.session.role === 'Inventory Management' || req.session.role === 'Admin')) {
     return next();
   }
   return res.status(403).json({ message: 'Access denied. Inventory Manager only.' });

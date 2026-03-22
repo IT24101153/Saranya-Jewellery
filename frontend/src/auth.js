@@ -9,6 +9,14 @@ class AuthManager {
   }
 
   /**
+   * Build a safe same-origin return path for post-login navigation
+   */
+  getCurrentPathWithQuery() {
+    const path = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    return path.startsWith('/') ? path : '/';
+  }
+
+  /**
    * Make authenticated API request with credentials
    */
   async apiRequest(url, options = {}) {
@@ -79,12 +87,17 @@ class AuthManager {
   /**
    * Check customer authentication
    */
-  async checkCustomerAuth() {
+  async checkCustomerAuth(options = {}) {
+    const { redirectOnFail = true, returnToCurrentPath = true } = options;
     try {
       const response = await this.apiRequest('/api/customer/me');
       
       if (!response.ok) {
-        this.redirectToLogin('customer');
+        if (redirectOnFail) {
+          this.redirectToLogin('customer', {
+            returnTo: returnToCurrentPath ? this.getCurrentPathWithQuery() : null
+          });
+        }
         return null;
       }
 
@@ -93,7 +106,11 @@ class AuthManager {
 
       if (!customer.isActive) {
         alert('Your account has been deactivated. Please contact support.');
-        this.redirectToLogin('customer');
+        if (redirectOnFail) {
+          this.redirectToLogin('customer', {
+            returnTo: returnToCurrentPath ? this.getCurrentPathWithQuery() : null
+          });
+        }
         return null;
       }
 
@@ -101,7 +118,11 @@ class AuthManager {
       return customer;
     } catch (error) {
       console.error('Customer auth check failed:', error);
-      this.redirectToLogin('customer');
+      if (redirectOnFail) {
+        this.redirectToLogin('customer', {
+          returnTo: returnToCurrentPath ? this.getCurrentPathWithQuery() : null
+        });
+      }
       return null;
     }
   }
@@ -162,17 +183,21 @@ class AuthManager {
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
-      this.redirectToLogin(this.userType || 'staff');
+      this.redirectToLogin(this.userType || 'staff', { returnTo: null });
     }
   }
 
   /**
    * Redirect to appropriate login page
    */
-  redirectToLogin(type) {
+  redirectToLogin(type, options = {}) {
+    const { returnTo = this.getCurrentPathWithQuery() } = options;
     const loginPage = type === 'customer' ? '/customer-login' : '/staff-login';
+    const redirectQuery = returnTo && returnTo.startsWith('/') ? `?redirect=${encodeURIComponent(returnTo)}` : '';
+    const targetUrl = `${loginPage}${redirectQuery}`;
+
     if (window.location.pathname !== loginPage) {
-      window.location.href = loginPage;
+      window.location.href = targetUrl;
     }
   }
 

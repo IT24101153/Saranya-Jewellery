@@ -100,6 +100,10 @@ app.get('/customer-shop', (req, res) => {
   res.sendFile(path.join(frontendDir, 'customer-shop.html'));
 });
 
+app.get('/customer-product', (req, res) => {
+  res.sendFile(path.join(frontendDir, 'customer-product.html'));
+});
+
 app.get('/customer-cart', (req, res) => {
   res.sendFile(path.join(frontendDir, 'customer-cart.html'));
 });

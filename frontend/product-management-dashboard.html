@@ -33,6 +33,15 @@
             </button>
         </div>
 
+        <nav class="dashboard-nav-strip">
+            <a href="/admin-dashboard">Admin</a>
+            <a href="/product-management-dashboard" class="active">Products</a>
+            <a href="/order-management-dashboard">Orders</a>
+            <a href="/inventory-dashboard">Inventory</a>
+            <a href="/loyalty-management-dashboard">Loyalty</a>
+            <a href="/customer-care-dashboard">Customer Care</a>
+        </nav>
+
         <!-- Stats Cards -->
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
             <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center;">
@@ -88,6 +97,7 @@
                             <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Image</th>
                             <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Name</th>
                             <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Category</th>
+                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Stock</th>
                             <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Status</th>
                             <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Featured</th>
                             <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Actions</th>
@@ -109,6 +119,13 @@
                 <button onclick="closeModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
             </div>
             <form id="productForm">
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem;">Select From Inventory Stock</label>
+                    <select id="stockSelector" style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
+                        <option value="">Create New Product (Manual)</option>
+                    </select>
+                    <p id="stockHint" style="margin: 0.5rem 0 0; color: #666; font-size: 0.85rem;">Pick an inventory item to prefill product details and use available stock.</p>
+                </div>
                 <div style="margin-bottom: 1rem;">
                     <label style="display: block; margin-bottom: 0.5rem;">Product Name *</label>
                     <input type="text" id="name" required style="width: 95%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
@@ -158,6 +175,7 @@
         import authManager from '/src/auth.js';
 
         let products = [];
+        let stockOptions = [];
         let editingId = null;
 
         async function checkAuth() {
@@ -201,7 +219,7 @@
         function displayProducts() {
             const tbody = document.getElementById('productsTable');
             if (products.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" style="padding: 2rem; text-align: center; color: #999;">No products found</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" style="padding: 2rem; text-align: center; color: #999;">No products found</td></tr>';
                 return;
             }
             tbody.innerHTML = products.map(p => `
@@ -211,6 +229,7 @@
                     </td>
                     <td style="padding: 1rem; border-bottom: 1px solid #eee;">${p.name}</td>
                     <td style="padding: 1rem; border-bottom: 1px solid #eee;">${p.category}</td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">${p.stockQuantity ?? 0}</td>
                     <td style="padding: 1rem; border-bottom: 1px solid #eee;">
                         <span style="padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.85rem; background: ${p.productStatus === 'Active' ? '#d4edda' : '#fff3cd'}; color: ${p.productStatus === 'Active' ? '#155724' : '#856404'};">
                             ${p.productStatus || 'Draft'}
@@ -231,6 +250,7 @@
             editingId = null;
             document.getElementById('modalTitle').textContent = 'Add Product';
             document.getElementById('productForm').reset();
+            populateStockSelector();
             document.getElementById('productModal').style.display = 'flex';
         }
 
@@ -263,6 +283,58 @@
             editingId = null;
         }
 
+        async function loadStockOptions() {
+            try {
+                const res = await fetch('/api/products/stock-options', { credentials: 'same-origin' });
+                if (!res.ok) throw new Error();
+                stockOptions = await res.json();
+                populateStockSelector();
+            } catch (error) {
+                stockOptions = [];
+                populateStockSelector();
+            }
+        }
+
+        function populateStockSelector() {
+            const select = document.getElementById('stockSelector');
+            if (!select) return;
+
+            const optionsHtml = stockOptions.map((item) => {
+                const stock = item.stockQuantity ?? 0;
+                const kType = item.kType || '-';
+                return `<option value="${item._id}">${item.name} | ${item.category} | ${kType} | Stock: ${stock}</option>`;
+            }).join('');
+
+            select.innerHTML = '<option value="">Create New Product (Manual)</option>' + optionsHtml;
+            document.getElementById('stockHint').textContent = stockOptions.length
+                ? `Available stock items: ${stockOptions.length}`
+                : 'No inventory stock available. Create product manually.';
+        }
+
+        function onStockSelect() {
+            const selectedId = document.getElementById('stockSelector').value;
+            if (!selectedId) return;
+
+            const selected = stockOptions.find((item) => item._id === selectedId);
+            if (!selected) return;
+
+            document.getElementById('name').value = selected.name || '';
+            document.getElementById('category').value = selected.category || '';
+
+            if (!document.getElementById('description').value.trim()) {
+                const stock = selected.stockQuantity ?? 0;
+                const kType = selected.kType || 'N/A';
+                document.getElementById('description').value = `${selected.name} (${kType}) - Available stock: ${stock}`;
+            }
+
+            if (selected.image) {
+                document.getElementById('image').value = selected.image;
+                document.getElementById('previewImg').src = selected.image;
+                document.getElementById('imageName').textContent = 'Using stock item image';
+                document.getElementById('imagePreview').style.display = 'block';
+            }
+        }
+
         async function deleteProduct(id, name) {
             if (!confirm(`Delete ${name}?`)) return;
             try {
@@ -291,6 +363,8 @@
                 reader.readAsDataURL(file);
             }
         });
+
+        document.getElementById('stockSelector').addEventListener('change', onStockSelect);
 
         document.getElementById('productForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -330,6 +404,7 @@
             }
             
             const data = {
+                stockProductId: editingId ? null : (document.getElementById('stockSelector').value || null),
                 name: document.getElementById('name').value,
                 description: document.getElementById('description').value,
                 category: document.getElementById('category').value,
@@ -390,7 +465,10 @@
 
         (async () => {
             const auth = await checkAuth();
-            if (auth) loadProducts();
+            if (auth) {
+                await loadStockOptions();
+                loadProducts();
+            }
         })();
     </script>
 </body>

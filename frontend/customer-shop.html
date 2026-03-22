@@ -12,28 +12,31 @@
     <!-- Top Bar -->
     <div class="top-bar">
         <div><i class="fas fa-phone"></i> <a href="tel:+1234567890">Contact Us</a></div>
-        <div>
-            <span id="customerName" style="margin-right: 1rem; color: var(--brand-gold-strong);">Loading...</span>
-            <span id="loyaltyPoints" style="margin-right: 1rem;">⭐ 0 Points</span>
-            <button class="logout-btn" onclick="logout()" style="font-size: 0.85rem; padding: 0.3rem 0.8rem;">Logout</button>
+        <div id="customerStatusArea" style="display: flex; align-items: center; gap: 0.6rem;">
+            <span id="customerName" style="color: var(--brand-gold-strong);">Guest</span>
+            <span id="loyaltyPoints" style="display: none;">Loyalty: 0 Points</span>
+            <a id="customerLoginLink" href="/customer-login" class="logout-btn" style="font-size: 0.85rem; padding: 0.3rem 0.8rem; text-decoration: none;">Login</a>
+            <a id="customerRegisterLink" href="/customer-register" class="logout-btn" style="font-size: 0.85rem; padding: 0.3rem 0.8rem; text-decoration: none;">Register</a>
+            <button id="customerLogoutBtn" class="logout-btn" onclick="logout()" style="display: none; font-size: 0.85rem; padding: 0.3rem 0.8rem;">Logout</button>
         </div>
     </div>
 
     <!-- Header -->
     <header class="header">
         <div class="nav">
-            <a href="/customer-dashboard">Dashboard</a>
+            <a href="/">Home</a>
             <a href="/customer-shop">Shop</a>
-            <a href="/customer-orders">My Orders</a>
-            <a href="#loyalty">Loyalty</a>
+            <a href="/customer-orders" data-requires-auth="true">My Orders</a>
+            <a href="/customer-loyalty" data-requires-auth="true">Loyalty</a>
+            <a href="/customer-support" data-requires-auth="true">Support</a>
         </div>
         
         <div class="logo">SARANYA JEWELLERY</div>
         
         <div class="header-icons">
             <i class="fas fa-search header-icon"></i>
-            <a href="/customer-dashboard?openProfile=true"><i class="fas fa-user header-icon"></i></a>
-            <a href="/customer-cart" style="position: relative;">
+            <a id="userProfileLink" href="/customer-login"><i class="fas fa-user header-icon"></i></a>
+            <a id="cartLink" href="/customer-cart" style="position: relative;">
                 <i class="fas fa-shopping-cart header-icon"></i>
                 <span id="cartBadge" style="display: none; position: absolute; top: -8px; right: -8px; background: var(--brand-gold-strong); color: white; border-radius: 50%; padding: 2px 6px; font-size: 0.7rem;">0</span>
             </a>
@@ -90,29 +93,94 @@
         </div>
     </main>
 
-    <!-- Product Details Modal -->
-    <div id="productModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center; overflow-y: auto; padding: 2rem;">
-        <div style="background: white; border-radius: 8px; max-width: 800px; width: 100%; max-height: 90vh; overflow-y: auto; position: relative;">
-            <button onclick="closeModal()" style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 2rem; cursor: pointer; color: #999; z-index: 10;">&times;</button>
-            
-            <div id="modalContent" style="padding: 2rem;">
-                <!-- Content will be dynamically inserted -->
-            </div>
-        </div>
-    </div>
-
     <script type="module">
         import authManager from '/src/auth.js';
 
         let cart = JSON.parse(localStorage.getItem('saranyaCart') || '[]');
+        let isAuthenticated = false;
+
+        function getCurrentReturnPath() {
+            return `${window.location.pathname}${window.location.search}${window.location.hash}`;
+        }
+
+        function setActiveNavLink() {
+            const currentPath = window.location.pathname;
+            document.querySelectorAll('.nav a').forEach((link) => {
+                const href = link.getAttribute('href');
+                if (!href || href.startsWith('#')) return;
+                if (href === currentPath) {
+                    link.classList.add('active');
+                }
+            });
+        }
+
+        function goToCustomerLogin() {
+            authManager.redirectToLogin('customer', { returnTo: getCurrentReturnPath() });
+        }
+
+        function updateCustomerHeader(customer) {
+            const customerName = document.getElementById('customerName');
+            const loyaltyPoints = document.getElementById('loyaltyPoints');
+            const loginLink = document.getElementById('customerLoginLink');
+            const registerLink = document.getElementById('customerRegisterLink');
+            const logoutBtn = document.getElementById('customerLogoutBtn');
+            const userProfileLink = document.getElementById('userProfileLink');
+
+            if (customer) {
+                isAuthenticated = true;
+                customerName.textContent = customer.fullName || customer.email;
+                loyaltyPoints.textContent = `Loyalty: ${customer.loyaltyPoints || 0} Points`;
+                loyaltyPoints.style.display = 'inline';
+                loginLink.style.display = 'none';
+                registerLink.style.display = 'none';
+                logoutBtn.style.display = 'inline-flex';
+                userProfileLink.href = '/customer-dashboard?openProfile=true';
+                userProfileLink.title = customer.fullName || customer.email;
+            } else {
+                isAuthenticated = false;
+                customerName.textContent = 'Guest';
+                loyaltyPoints.style.display = 'none';
+                loginLink.href = `/customer-login?redirect=${encodeURIComponent(getCurrentReturnPath())}`;
+                registerLink.href = `/customer-register?redirect=${encodeURIComponent(getCurrentReturnPath())}`;
+                loginLink.style.display = 'inline-flex';
+                registerLink.style.display = 'inline-flex';
+                logoutBtn.style.display = 'none';
+                userProfileLink.href = `/customer-login?redirect=${encodeURIComponent(getCurrentReturnPath())}`;
+                userProfileLink.title = 'Login to your account';
+            }
+        }
 
         async function checkAuth() {
-            const customer = await authManager.checkCustomerAuth();
-            if (!customer) return;
-            document.getElementById('customerName').textContent = customer.fullName || customer.email;
-            const points = customer.loyaltyPoints || 0;
-            document.getElementById('loyaltyPoints').textContent = `⭐ ${points} Points`;
+            const customer = await authManager.checkCustomerAuth({
+                redirectOnFail: false,
+                returnToCurrentPath: false
+            });
+            updateCustomerHeader(customer);
             updateCartBadge();
+        }
+
+        function attachProtectedLinkHandlers() {
+            const protectedLinks = document.querySelectorAll('a[data-requires-auth="true"]');
+            protectedLinks.forEach((link) => {
+                link.addEventListener('click', (event) => {
+                    if (isAuthenticated) {
+                        return;
+                    }
+
+                    event.preventDefault();
+                    const target = link.getAttribute('href');
+                    authManager.redirectToLogin('customer', { returnTo: target || getCurrentReturnPath() });
+                });
+            });
+
+            const cartLink = document.getElementById('cartLink');
+            cartLink.addEventListener('click', (event) => {
+                if (isAuthenticated) {
+                    return;
+                }
+                event.preventDefault();
+                goToCustomerLogin();
+            });
         }
 
         function updateCartBadge() {
@@ -157,7 +225,7 @@
             }
 
             grid.innerHTML = products.map(product => `
-                <div class="category-card" style="cursor: pointer; padding: 1rem; background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: transform 0.3s;" onclick="showProductDetails('${product._id}')">
+                <div class="category-card" style="cursor: pointer; padding: 1rem; background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: transform 0.3s;" onclick="openProductPage('${product._id}')">
                     <img src="${product.imageUrl || '/SaranyaLOGO.jpg'}" alt="${product.name}" style="width: 100%; height: 250px; object-fit: cover; border-radius: 4px;">
                     <h3 style="margin: 1rem 0 0.5rem; color: var(--brand-burgundy);">${product.name}</h3>
                     <p style="color: #666; font-size: 0.9rem; margin: 0.5rem 0;">${product.category} - ${product.karat}</p>
@@ -176,62 +244,25 @@
             `).join('');
         }
 
-        async function showProductDetails(productId) {
-            try {
-                const res = await authManager.apiRequest(`/api/products/${productId}`);
-                if (!res.ok) throw new Error('Failed to load product');
-                
-                const product = await res.json();
-                
-                document.getElementById('modalContent').innerHTML = `
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
-                        <div>
-                            <img src="${product.imageUrl || '/SaranyaLOGO.jpg'}" alt="${product.name}" style="width: 100%; border-radius: 8px;">
-                        </div>
-                        <div>
-                            <h2 style="margin: 0 0 1rem; color: var(--brand-burgundy); font-family: 'Cormorant Garamond', serif;">${product.name}</h2>
-                            <p style="color: var(--brand-gold-strong); font-size: 1.5rem; font-weight: 600; margin: 1rem 0;">Rs. ${product.price?.toLocaleString() || 'N/A'}</p>
-                            
-                            <div style="margin: 1.5rem 0;">
-                                <p style="margin: 0.5rem 0;"><strong>Category:</strong> ${product.category}</p>
-                                <p style="margin: 0.5rem 0;"><strong>Karat:</strong> ${product.karat}</p>
-                                <p style="margin: 0.5rem 0;"><strong>Weight:</strong> ${product.weight}g</p>
-                                <p style="margin: 0.5rem 0;"><strong>SKU:</strong> ${product.sku}</p>
-                                <p style="margin: 0.5rem 0;"><strong>Availability:</strong> 
-                                    <span style="color: ${product.isAvailable ? '#28a745' : '#dc3545'};">
-                                        ${product.isAvailable ? '✓ In Stock' : '✗ Out of Stock'}
-                                    </span>
-                                </p>
-                            </div>
-
-                            <div style="margin: 1.5rem 0;">
-                                <p style="margin: 0 0 0.5rem; font-weight: 600;">Description:</p>
-                                <p style="color: #666; line-height: 1.6;">${product.description || 'No description available'}</p>
-                            </div>
-
-                            ${product.isAvailable ? `
-                                <button onclick="addToCartFromModal('${product._id}', event)" style="background: var(--brand-burgundy); color: white; border: none; padding: 1rem 2rem; border-radius: 4px; cursor: pointer; font-size: 1rem; width: 100%; margin-top: 1rem;">
-                                    <i class="fas fa-cart-plus"></i> Add to Cart
-                                </button>
-                            ` : ''}
-                        </div>
-                    </div>
-                `;
-                
-                document.getElementById('productModal').style.display = 'flex';
-            } catch (error) {
-                console.error('Error loading product details:', error);
-                alert('Failed to load product details');
-            }
-        }
-
-        function closeModal() {
-            document.getElementById('productModal').style.display = 'none';
+        function openProductPage(productId) {
+            window.location.href = `/customer-product?id=${encodeURIComponent(productId)}`;
         }
 
         async function addToCart(productId, e) {
             // Capture button reference immediately before any await
             const btn = e ? (e.target.closest ? e.target.closest('button') : e.target) : null;
+
+            if (!isAuthenticated) {
+                if (btn) {
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fas fa-user-lock"></i> Login Required';
+                }
+                setTimeout(() => {
+                    goToCustomerLogin();
+                }, 250);
+                return;
+            }
+
             try {
                 const res = await authManager.apiRequest(`/api/products/${productId}`);
                 if (!res.ok) throw new Error('Failed to load product');
@@ -272,23 +303,18 @@
             }
         }
 
-        function addToCartFromModal(productId, e) {
-            addToCart(productId, e);
-            setTimeout(() => closeModal(), 1200);
-        }
-
         function logout() {
             authManager.logout();
         }
 
         // Make functions available globally
-        window.showProductDetails = showProductDetails;
+        window.openProductPage = openProductPage;
         window.addToCart = addToCart;
-        window.addToCartFromModal = addToCartFromModal;
-        window.closeModal = closeModal;
         window.logout = logout;
 
         // Initialize
+        setActiveNavLink();
+        attachProtectedLinkHandlers();
         checkAuth();
         loadProducts();
     </script>

@@ -13,7 +13,7 @@
     <!-- Pending Approval Overlay -->
     <div id="pendingOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 9999; align-items: center; justify-content: center;">
         <div style="background: white; padding: 3rem; border-radius: 8px; text-align: center; max-width: 500px;">
-            <h2 style="color: #6f0022; margin-bottom: 1rem;">⏳ Pending Approval</h2>
+            <h2 style="color: #6f0022; margin-bottom: 1rem;">Pending Approval</h2>
             <p style="color: #666; margin-bottom: 2rem;">Your account is awaiting admin approval. Please check back later.</p>
             <button onclick="logout()" style="background: #6f0022; color: white; padding: 0.8rem 2rem; border: none; border-radius: 4px; cursor: pointer;">Logout</button>
         </div>
@@ -24,11 +24,20 @@
         <!-- Header -->
         <div style="display: flex; justify-content: space-between; align-items: center; background: #6f0022; color: white; padding: 1.5rem 2rem; border-radius: 8px; margin-bottom: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
             <div>
-                <h1 style="margin: 0; font-family: 'Cormorant Garamond', serif; font-size: 2rem;">💬 Customer Care</h1>
+                <h1 style="margin: 0; font-family: 'Cormorant Garamond', serif; font-size: 2rem;">Customer Care</h1>
                 <p style="margin: 0.5rem 0 0; opacity: 0.9;">Welcome, <span id="userName">Care Manager</span></p>
             </div>
             <button onclick="logout()" style="background: white; color: #6f0022; border: none; padding: 0.75rem 1.5rem; border-radius: 4px; cursor: pointer; font-weight: 600;">Logout</button>
         </div>
+
+        <nav class="dashboard-nav-strip">
+            <a href="/admin-dashboard">Admin</a>
+            <a href="/product-management-dashboard">Products</a>
+            <a href="/order-management-dashboard">Orders</a>
+            <a href="/inventory-dashboard">Inventory</a>
+            <a href="/loyalty-management-dashboard">Loyalty</a>
+            <a href="/customer-care-dashboard" class="active">Customer Care</a>
+        </nav>
 
         <!-- Stats Cards -->
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
@@ -49,7 +58,7 @@
         <!-- Email Messages & Promotions -->
         <div style="background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                <h2 style="margin: 0; font-family: 'Cormorant Garamond', serif;">📧 Email Messages & Promotions</h2>
+                <h2 style="margin: 0; font-family: 'Cormorant Garamond', serif;">Email Messages & Promotions</h2>
                 <button onclick="openMessageModal()" style="background: #6f0022; color: white; padding: 0.8rem 1.5rem; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">+ Create Message</button>
             </div>
 
@@ -95,7 +104,7 @@
 
         <!-- Customer Chat Support -->
         <div style="background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-top: 2rem;">
-            <h2 style="margin: 0 0 1.5rem; font-family: 'Cormorant Garamond', serif;">💬 Customer Support Chats</h2>
+            <h2 style="margin: 0 0 1.5rem; font-family: 'Cormorant Garamond', serif;">Customer Support Chats</h2>
             
             <!-- Chat Stats -->
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
@@ -127,7 +136,7 @@
             
             <div style="background: #f0f7ff; padding: 1rem; border-radius: 6px; margin-top: 1rem; border-left: 4px solid #17a2b8;">
                 <p style="margin: 0; font-size: 0.9rem; color: #666;">
-                    💡 <strong>Tip:</strong> Click on any chat above to view the conversation and send a reply
+                    <strong>Tip:</strong> Click on any chat above to view the conversation and send a reply
                 </p>
             </div>
         </div>
@@ -162,7 +171,7 @@
 
             <!-- Reply Form -->
             <div style="padding: 1.5rem; background: white; border-top: 2px solid #6f0022;">
-                <h4 style="margin: 0 0 1rem 0; color: #6f0022; font-size: 1rem;">📤 Send Your Reply:</h4>
+                <h4 style="margin: 0 0 1rem 0; color: #6f0022; font-size: 1rem;">Send Your Reply:</h4>
                 <form id="replyForm" style="display: flex; gap: 0.5rem;">
                     <input 
                         type="text" 
@@ -172,7 +181,7 @@
                         style="flex: 1; padding: 0.8rem; border: 1px solid #ddd; border-radius: 25px; font-size: 1rem;"
                     >
                     <button type="submit" style="background: #6f0022; color: white; border: none; padding: 0.8rem 1.5rem; border-radius: 25px; cursor: pointer; font-weight: 600; white-space: nowrap;">
-                        📤 Send Reply
+                        Send Reply
                     </button>
                 </form>
             </div>
@@ -444,12 +453,12 @@
                             </div>
                         </div>
                         <div style="display: flex; gap: 0.5rem;">
-                            <button onclick="editMessage('${msg._id}')" style="padding: 0.4rem 0.8rem; background: #17a2b8; color: white; border: none; border-radius: 4px; cursor: pointer;" title="Edit">✏️</button>
+                            <button onclick="editMessage('${msg._id}')" style="padding: 0.4rem 0.8rem; background: #17a2b8; color: white; border: none; border-radius: 4px; cursor: pointer;" title="Edit">Edit</button>
                             ${msg.status === 'active' ? 
-                                `<button onclick="broadcastMessage('${msg._id}')" style="padding: 0.4rem 0.8rem; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;" title="Broadcast to customers">📧</button>` :
-                                `<button disabled style="padding: 0.4rem 0.8rem; background: #ccc; color: #666; border: none; border-radius: 4px; cursor: not-allowed;" title="Only active messages can be broadcast">📧</button>`
+                                `<button onclick="broadcastMessage('${msg._id}')" style="padding: 0.4rem 0.8rem; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;" title="Broadcast to customers">Send</button>` :
+                                `<button disabled style="padding: 0.4rem 0.8rem; background: #ccc; color: #666; border: none; border-radius: 4px; cursor: not-allowed;" title="Only active messages can be broadcast">Send</button>`
                             }
-                            <button onclick="deleteMessage('${msg._id}', '${msg.title}')" style="padding: 0.4rem 0.8rem; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;" title="Delete">🗑️</button>
+                            <button onclick="deleteMessage('${msg._id}', '${msg.title}')" style="padding: 0.4rem 0.8rem; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;" title="Delete">Delete</button>
                         </div>
                     </div>
                     <p style="color: #666; margin: 0.5rem 0; line-height: 1.6;">${msg.message}</p>
@@ -649,7 +658,7 @@
                 <div style="border-bottom: 1px solid #eee; padding: 1rem 0;">
                     <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
                         <strong>${f.customerName || 'Anonymous'}</strong>
-                        <span style="color: #e0bf63;">${'⭐'.repeat(f.rating || 5)}</span>
+                        <span style="color: #e0bf63;">Rating: ${f.rating || 5}/5</span>
                     </div>
                     <p style="margin: 0.5rem 0; color: #666;">${f.message || f.comment}</p>
                     <small style="color: #999;">${new Date(f.createdAt).toLocaleDateString()}</small>
@@ -832,7 +841,7 @@
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem;">
                             <p style="margin: 0; font-size: 0.75rem; color: #999;">${time} • ${chat.messageCount} messages</p>
                             <button style="background: #6f0022; color: white; border: none; padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.85rem; cursor: pointer; font-weight: 600;" onclick="event.stopPropagation(); openChatModal('${chat._id}');">
-                                💬 Reply
+                                Reply
                             </button>
                         </div>
                     </div>
@@ -953,7 +962,7 @@
             const submitBtn = e.target.querySelector('button[type="submit"]');
             const originalText = submitBtn.innerHTML;
             submitBtn.disabled = true;
-            submitBtn.innerHTML = '⏳ Sending...';
+            submitBtn.innerHTML = 'Sending...';
             
             try {
                 const res = await fetch(`/api/chat/${currentChatId}/reply`, {

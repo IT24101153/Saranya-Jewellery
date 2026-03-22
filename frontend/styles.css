@@ -192,6 +192,16 @@ a:hover {
     width: 100%;
 }
 
+.nav a.active {
+    color: var(--brand-gold-strong);
+    font-weight: 600;
+}
+
+.nav a.active::after {
+    width: 100%;
+    background: var(--brand-gold-strong);
+}
+
 .nav a:hover {
     color: var(--brand-burgundy);
     background: transparent;
@@ -1162,6 +1172,67 @@ tbody td {
 .badge-featured {
     background: var(--brand-gold);
     color: var(--brand-burgundy-dark);
+}
+
+.home-add-cart-btn {
+    margin-top: 1rem;
+    width: 100%;
+    border: 1px solid var(--brand-burgundy);
+    background: var(--brand-burgundy);
+    color: var(--text-white);
+    padding: 0.7rem 1rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.home-add-cart-btn:hover:not(:disabled) {
+    background: var(--brand-burgundy-light);
+    border-color: var(--brand-burgundy-light);
+}
+
+.home-add-cart-btn:disabled {
+    background: #d3d3d3;
+    border-color: #d3d3d3;
+    color: #777;
+    cursor: not-allowed;
+}
+
+/* ===== Staff Dashboard Navigation Strip ===== */
+.dashboard-nav-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    background: #ffffff;
+    border: 1px solid #e8dde2;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.dashboard-nav-strip a {
+    text-decoration: none;
+    color: #6f0022;
+    border: 1px solid #d8bdc8;
+    background: #faf5f7;
+    border-radius: 999px;
+    padding: 0.45rem 0.9rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.dashboard-nav-strip a:hover {
+    background: #f2e5ea;
+    border-color: #c79aac;
+}
+
+.dashboard-nav-strip a.active {
+    background: #e0bf63;
+    border-color: #e0bf63;
+    color: #3e2723;
 }
 
 /* ===== Category Showcase ===== */

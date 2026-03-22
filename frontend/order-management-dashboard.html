@@ -30,6 +30,15 @@
             <button onclick="logout()" style="background: white; color: #6f0022; border: none; padding: 0.75rem 1.5rem; border-radius: 4px; cursor: pointer; font-weight: 600;">Logout</button>
         </div>
 
+        <nav class="dashboard-nav-strip">
+            <a href="/admin-dashboard">Admin</a>
+            <a href="/product-management-dashboard">Products</a>
+            <a href="/order-management-dashboard" class="active">Orders</a>
+            <a href="/inventory-dashboard">Inventory</a>
+            <a href="/loyalty-management-dashboard">Loyalty</a>
+            <a href="/customer-care-dashboard">Customer Care</a>
+        </nav>
+
         <!-- Stats Cards -->
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
             <div style="background: white; padding: 1.2rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center;">
@@ -58,6 +67,7 @@
         <div style="background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
                 <h2 style="margin: 0; font-family: 'Cormorant Garamond', serif;">Orders</h2>
+                <button onclick="openCreateOrderModal()" style="background: #6f0022; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">+ Create Manual Order</button>
             </div>
 
             <!-- Alert -->
@@ -135,6 +145,83 @@
         </div>
     </div>
 
+    <!-- Create Manual Order Modal -->
+    <div id="createOrderModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000; overflow-y: auto;">
+        <div style="background: white; padding: 2rem; border-radius: 8px; max-width: 800px; width: 90%; margin: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h3 style="margin: 0; font-family: 'Cormorant Garamond', serif;">Create Manual Order</h3>
+                <button onclick="closeCreateOrderModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+            </div>
+
+            <form id="manualOrderForm" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <!-- Customer Details Row 1 -->
+                <div>
+                    <label style="display: block; margin-bottom: 0.3rem; font-weight: 600; font-size: 0.9rem;">Customer Name *</label>
+                    <input type="text" id="mo_customerName" placeholder="Enter customer name" required style="width: 100%; padding: 0.6rem; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9rem; box-sizing: border-box;">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 0.3rem; font-weight: 600; font-size: 0.9rem;">Customer Email *</label>
+                    <input type="email" id="mo_customerEmail" placeholder="customer@example.com" required style="width: 100%; padding: 0.6rem; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9rem; box-sizing: border-box;">
+                </div>
+
+                <!-- Customer Details Row 2 -->
+                <div>
+                    <label style="display: block; margin-bottom: 0.3rem; font-weight: 600; font-size: 0.9rem;">Phone Number *</label>
+                    <input type="tel" id="mo_phoneNumber" placeholder="Enter phone number" required style="width: 100%; padding: 0.6rem; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9rem; box-sizing: border-box;">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 0.3rem; font-weight: 600; font-size: 0.9rem;">Payment Method</label>
+                    <select id="mo_paymentMethod" style="width: 100%; padding: 0.6rem; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9rem; box-sizing: border-box;">
+                        <option value="">Select Payment Method</option>
+                        <option value="Bank Transfer">Bank Transfer</option>
+                        <option value="Cash">Cash</option>
+                        <option value="Card">Card</option>
+                        <option value="Cheque">Cheque</option>
+                    </select>
+                </div>
+
+                <!-- Items Section -->
+                <div style="grid-column: 1 / -1; border-top: 1px solid #eee; padding-top: 1rem; margin-top: 0.5rem;">
+                    <h4 style="margin: 0 0 1rem; font-size: 0.95rem;">Order Items</h4>
+                    <div id="mo_itemsContainer" style="display: grid; gap: 1rem; margin-bottom: 1rem;">
+                        <!-- Items will be added here -->
+                    </div>
+                    <button type="button" onclick="addManualOrderItem()" style="background: #6c757d; color: white; padding: 0.5rem 1rem; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 0.9rem;">+ Add Item</button>
+                </div>
+
+                <!-- Totals -->
+                <div style="grid-column: 1 / -1; border-top: 1px solid #eee; padding-top: 1rem;">
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
+                        <div>
+                            <label style="display: block; margin-bottom: 0.3rem; font-weight: 600; font-size: 0.9rem;">Subtotal (Rs.)</label>
+                            <input type="number" id="mo_subtotal" value="0" readonly style="width: 100%; padding: 0.6rem; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9rem; box-sizing: border-box; background: #f9f9f9;">
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 0.3rem; font-weight: 600; font-size: 0.9rem;">Tax (Rs.)</label>
+                            <input type="number" id="mo_tax" value="0" step="0.01" style="width: 100%; padding: 0.6rem; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9rem; box-sizing: border-box;" oninput="updateOrderTotals()">
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 0.3rem; font-weight: 600; font-size: 0.9rem;">Total (Rs.)</label>
+                            <input type="number" id="mo_total" value="0" readonly style="width: 100%; padding: 0.6rem; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9rem; box-sizing: border-box; background: #f9f9f9; color: #6f0022; font-weight: 600;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notes -->
+                <div style="grid-column: 1 / -1;">
+                    <label style="display: block; margin-bottom: 0.3rem; font-weight: 600; font-size: 0.9rem;">Order Notes</label>
+                    <textarea id="mo_orderNotes" placeholder="Add any special notes for this order..." style="width: 100%; padding: 0.6rem; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9rem; box-sizing: border-box; resize: vertical; height: 60px;"></textarea>
+                </div>
+
+                <!-- Buttons -->
+                <div style="grid-column: 1 / -1; display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1rem; border-top: 1px solid #eee; padding-top: 1rem;">
+                    <button type="button" onclick="closeCreateOrderModal()" style="background: #6c757d; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Cancel</button>
+                    <button type="submit" style="background: #6f0022; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Create Order</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <style>
         .filter-btn { padding: 0.5rem 1rem; border: 1px solid #6f0022; background: white; color: #6f0022; cursor: pointer; border-radius: 4px; font-weight: 500; transition: all 0.3s; font-size: 0.85rem; }
         .filter-btn:hover { background: #f5f5f5; }
@@ -147,6 +234,7 @@
 
         let orders = [];
         let currentFilter = 'all';
+        let availableProducts = []; // Store products for order creation
 
         async function checkAuth() {
             const user = await authManager.checkStaffAuth('Order Management');
@@ -202,6 +290,7 @@
             if (o.status === 'Pending') {
                 btns += `<button class="action-btn" style="background: #17a2b8; color: white;" onclick="confirmOrder('${o._id}')">✅ Confirm</button>`;
                 btns += `<button class="action-btn" style="background: #dc3545; color: white;" onclick="changeStatus('${o._id}', 'Cancelled')">❌ Cancel</button>`;
+                btns += `<button class="action-btn" style="background: #e83e8c; color: white;" onclick="deleteOrder('${o._id}')">🗑️ Delete</button>`;
             }
             if (o.status === 'Confirmed') {
                 btns += `<button class="action-btn" style="background: #6f42c1; color: white;" onclick="createInvoice('${o._id}')">🧾 Create Invoice</button>`;
@@ -373,6 +462,237 @@
             setTimeout(() => alert.style.display = 'none', 5000);
         }
 
+        async function deleteOrder(id) {
+            if (!confirm('Are you sure you want to delete this order? This action cannot be undone.')) return;
+            try {
+                const res = await fetch(`/api/orders/${id}`, {
+                    method: 'DELETE',
+                    credentials: 'same-origin'
+                });
+                if (!res.ok) { const e = await res.json(); throw new Error(e.message); }
+                showAlert('Order deleted successfully', 'success');
+                loadOrders();
+            } catch (e) { showAlert(e.message || 'Error deleting order', 'error'); }
+        }
+
+        async function loadAvailableProducts() {
+            try {
+                const res = await fetch('/api/products', { credentials: 'same-origin' });
+                if (!res.ok) throw new Error('Failed to load products');
+                availableProducts = await res.json();
+            } catch (e) {
+                console.error('Error loading products:', e);
+                availableProducts = [];
+            }
+        }
+
+        function getProductOptions() {
+            return availableProducts.map(p => `
+                <option value="${p._id}" data-name="${p.name}" data-price="${p.price || 0}" data-stock="${p.stockQuantity || 0}">
+                    ${p.name} (Stock: ${p.stockQuantity || 0}) - Rs. ${(p.price || 0).toLocaleString()}
+                </option>
+            `).join('');
+        }
+
+        function openCreateOrderModal() {
+            document.getElementById('mo_itemsContainer').innerHTML = '';
+            addManualOrderItem(); // Add first empty item row
+            document.getElementById('manualOrderForm').reset();
+            document.getElementById('createOrderModal').style.display = 'flex';
+        }
+
+        function closeCreateOrderModal() {
+            document.getElementById('createOrderModal').style.display = 'none';
+        }
+
+        let manualOrderItemCount = 0;
+
+        function addManualOrderItem() {
+            const itemId = manualOrderItemCount++;
+            const container = document.getElementById('mo_itemsContainer');
+            const itemHtml = `
+                <div id="mo_item_${itemId}" style="display: grid; grid-template-columns: 2fr 0.8fr 1fr 1fr 1fr auto; gap: 0.5rem; padding: 0.8rem; background: #f9f9f9; border-radius: 4px; border: 1px solid #eee;">
+                    <div>
+                        <label style="display: block; margin-bottom: 0.2rem; font-weight: 600; font-size: 0.8rem;">Product</label>
+                        <select class="mo_item_product" onchange="onProductChange(this, ${itemId})" style="width: 100%; padding: 0.4rem; border: 1px solid #ddd; border-radius: 4px; font-size: 0.75rem; box-sizing: border-box;">
+                            <option value="">-- Select Product --</option>
+                            ${getProductOptions()}
+                            <option value="custom">-- Custom Item --</option>
+                        </select>
+                    </div>
+                    <div style="display: none;" class="mo_item_custom_name_section">
+                        <label style="display: block; margin-bottom: 0.2rem; font-weight: 600; font-size: 0.8rem;">Item Name</label>
+                        <input type="text" class="mo_item_custom_name" placeholder="Name" style="width: 100%; padding: 0.4rem; border: 1px solid #ddd; border-radius: 4px; font-size: 0.75rem; box-sizing: border-box;">
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 0.2rem; font-weight: 600; font-size: 0.8rem;">Qty</label>
+                        <input type="number" class="mo_item_qty" value="1" min="1" style="width: 100%; padding: 0.4rem; border: 1px solid #ddd; border-radius: 4px; font-size: 0.75rem; box-sizing: border-box;" oninput="updateOrderTotals()">
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 0.2rem; font-weight: 600; font-size: 0.8rem;">Price (Rs.)</label>
+                        <input type="number" class="mo_item_price" value="0" step="0.01" min="0" readonly style="width: 100%; padding: 0.4rem; border: 1px solid #ddd; border-radius: 4px; font-size: 0.75rem; box-sizing: border-box; background: #f0f0f0;" oninput="updateOrderTotals()">
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 0.2rem; font-weight: 600; font-size: 0.8rem;">Subtotal</label>
+                        <input type="number" class="mo_item_subtotal" value="0" readonly style="width: 100%; padding: 0.4rem; border: 1px solid #ddd; border-radius: 4px; font-size: 0.75rem; box-sizing: border-box; background: #fff; color: #6f0022; font-weight: 600;">
+                    </div>
+                    <button type="button" onclick="removeManualOrderItem(${itemId})" style="background: #dc3545; color: white; border: none; padding: 0.4rem 0.6rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem; align-self: flex-end; height: 30px; display: flex; align-items: center;">🗑️</button>
+                </div>
+            `;
+            container.innerHTML += itemHtml;
+        }
+
+        function onProductChange(selectElem, itemId) {
+            const row = document.getElementById(`mo_item_${itemId}`);
+            const selectedValue = selectElem.value;
+            const customNameSection = row.querySelector('.mo_item_custom_name_section');
+            const priceInput = row.querySelector('.mo_item_price');
+            
+            if (selectedValue === 'custom') {
+                customNameSection.style.display = 'block';
+                priceInput.removeAttribute('readonly');
+                priceInput.style.background = 'white';
+                priceInput.value = '0';
+            } else if (selectedValue) {
+                const selected = selectElem.options[selectElem.selectedIndex];
+                const price = parseFloat(selected.getAttribute('data-price')) || 0;
+                priceInput.value = price.toFixed(2);
+                priceInput.setAttribute('readonly', 'readonly');
+                priceInput.style.background = '#f0f0f0';
+                customNameSection.style.display = 'none';
+            } else {
+                customNameSection.style.display = 'none';
+                priceInput.value = '0';
+                priceInput.setAttribute('readonly', 'readonly');
+                priceInput.style.background = '#f0f0f0';
+            }
+            updateOrderTotals();
+        }
+
+        function removeManualOrderItem(itemId) {
+            const elem = document.getElementById(`mo_item_${itemId}`);
+            if (elem) elem.remove();
+            updateOrderTotals();
+        }
+
+        function updateOrderTotals() {
+            let subtotal = 0;
+            document.querySelectorAll('#mo_itemsContainer input.mo_item_qty').forEach((qtyInput, idx) => {
+                const row = qtyInput.closest('[id^="mo_item_"]');
+                const qty = parseFloat(qtyInput.value) || 0;
+                const price = parseFloat(row.querySelector('.mo_item_price').value) || 0;
+                const itemSubtotal = qty * price;
+                row.querySelector('.mo_item_subtotal').value = itemSubtotal.toFixed(2);
+                subtotal += itemSubtotal;
+            });
+            document.getElementById('mo_subtotal').value = subtotal.toFixed(2);
+            const tax = parseFloat(document.getElementById('mo_tax').value) || 0;
+            const total = subtotal + tax;
+            document.getElementById('mo_total').value = total.toFixed(2);
+        }
+
+        async function submitManualOrder(e) {
+            e.preventDefault();
+            
+            // Validate customer fields
+            const customerName = document.getElementById('mo_customerName').value.trim();
+            const customerEmail = document.getElementById('mo_customerEmail').value.trim();
+            const phoneNumber = document.getElementById('mo_phoneNumber').value.trim();
+            
+            if (!customerName || !customerEmail || !phoneNumber) {
+                showAlert('Please fill in all customer details', 'error');
+                return;
+            }
+
+            // Compile items
+            const items = [];
+            let hasItems = false;
+            document.querySelectorAll('#mo_itemsContainer [id^="mo_item_"]').forEach((itemRow, idx) => {
+                const productSelect = itemRow.querySelector('.mo_item_product');
+                const selectedValue = productSelect.value;
+                const qty = parseInt(itemRow.querySelector('.mo_item_qty').value) || 0;
+                const price = parseFloat(itemRow.querySelector('.mo_item_price').value) || 0;
+                
+                let name;
+                let itemData = {
+                    quantity: qty,
+                    price
+                };
+                
+                if (selectedValue === 'custom') {
+                    // Custom item
+                    name = itemRow.querySelector('.mo_item_custom_name').value.trim();
+                    if (!name) {
+                        showAlert('Please enter a name for custom items', 'error');
+                        return;
+                    }
+                    itemData.name = name;
+                    // Don't include productId for custom items
+                } else if (selectedValue) {
+                    // Selected product
+                    const selected = productSelect.options[productSelect.selectedIndex];
+                    name = selected.getAttribute('data-name');
+                    itemData.name = name;
+                    itemData.productId = selectedValue;
+                } else {
+                    showAlert('Please select a product or enter a custom item', 'error');
+                    return;
+                }
+                
+                if (qty > 0 && price > 0 && itemData.name) {
+                    items.push(itemData);
+                    hasItems = true;
+                }
+            });
+
+            if (!hasItems) {
+                showAlert('Please add at least one item to the order', 'error');
+                return;
+            }
+
+            const subtotal = parseFloat(document.getElementById('mo_subtotal').value) || 0;
+            const tax = parseFloat(document.getElementById('mo_tax').value) || 0;
+            const total = parseFloat(document.getElementById('mo_total').value) || 0;
+
+            if (total <= 0) {
+                showAlert('Order total must be greater than 0', 'error');
+                return;
+            }
+
+            const payload = {
+                customerName,
+                customerEmail,
+                phoneNumber,
+                items,
+                subtotal,
+                tax,
+                total,
+                paymentMethod: document.getElementById('mo_paymentMethod').value || 'Bank Transfer',
+                orderNotes: document.getElementById('mo_orderNotes').value.trim()
+            };
+
+            try {
+                const res = await fetch('/api/orders/manual/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',
+                    body: JSON.stringify(payload)
+                });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.message);
+                }
+
+                const data = await res.json();
+                showAlert(`Order #${data.orderNumber} created successfully! Customer notified.`, 'success');
+                closeCreateOrderModal();
+                loadOrders();
+            } catch (e) {
+                showAlert(e.message || 'Error creating order', 'error');
+            }
+        }
+
         function logout() { authManager.logout(); }
 
         // Make functions available globally for onclick/onchange handlers
@@ -384,8 +704,24 @@
         window.changeStatus = changeStatus;
         window.viewOrder = viewOrder;
         window.closeDetailModal = closeDetailModal;
+        window.deleteOrder = deleteOrder;
+        window.openCreateOrderModal = openCreateOrderModal;
+        window.closeCreateOrderModal = closeCreateOrderModal;
+        window.addManualOrderItem = addManualOrderItem;
+        window.removeManualOrderItem = removeManualOrderItem;
+        window.updateOrderTotals = updateOrderTotals;
+        window.submitManualOrder = submitManualOrder;
+        window.onProductChange = onProductChange;
 
-        (async () => { const auth = await checkAuth(); if (auth) loadOrders(); })();
+        (async () => { 
+            const auth = await checkAuth(); 
+            if (auth) {
+                loadOrders();
+                await loadAvailableProducts(); // Load products on page load
+                // Setup manual order form submission
+                document.getElementById('manualOrderForm').addEventListener('submit', submitManualOrder);
+            }
+        })();
     </script>
 </body>
 </html>

@@ -479,4 +479,149 @@ router.patch('/:id/notify-inventory', async (req, res) => {
   }
 });
 
+// DELETE /api/orders/:id - Delete an order (staff only)
+router.delete('/:id', async (req, res) => {
+  try {
+    if (!req.session.staffId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const order = await Order.findById(req.params.id);
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    // Restore stock if order was not already cancelled/refunded
+    if (!['Cancelled', 'Refunded'].includes(order.status)) {
+      for (const item of order.items) {
+        const product = await Product.findById(item.productId);
+        if (product) {
+          product.stockQuantity += item.quantity;
+          await product.save();
+        }
+      }
+    }
+
+    // Delete the order
+    await Order.findByIdAndDelete(req.params.id);
+
+    res.json({ message: 'Order deleted successfully' });
+  } catch (error) {
+    console.error('Delete order error:', error);
+    res.status(500).json({ message: 'Server error while deleting order' });
+  }
+});
+
+// POST /api/orders/manual - Create order manually by staff for customer
+router.post('/manual/create', async (req, res) => {
+  try {
+    if (!req.session.staffId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const {
+      customerName,
+      customerEmail,
+      phoneNumber,
+      items,
+      subtotal,
+      tax,
+      total,
+      paymentMethod,
+      paymentReceipt,
+      orderNotes
+    } = req.body;
+
+    // Validate required fields
+    if (!customerName || !customerEmail || !phoneNumber) {
+      return res.status(400).json({ message: 'Customer details (name, email, phone) are required' });
+    }
+
+    if (!items || items.length === 0) {
+      return res.status(400).json({ message: 'Order must have at least one item' });
+    }
+
+    if (total === undefined || total === null) {
+      return res.status(400).json({ message: 'Total amount is required' });
+    }
+
+    // Validate and decrease stock for each item
+    for (const item of items) {
+      // Only validate stock for items with productId (skip custom items)
+      if (item.productId) {
+        const product = await Product.findById(item.productId);
+        if (!product) {
+          return res.status(400).json({ message: `Product "${item.name}" is no longer available` });
+        }
+        if (product.stockQuantity < item.quantity) {
+          return res.status(400).json({ message: `Insufficient stock for ${product.name}. Available: ${product.stockQuantity}` });
+        }
+        product.stockQuantity -= item.quantity;
+        await product.save();
+      }
+      // Custom items (without productId) don't require stock validation
+    }
+
+    // Create new order
+    const newOrder = new Order({
+      customerName,
+      customerEmail,
+      items,
+      subtotal: subtotal || 0,
+      tax: tax || 0,
+      total,
+      deliveryAddress: 'Shop Collection - Visit Saranya Jewellery',
+      phoneNumber,
+      paymentMethod: paymentMethod || 'Bank Transfer',
+      paymentReceipt: paymentReceipt || null,
+      orderNotes: orderNotes || `Manually created by staff (${req.session.email || req.session.staffId})`,
+      status: 'Pending',
+      paymentStatus: 'Pending'
+    });
+
+    await newOrder.save();
+
+    // Send order confirmation email to customer
+    try {
+      await emailService.sendCustomEmail(
+        customerEmail,
+        `Order #${newOrder.orderNumber} - Created by Saranya Jewellery`,
+        `<div style="font-family: 'Poppins', sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: #6f0022; color: white; padding: 2rem; text-align: center;">
+            <h1 style="margin: 0;">Saranya Jewellery</h1>
+          </div>
+          <div style="padding: 2rem; background: #f9f9f9;">
+            <h2 style="color: #6f0022;">Order Created Successfully!</h2>
+            <p>Dear ${customerName},</p>
+            <p>Your order has been created and is pending confirmation.</p>
+            <div style="background: white; padding: 1.5rem; border-radius: 8px; margin: 1rem 0;">
+              <p><strong>Order Number:</strong> ${newOrder.orderNumber}</p>
+              <p><strong>Items:</strong> ${items.length} item(s)</p>
+              <p><strong>Total:</strong> Rs. ${total.toLocaleString()}</p>
+              <p><strong>Payment Method:</strong> ${paymentMethod || 'Bank Transfer'}</p>
+              <p><strong>Collection:</strong> Visit Saranya Jewellery shop</p>
+            </div>
+            <p style="color: #666;">Once your order is confirmed and prepared, we will notify you to collect it from our shop.</p>
+            <p style="color: #666;">Thank you for choosing Saranya Jewellery!</p>
+          </div>
+        </div>`
+      );
+    } catch (emailErr) {
+      console.error('Failed to send order confirmation email:', emailErr);
+    }
+
+    res.status(201).json({
+      message: 'Order created successfully',
+      orderNumber: newOrder.orderNumber,
+      orderId: newOrder._id
+    });
+  } catch (error) {
+    console.error('Manual order creation error:', error);
+    const errorMessage = error.name === 'ValidationError'
+      ? Object.values(error.errors).map(e => e.message).join(', ')
+      : error.message || 'Server error while creating order';
+    res.status(500).json({ message: errorMessage });
+  }
+});
+
 export default router;

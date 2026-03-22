@@ -5,6 +5,19 @@ import Staff from '../models/Staff.js';
 
 const router = express.Router();
 
+// Get inventory-backed stock options for product manager (protected)
+router.get('/stock-options', isProductManager, async (req, res) => {
+  try {
+    const stockItems = await Product.find({ stockQuantity: { $gt: 0 } })
+      .select('name category stockQuantity kType weight supplier image productStatus')
+      .sort({ updatedAt: -1 });
+
+    res.json(stockItems);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching stock options', error: error.message });
+  }
+});
+
 // Get product statistics (protected route) - Must be before /:id route
 router.get('/stats/overview', isAuthenticated, async (req, res) => {
   try {
@@ -80,6 +93,7 @@ router.get('/:id', async (req, res) => {
 router.post('/', isProductManager, async (req, res) => {
   try {
     const {
+      stockProductId,
       name,
       description,
       image,
@@ -94,11 +108,6 @@ router.post('/', isProductManager, async (req, res) => {
       sessionData: req.session
     });
 
-    // Validate required fields (only basic info from Product Manager)
-    if (!name || !description || !image || !category) {
-      return res.status(400).json({ message: 'Please provide name, description, image, and category' });
-    }
-
     // Check if staff exists
     if (!req.session.staffId) {
       return res.status(401).json({ message: 'User session invalid. Please log in again.' });
@@ -107,6 +116,36 @@ router.post('/', isProductManager, async (req, res) => {
     const staff = await Staff.findById(req.session.staffId);
     if (!staff) {
       return res.status(401).json({ message: 'User not found. Please log in again.' });
+    }
+
+    // If product manager selected an existing inventory stock item,
+    // update and publish that same product instead of creating a duplicate.
+    if (stockProductId) {
+      const stockProduct = await Product.findById(stockProductId);
+      if (!stockProduct) {
+        return res.status(404).json({ message: 'Selected stock item not found' });
+      }
+
+      if (description) stockProduct.description = description;
+      if (image) stockProduct.image = image;
+      if (featured !== undefined) stockProduct.featured = featured;
+
+      // Keep inventory values as source of truth, but allow optional overrides.
+      if (name) stockProduct.name = name;
+      if (category) stockProduct.category = category;
+
+      stockProduct.productStatus = 'Active';
+      await stockProduct.save();
+
+      const populatedStockProduct = await Product.findById(stockProduct._id)
+        .populate('createdBy', 'fullName email');
+
+      return res.status(200).json(populatedStockProduct);
+    }
+
+    // Validate required fields for brand-new product creation
+    if (!name || !description || !image || !category) {
+      return res.status(400).json({ message: 'Please provide name, description, image, and category' });
     }
 
     const product = new Product({

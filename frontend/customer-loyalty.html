@@ -14,7 +14,7 @@
         <div><i class="fas fa-phone"></i> <a href="tel:+1234567890">Contact Us</a></div>
         <div>
             <span id="customerName" style="margin-right: 1rem; color: var(--brand-gold-strong);">Loading...</span>
-            <span id="loyaltyPoints" style="margin-right: 1rem;">⭐ 0 Points</span>
+            <span id="loyaltyPoints" style="margin-right: 1rem;">Loyalty: 0 Points</span>
             <button class="logout-btn" onclick="logout()" style="font-size: 0.85rem; padding: 0.3rem 0.8rem;">Logout</button>
         </div>
     </div>
@@ -22,7 +22,7 @@
     <!-- Header -->
     <header class="header">
         <div class="nav">
-            <a href="/customer-dashboard">Dashboard</a>
+            <a href="/">Home</a>
             <a href="/customer-shop">Shop</a>
             <a href="/customer-orders">My Orders</a>
             <a href="/customer-loyalty">Loyalty</a>
@@ -47,7 +47,7 @@
 
             <!-- Current Balance -->
             <div class="section loyalty-card" style="text-align: center; padding: 3rem 2rem;">
-                <div style="font-size: 5rem; margin-bottom: 1rem;">⭐</div>
+                <div style="font-size: 5rem; margin-bottom: 1rem;"><i class="fas fa-gem"></i></div>
                 <h2 style="color: var(--brand-gold); font-size: 3rem; margin: 1rem 0;">
                     <span id="loyaltyBalance">0</span> <span style="font-size: 1.5rem;">Points</span>
                 </h2>
@@ -64,17 +64,17 @@
                 <div class="section-content">
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem; margin-top: 1.5rem;">
                         <div style="text-align: center; padding: 2rem; background: var(--bg-light); border-radius: 12px;">
-                            <div style="font-size: 3rem; margin-bottom: 1rem;">💰</div>
+                            <div style="font-size: 3rem; margin-bottom: 1rem;"><i class="fas fa-wallet"></i></div>
                             <h3 style="color: var(--brand-burgundy); margin-bottom: 1rem;">Earn Points</h3>
                             <p style="color: var(--text-medium);">Earn 1 point for every Rs. 100 you spend on purchases</p>
                         </div>
                         <div style="text-align: center; padding: 2rem; background: var(--bg-light); border-radius: 12px;">
-                            <div style="font-size: 3rem; margin-bottom: 1rem;">🎁</div>
+                            <div style="font-size: 3rem; margin-bottom: 1rem;"><i class="fas fa-gift"></i></div>
                             <h3 style="color: var(--brand-burgundy); margin-bottom: 1rem;">Redeem Rewards</h3>
                             <p style="color: var(--text-medium);">100 points = Rs. 100 discount on your next purchase</p>
                         </div>
                         <div style="text-align: center; padding: 2rem; background: var(--bg-light); border-radius: 12px;">
-                            <div style="font-size: 3rem; margin-bottom: 1rem;">⏰</div>
+                            <div style="font-size: 3rem; margin-bottom: 1rem;"><i class="fas fa-clock"></i></div>
                             <h3 style="color: var(--brand-burgundy); margin-bottom: 1rem;">Never Expire</h3>
                             <p style="color: var(--text-medium);">Your points never expire and keep accumulating</p>
                         </div>
@@ -90,19 +90,19 @@
                 <div class="section-content">
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-top: 1.5rem;">
                         <div style="background: linear-gradient(135deg, #cd7f32 0%, #d89c5f 100%); color: white; padding: 2rem; border-radius: 12px; text-align: center;">
-                            <div style="font-size: 3rem; margin-bottom: 1rem;">🥉</div>
+                            <div style="font-size: 3rem; margin-bottom: 1rem;"><i class="fas fa-award"></i></div>
                             <h3 style="color: white; margin-bottom: 1rem;">Bronze</h3>
                             <p style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem;">0 - 999 Points</p>
                             <p style="font-size: 0.9rem; opacity: 0.9;">Standard benefits + Welcome bonus</p>
                         </div>
                         <div style="background: linear-gradient(135deg, #c0c0c0 0%, #e8e8e8 100%); color: #333; padding: 2rem; border-radius: 12px; text-align: center;">
-                            <div style="font-size: 3rem; margin-bottom: 1rem;">🥈</div>
+                            <div style="font-size: 3rem; margin-bottom: 1rem;"><i class="fas fa-medal"></i></div>
                             <h3 style="color: #333; margin-bottom: 1rem;">Silver</h3>
                             <p style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem;">1000 - 2499 Points</p>
                             <p style="font-size: 0.9rem; opacity: 0.8;">5% extra points on purchases</p>
                         </div>
                         <div style="background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%); color: #333; padding: 2rem; border-radius: 12px; text-align: center;">
-                            <div style="font-size: 3rem; margin-bottom: 1rem;">🥇</div>
+                            <div style="font-size: 3rem; margin-bottom: 1rem;"><i class="fas fa-crown"></i></div>
                             <h3 style="color: #333; margin-bottom: 1rem;">Gold</h3>
                             <p style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem;">2500+ Points</p>
                             <p style="font-size: 0.9rem; opacity: 0.8;">10% extra points + Priority support</p>
@@ -195,13 +195,24 @@
 
         let cart = JSON.parse(localStorage.getItem('saranyaCart') || '[]');
 
+        function setActiveNavLink() {
+            const currentPath = window.location.pathname;
+            document.querySelectorAll('.nav a').forEach((link) => {
+                const href = link.getAttribute('href');
+                if (!href || href.startsWith('#')) return;
+                if (href === currentPath) {
+                    link.classList.add('active');
+                }
+            });
+        }
+
         async function checkAuth() {
             const customer = await authManager.checkCustomerAuth();
             if (!customer) return;
 
             document.getElementById('customerName').textContent = customer.fullName || customer.email;
             const points = customer.loyaltyPoints || 0;
-            document.getElementById('loyaltyPoints').textContent = `⭐ ${points} Points`;
+            document.getElementById('loyaltyPoints').textContent = `Loyalty: ${points} Points`;
             document.getElementById('loyaltyBalance').textContent = points;
             
             updateCartBadge();
@@ -226,6 +237,7 @@
             window.location.href = '/customer-dashboard?openProfile=true';
         }
 
+        setActiveNavLink();
         checkAuth();
 
         window.logout = logout;
