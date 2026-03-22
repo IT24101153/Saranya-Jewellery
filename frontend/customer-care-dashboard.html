@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Care - Saranya Jewellery</title>
+    <link rel="icon" href="/favicon.png">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Cormorant+Garamond:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body style="font-family: 'Poppins', sans-serif; background-color: #f5f5f5; margin: 0; padding: 0;">
+
+    <!-- Pending Approval Overlay -->
+    <div id="pendingOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 9999; align-items: center; justify-content: center;">
+        <div style="background: white; padding: 3rem; border-radius: 8px; text-align: center; max-width: 500px;">
+            <h2 style="color: #6f0022; margin-bottom: 1rem;">⏳ Pending Approval</h2>
+            <p style="color: #666; margin-bottom: 2rem;">Your account is awaiting admin approval. Please check back later.</p>
+            <button onclick="logout()" style="background: #6f0022; color: white; padding: 0.8rem 2rem; border: none; border-radius: 4px; cursor: pointer;">Logout</button>
+        </div>
+    </div>
+
+    <div style="max-width: 1400px; margin: 0 auto; padding: 2rem;">
+        
+        <!-- Header -->
+        <div style="display: flex; justify-content: space-between; align-items: center; background: #6f0022; color: white; padding: 1.5rem 2rem; border-radius: 8px; margin-bottom: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            <div>
+                <h1 style="margin: 0; font-family: 'Cormorant Garamond', serif; font-size: 2rem;">💬 Customer Care</h1>
+                <p style="margin: 0.5rem 0 0; opacity: 0.9;">Welcome, <span id="userName">Care Manager</span></p>
+            </div>
+            <button onclick="logout()" style="background: white; color: #6f0022; border: none; padding: 0.75rem 1.5rem; border-radius: 4px; cursor: pointer; font-weight: 600;">Logout</button>
+        </div>
+
+        <!-- Stats Cards -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center;">
+                <h3 style="font-size: 2.5rem; color: #6f0022; margin: 0 0 0.5rem;" id="totalMessages">0</h3>
+                <p style="margin: 0; color: #666;">Total Messages</p>
+            </div>
+            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center;">
+                <h3 style="font-size: 2.5rem; color: #28a745; margin: 0 0 0.5rem;" id="activeMessages">0</h3>
+                <p style="margin: 0; color: #666;">Active Messages</p>
+            </div>
+            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center;">
+                <h3 style="font-size: 2.5rem; color: #17a2b8; margin: 0 0 0.5rem;" id="totalSent">0</h3>
+                <p style="margin: 0; color: #666;">Emails Sent</p>
+            </div>
+        </div>
+
+        <!-- Email Messages & Promotions -->
+        <div style="background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h2 style="margin: 0; font-family: 'Cormorant Garamond', serif;">📧 Email Messages & Promotions</h2>
+                <button onclick="openMessageModal()" style="background: #6f0022; color: white; padding: 0.8rem 1.5rem; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">+ Create Message</button>
+            </div>
+
+            <!-- Alert -->
+            <div id="alert" style="padding: 1rem; border-radius: 4px; margin-bottom: 1rem; display: none;"></div>
+
+            <!-- Filter Tabs -->
+            <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; border-bottom: 2px solid #eee; padding-bottom: 0.5rem;">
+                <button onclick="filterMessages('all')" id="filter-all" style="background: none; border: none; padding: 0.5rem 1rem; cursor: pointer; font-weight: 600; color: #6f0022; border-bottom: 3px solid #6f0022;">All</button>
+                <button onclick="filterMessages('active')" id="filter-active" style="background: none; border: none; padding: 0.5rem 1rem; cursor: pointer; color: #666;">Active</button>
+                <button onclick="filterMessages('inactive')" id="filter-inactive" style="background: none; border: none; padding: 0.5rem 1rem; cursor: pointer; color: #666;">Inactive</button>
+            </div>
+
+            <!-- Messages List -->
+            <div id="messagesList" style="display: flex; flex-direction: column; gap: 1rem;">
+                <div style="padding: 2rem; text-align: center; color: #999;">Loading messages...</div>
+            </div>
+        </div>
+
+        <!-- Promotional Campaigns (Old Section - Keep for backward compatibility) -->
+        <div style="background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem; display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h2 style="margin: 0; font-family: 'Cormorant Garamond', serif;">Promotional Campaigns</h2>
+                <button onclick="openCampaignModal()" style="background: #6f0022; color: white; padding: 0.8rem 1.5rem; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">+ Create Campaign</button>
+            </div>
+
+            <!-- Alert -->
+            <div id="alert" style="padding: 1rem; border-radius: 4px; margin-bottom: 1rem; display: none;"></div>
+
+            <!-- Campaigns Grid -->
+            <div id="campaignsGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem;">
+                <div style="padding: 2rem; text-align: center; color: #999;">Loading campaigns...</div>
+            </div>
+        </div>
+
+        <!-- Customer Feedback -->
+        <div style="background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <h2 style="margin: 0 0 1.5rem; font-family: 'Cormorant Garamond', serif;">Customer Feedback</h2>
+            <div id="feedbackList">
+                <p style="text-align: center; color: #999;">Loading feedback...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Message Modal -->
+    <div id="messageModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000;">
+        <div style="background: white; padding: 2rem; border-radius: 8px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 1.5rem;">
+                <h3 id="messageModalTitle" style="margin: 0;">Create Email Message</h3>
+                <button onclick="closeMessageModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+            </div>
+            <form id="messageForm">
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem;">Title *</label>
+                    <input type="text" id="msgTitle" required style="width: 95%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem;">Message Content *</label>
+                    <textarea id="msgContent" required rows="5" style="width: 95%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;"></textarea>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem;">Type *</label>
+                        <select id="msgType" required style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
+                            <option value="promotion">Promotion</option>
+                            <option value="announcement">Announcement</option>
+                            <option value="welcome">Welcome</option>
+                            <option value="general">General</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem;">Status *</label>
+                        <select id="msgStatus" required style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                            <option value="scheduled">Scheduled</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem;">Target Audience *</label>
+                        <select id="msgTarget" required style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
+                            <option value="all">All Customers</option>
+                            <option value="new">New Customers</option>
+                            <option value="existing">Existing Customers</option>
+                            <option value="specific">Specific</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem;">Valid Until</label>
+                        <input type="date" id="msgValidUntil" style="width: 90%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
+                    </div>
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                        <input type="checkbox" id="msgSendOnLogin" checked style="width: 20px; height: 20px;">
+                        <span>Send on customer login</span>
+                    </label>
+                </div>
+                <button type="submit" style="width: 100%; background: #6f0022; color: white; padding: 0.8rem; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Save Message</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Campaign Modal -->
+    <div id="campaignModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000;">
+        <div style="background: white; padding: 2rem; border-radius: 8px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 1.5rem;">
+                <h3 id="modalTitle" style="margin: 0;">Create Campaign</h3>
+                <button onclick="closeCampaignModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+            </div>
+            <form id="campaignForm">
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem;">Campaign Name *</label>
+                    <input type="text" id="campaignName" required style="width: 95%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem;">Description *</label>
+                    <textarea id="campaignDesc" required rows="3" style="width: 95%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;"></textarea>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem;">Discount % *</label>
+                        <input type="number" id="discount" required min="0" max="100" style="width: 90%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem;">Promo Code *</label>
+                        <input type="text" id="promoCode" required style="width: 90%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem;">Start Date *</label>
+                        <input type="date" id="startDate" required style="width: 90%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem;">End Date *</label>
+                        <input type="date" id="endDate" required style="width: 90%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
+                    </div>
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem;">Target Customers</label>
+                    <select id="targetCustomers" style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
+                        <option value="All">All Customers</option>
+                        <option value="Silver">Silver Tier</option>
+                        <option value="Gold">Gold Tier</option>
+                        <option value="Platinum">Platinum Tier</option>
+                        <option value="New">New Customers</option>
+                    </select>
+                </div>
+                <button type="submit" style="width: 100%; background: #6f0022; color: white; padding: 0.8rem; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Save Campaign</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let campaigns = [];
+        let feedback = [];
+        let messages = [];
+        let editingCampaignId = null;
+        let editingMessageId = null;
+        let currentFilter = 'all';
+
+        async function checkAuth() {
+            // Temporarily disabled for testing
+            document.getElementById('userName').textContent = 'Care Manager (Test)';
+            return true;
+        }
+
+        // Message Functions
+        async function loadMessages() {
+            try {
+                const res = await fetch('/api/messages');
+                if (res.ok) {
+                    messages = await res.json();
+                    displayMessages();
+                    await loadMessageStats();
+                } else {
+                    messages = [];
+                    displayMessages();
+                }
+            } catch (e) { 
+                messages = [];
+                displayMessages();
+            }
+        }
+
+        async function loadMessageStats() {
+            try {
+                const res = await fetch('/api/messages/stats');
+                if (res.ok) {
+                    const stats = await res.json();
+                    document.getElementById('totalMessages').textContent = stats.totalMessages || 0;
+                    document.getElementById('activeMessages').textContent = stats.activeMessages || 0;
+                    document.getElementById('totalSent').textContent = stats.totalSent || 0;
+                }
+            } catch (e) {
+                console.error('Failed to load stats');
+            }
+        }
+
+        function filterMessages(status) {
+            currentFilter = status;
+            
+            // Update button styles
+            document.getElementById('filter-all').style.borderBottom = status === 'all' ? '3px solid #6f0022' : 'none';
+            document.getElementById('filter-all').style.color = status === 'all' ? '#6f0022' : '#666';
+            document.getElementById('filter-active').style.borderBottom = status === 'active' ? '3px solid #6f0022' : 'none';
+            document.getElementById('filter-active').style.color = status === 'active' ? '#6f0022' : '#666';
+            document.getElementById('filter-inactive').style.borderBottom = status === 'inactive' ? '3px solid #6f0022' : 'none';
+            document.getElementById('filter-inactive').style.color = status === 'inactive' ? '#6f0022' : '#666';
+            
+            displayMessages();
+        }
+
+        function displayMessages() {
+            const container = document.getElementById('messagesList');
+            let filtered = messages;
+            
+            if (currentFilter !== 'all') {
+                filtered = messages.filter(m => m.status === currentFilter);
+            }
+            
+            if (filtered.length === 0) {
+                container.innerHTML = '<div style="padding: 2rem; text-align: center; color: #999;">No messages found</div>';
+                return;
+            }
+            
+            container.innerHTML = filtered.map(msg => {
+                const typeColors = {
+                    promotion: '#e0bf63',
+                    announcement: '#17a2b8',
+                    welcome: '#28a745',
+                    general: '#6c757d'
+                };
+                const statusColors = {
+                    active: '#28a745',
+                    inactive: '#6c757d',
+                    scheduled: '#ffc107'
+                };
+                
+                return `
+                <div style="border: 2px solid #eee; border-radius: 8px; padding: 1.5rem; position: relative;">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+                        <div>
+                            <h3 style="margin: 0 0 0.5rem; color: #6f0022;">${msg.title}</h3>
+                            <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                <span style="background: ${typeColors[msg.type]}; color: white; padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.8rem;">${msg.type}</span>
+                                <span style="background: ${statusColors[msg.status]}; color: white; padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.8rem;">${msg.status}</span>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button onclick="editMessage('${msg._id}')" style="padding: 0.4rem 0.8rem; background: #17a2b8; color: white; border: none; border-radius: 4px; cursor: pointer;" title="Edit">✏️</button>
+                            ${msg.status === 'active' ? 
+                                `<button onclick="broadcastMessage('${msg._id}')" style="padding: 0.4rem 0.8rem; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;" title="Broadcast to customers">📧</button>` :
+                                `<button disabled style="padding: 0.4rem 0.8rem; background: #ccc; color: #666; border: none; border-radius: 4px; cursor: not-allowed;" title="Only active messages can be broadcast">📧</button>`
+                            }
+                            <button onclick="deleteMessage('${msg._id}', '${msg.title}')" style="padding: 0.4rem 0.8rem; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;" title="Delete">🗑️</button>
+                        </div>
+                    </div>
+                    <p style="color: #666; margin: 0.5rem 0; line-height: 1.6;">${msg.message}</p>
+                    <div style="display: flex; justify-content: space-between; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #eee; font-size: 0.9rem; color: #999;">
+                        <span>Target: ${msg.targetAudience}</span>
+                        <span>Sent: ${msg.sentCount || 0} times</span>
+                        ${msg.validUntil ? `<span>Valid until: ${new Date(msg.validUntil).toLocaleDateString()}</span>` : '<span>No expiry</span>'}
+                    </div>
+                </div>
+            `}).join('');
+        }
+
+        function openMessageModal() {
+            editingMessageId = null;
+            document.getElementById('messageModalTitle').textContent = 'Create Email Message';
+            document.getElementById('messageForm').reset();
+            document.getElementById('msgSendOnLogin').checked = true;
+            document.getElementById('messageModal').style.display = 'flex';
+        }
+
+        function closeMessageModal() {
+            document.getElementById('messageModal').style.display = 'none';
+            editingMessageId = null;
+        }
+
+        async function editMessage(id) {
+            const msg = messages.find(m => m._id === id);
+            if (!msg) return;
+            
+            editingMessageId = id;
+            document.getElementById('messageModalTitle').textContent = 'Edit Email Message';
+            document.getElementById('msgTitle').value = msg.title;
+            document.getElementById('msgContent').value = msg.message;
+            document.getElementById('msgType').value = msg.type;
+            document.getElementById('msgStatus').value = msg.status;
+            document.getElementById('msgTarget').value = msg.targetAudience;
+            document.getElementById('msgValidUntil').value = msg.validUntil ? msg.validUntil.split('T')[0] : '';
+            document.getElementById('msgSendOnLogin').checked = msg.sendOnLogin;
+            document.getElementById('messageModal').style.display = 'flex';
+        }
+
+        async function deleteMessage(id, title) {
+            if (!confirm(`Delete message "${title}"?`)) return;
+            try {
+                const res = await fetch(`/api/messages/${id}`, { method: 'DELETE' });
+                if (!res.ok) throw new Error();
+                showAlert('Message deleted successfully', 'success');
+                loadMessages();
+            } catch (e) {
+                showAlert('Error deleting message', 'error');
+            }
+        }
+
+        async function broadcastMessage(id) {
+            if (!confirm('Send this message to all target customers? This may take a while.')) return;
+            
+            try {
+                showAlert('Broadcasting message... Please wait', 'info');
+                const res = await fetch(`/api/messages/broadcast/${id}`, { method: 'POST' });
+                
+                const result = await res.json();
+                console.log('Broadcast response:', result);
+                
+                if (!res.ok) {
+                    throw new Error(result.message || 'Broadcast failed');
+                }
+                
+                showAlert(`Broadcast completed: ${result.successCount} sent, ${result.failCount} failed`, 'success');
+                loadMessages();
+            } catch (e) {
+                console.error('Broadcast error:', e);
+                showAlert(`Error broadcasting message: ${e.message}`, 'error');
+            }
+        }
+
+        document.getElementById('messageForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const data = {
+                title: document.getElementById('msgTitle').value,
+                message: document.getElementById('msgContent').value,
+                type: document.getElementById('msgType').value,
+                status: document.getElementById('msgStatus').value,
+                targetAudience: document.getElementById('msgTarget').value,
+                validUntil: document.getElementById('msgValidUntil').value || undefined,
+                sendOnLogin: document.getElementById('msgSendOnLogin').checked
+            };
+            
+            try {
+                let res;
+                if (editingMessageId) {
+                    res = await fetch(`/api/messages/${editingMessageId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                } else {
+                    res = await fetch('/api/messages', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                }
+                
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.message);
+                }
+                
+                showAlert(editingMessageId ? 'Message updated successfully' : 'Message created successfully', 'success');
+                closeMessageModal();
+                loadMessages();
+            } catch (e) {
+                showAlert(e.message, 'error');
+            }
+        });
+
+        async function loadCampaigns() {
+            try {
+                const res = await fetch('/api/campaigns');
+                if (res.ok) {
+                    campaigns = await res.json();
+                    displayCampaigns();
+                } else {
+                    campaigns = [];
+                    displayCampaigns();
+                }
+            } catch (e) { 
+                campaigns = [];
+                displayCampaigns();
+            }
+        }
+
+        function displayCampaigns() {
+            const grid = document.getElementById('campaignsGrid');
+            if (campaigns.length === 0) {
+                grid.innerHTML = '<div style="padding: 2rem; text-align: center; color: #999; grid-column: 1/-1;">No campaigns yet</div>';
+                return;
+            }
+            grid.innerHTML = campaigns.map(c => {
+                const now = new Date();
+                const start = new Date(c.startDate);
+                const end = new Date(c.endDate);
+                const isActive = now >= start && now <= end;
+                return `
+                <div style="border: 2px solid ${isActive ? '#28a745' : '#ddd'}; border-radius: 8px; padding: 1.5rem; position: relative;">
+                    ${isActive ? '<span style="position: absolute; top: 10px; right: 10px; background: #28a745; color: white; padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.8rem;">Active</span>' : ''}
+                    <h3 style="margin: 0 0 0.5rem; color: #6f0022;">${c.name}</h3>
+                    <p style="color: #666; margin: 0.5rem 0;">${c.description}</p>
+                    <div style="margin: 1rem 0;">
+                        <span style="background: #e0bf63; padding: 0.5rem 1rem; border-radius: 4px; font-weight: 600;">${c.discount}% OFF</span>
+                        <span style="margin-left: 0.5rem; color: #666;">Code: <strong>${c.promoCode}</strong></span>
+                    </div>
+                    <p style="font-size: 0.9rem; color: #666; margin: 0.5rem 0;">Valid: ${new Date(c.startDate).toLocaleDateString()} - ${new Date(c.endDate).toLocaleDateString()}</p>
+                    <p style="font-size: 0.9rem; color: #666; margin: 0.5rem 0;">Target: ${c.targetCustomers || 'All'}</p>
+                    <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+                        <button onclick="editCampaign('${c._id}')" style="padding: 0.5rem 1rem; background: #17a2b8; color: white; border: none; border-radius: 4px; cursor: pointer;">Edit</button>
+                        <button onclick="deleteCampaign('${c._id}', '${c.name}')" style="padding: 0.5rem 1rem; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">Delete</button>
+                    </div>
+                </div>
+            `}).join('');
+        }
+
+        async function loadFeedback() {
+            try {
+                const res = await fetch('/api/feedback');
+                if (res.ok) {
+                    feedback = await res.json();
+                    displayFeedback();
+                } else {
+                    document.getElementById('feedbackList').innerHTML = '<p style="text-align: center; color: #999;">No feedback available</p>';
+                }
+            } catch (e) {
+                document.getElementById('feedbackList').innerHTML = '<p style="text-align: center; color: #999;">No feedback available</p>';
+            }
+        }
+
+        function displayFeedback() {
+            const list = document.getElementById('feedbackList');
+            if (feedback.length === 0) {
+                list.innerHTML = '<p style="text-align: center; color: #999;">No feedback yet</p>';
+                return;
+            }
+            list.innerHTML = feedback.slice(0, 5).map(f => `
+                <div style="border-bottom: 1px solid #eee; padding: 1rem 0;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                        <strong>${f.customerName || 'Anonymous'}</strong>
+                        <span style="color: #e0bf63;">${'⭐'.repeat(f.rating || 5)}</span>
+                    </div>
+                    <p style="margin: 0.5rem 0; color: #666;">${f.message || f.comment}</p>
+                    <small style="color: #999;">${new Date(f.createdAt).toLocaleDateString()}</small>
+                </div>
+            `).join('');
+        }
+
+        function openCampaignModal() {
+            editingCampaignId = null;
+            document.getElementById('modalTitle').textContent = 'Create Campaign';
+            document.getElementById('campaignForm').reset();
+            document.getElementById('campaignModal').style.display = 'flex';
+        }
+
+        function editCampaign(id) {
+            const campaign = campaigns.find(c => c._id === id);
+            if (!campaign) return;
+            editingCampaignId = id;
+            document.getElementById('modalTitle').textContent = 'Edit Campaign';
+            document.getElementById('campaignName').value = campaign.name;
+            document.getElementById('campaignDesc').value = campaign.description;
+            document.getElementById('discount').value = campaign.discount;
+            document.getElementById('promoCode').value = campaign.promoCode;
+            document.getElementById('startDate').value = campaign.startDate.split('T')[0];
+            document.getElementById('endDate').value = campaign.endDate.split('T')[0];
+            document.getElementById('targetCustomers').value = campaign.targetCustomers || 'All';
+            document.getElementById('campaignModal').style.display = 'flex';
+        }
+
+        function closeCampaignModal() {
+            document.getElementById('campaignModal').style.display = 'none';
+            editingCampaignId = null;
+        }
+
+        async function deleteCampaign(id, name) {
+            if (!confirm(`Delete campaign "${name}"?`)) return;
+            try {
+                const res = await fetch(`/api/campaigns/${id}`, { method: 'DELETE' });
+                if (!res.ok) throw new Error();
+                showAlert('Campaign deleted', 'success');
+                loadCampaigns();
+            } catch (e) { showAlert('Error deleting campaign', 'error'); }
+        }
+
+        document.getElementById('campaignForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = {
+                name: document.getElementById('campaignName').value,
+                description: document.getElementById('campaignDesc').value,
+                discount: parseInt(document.getElementById('discount').value),
+                promoCode: document.getElementById('promoCode').value,
+                startDate: document.getElementById('startDate').value,
+                endDate: document.getElementById('endDate').value,
+                targetCustomers: document.getElementById('targetCustomers').value
+            };
+            try {
+                let res;
+                if (editingCampaignId) {
+                    res = await fetch(`/api/campaigns/${editingCampaignId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                } else {
+                    res = await fetch('/api/campaigns', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                }
+                if (!res.ok) { const err = await res.json(); throw new Error(err.message); }
+                showAlert(editingCampaignId ? 'Campaign updated' : 'Campaign created', 'success');
+                closeCampaignModal();
+                loadCampaigns();
+            } catch (e) { showAlert(e.message, 'error'); }
+        });
+
+        function showAlert(msg, type) {
+            const alert = document.getElementById('alert');
+            alert.textContent = msg;
+            alert.style.display = 'block';
+            if (type === 'success') {
+                alert.style.background = '#d4edda';
+                alert.style.color = '#155724';
+                alert.style.border = '1px solid #c3e6cb';
+            } else if (type === 'info') {
+                alert.style.background = '#d1ecf1';
+                alert.style.color = '#0c5460';
+                alert.style.border = '1px solid #bee5eb';
+            } else {
+                alert.style.background = '#f8d7da';
+                alert.style.color = '#721c24';
+                alert.style.border = '1px solid #f5c6cb';
+            }
+            setTimeout(() => alert.style.display = 'none', 5000);
+        }
+
+        async function logout() { try { await fetch('/api/auth/logout', { method: 'POST' }); } catch (e) {} window.location.href = '/staff-login.html'; }
+
+        // Load data on page startup
+        (async () => { 
+            const auth = await checkAuth(); 
+            if (auth) { 
+                loadMessages(); 
+                loadCampaigns(); 
+                loadFeedback(); 
+            } 
+        })();
+    </script>
+</body>
+</html>
