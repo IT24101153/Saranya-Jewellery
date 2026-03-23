@@ -16,22 +16,13 @@
         <!-- Header -->
         <div style="display: flex; justify-content: space-between; align-items: center; background: #6f0022; color: white; padding: 1.5rem 2rem; border-radius: 8px; margin-bottom: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
             <div>
-                <h1 style="margin: 0; font-family: 'Cormorant Garamond', serif; font-size: 2rem;">Admin Dashboard</h1>
-                <p style="margin: 0.5rem 0 0; opacity: 0.9;">Welcome, <span id="adminName">Admin</span></p>
+                <h1 style="margin: 0; font-family: 'Cormorant Garamond', serif; font-size: 2rem; color: #ffffff;">Admin Dashboard</h1>
+                <p style="margin: 0.5rem 0 0; opacity: 0.9; color: #ffffff;">Welcome, <span id="adminName" style="color: #ffffff;">Admin</span></p>
             </div>
             <button onclick="logout()" style="background: white; color: #6f0022; border: none; padding: 0.75rem 1.5rem; border-radius: 4px; cursor: pointer; font-weight: 600; transition: all 0.3s;">
                 Logout
             </button>
         </div>
-
-        <nav class="dashboard-nav-strip">
-            <a href="/admin-dashboard" class="active">Admin</a>
-            <a href="/product-management-dashboard">Products</a>
-            <a href="/order-management-dashboard">Orders</a>
-            <a href="/inventory-dashboard">Inventory</a>
-            <a href="/loyalty-management-dashboard">Loyalty</a>
-            <a href="/customer-care-dashboard">Customer Care</a>
-        </nav>
 
         <!-- Stats Cards -->
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
