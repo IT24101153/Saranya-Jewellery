@@ -24,20 +24,11 @@
         <!-- Header -->
         <div style="display: flex; justify-content: space-between; align-items: center; background: #6f0022; color: white; padding: 1.5rem 2rem; border-radius: 8px; margin-bottom: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
             <div>
-                <h1 style="margin: 0; font-family: 'Cormorant Garamond', serif; font-size: 2rem;">🛍️ Order Management</h1>
-                <p style="margin: 0.5rem 0 0; opacity: 0.9;">Welcome, <span id="userName">Manager</span></p>
+                <h1 style="margin: 0; font-family: 'Cormorant Garamond', serif; font-size: 2rem; color: #ffffff;"> Order Management</h1>
+                <p style="margin: 0.5rem 0 0; opacity: 0.9; color: #ffffff;">Welcome, <span id="userName" style="color: #ffffff;">Manager</span></p>
             </div>
             <button onclick="logout()" style="background: white; color: #6f0022; border: none; padding: 0.75rem 1.5rem; border-radius: 4px; cursor: pointer; font-weight: 600;">Logout</button>
         </div>
-
-        <nav class="dashboard-nav-strip">
-            <a href="/admin-dashboard">Admin</a>
-            <a href="/product-management-dashboard">Products</a>
-            <a href="/order-management-dashboard" class="active">Orders</a>
-            <a href="/inventory-dashboard">Inventory</a>
-            <a href="/loyalty-management-dashboard">Loyalty</a>
-            <a href="/customer-care-dashboard">Customer Care</a>
-        </nav>
 
         <!-- Stats Cards -->
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
@@ -92,15 +83,15 @@
                 <table style="width: 100%; border-collapse: collapse;">
                     <thead>
                         <tr>
-                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Order ID</th>
-                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Customer</th>
-                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Date</th>
-                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Items</th>
-                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Amount</th>
-                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Status</th>
-                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Payment</th>
-                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Invoice</th>
-                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9; min-width: 200px;">Actions</th>
+                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9; color: #6f0022;">Order ID</th>
+                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9; color: #6f0022;">Customer</th>
+                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9; color: #6f0022;">Date</th>
+                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9; color: #6f0022;">Items</th>
+                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9; color: #6f0022;">Amount</th>
+                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9; color: #6f0022;">Status</th>
+                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9; color: #6f0022;">Payment</th>
+                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9; color: #6f0022;">Invoice</th>
+                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9; color: #6f0022; min-width: 200px;">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="ordersTable">
@@ -110,25 +101,26 @@
             </div>
         </div>
 
-        <!-- Order Status Flow Info -->
+        <!-- Created Invoices -->
         <div style="background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-top: 2rem;">
-            <h3 style="font-family: 'Cormorant Garamond', serif; margin-bottom: 1rem;">Order Status Flow</h3>
-            <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
-                <span style="padding: 0.4rem 0.8rem; background: #fff3cd; border-radius: 4px; font-size: 0.85rem;">Pending</span>
-                <span>→</span>
-                <span style="padding: 0.4rem 0.8rem; background: #d4edda; border-radius: 4px; font-size: 0.85rem;">Payment Received</span>
-                <span>→</span>
-                <span style="padding: 0.4rem 0.8rem; background: #d1ecf1; border-radius: 4px; font-size: 0.85rem;">Confirmed</span>
-                <span>→</span>
-                <span style="padding: 0.4rem 0.8rem; background: #cce5ff; border-radius: 4px; font-size: 0.85rem;">Preparing (Inventory)</span>
-                <span>→</span>
-                <span style="padding: 0.4rem 0.8rem; background: #d4edda; border-radius: 4px; font-size: 0.85rem;">Ready for Collection</span>
-                <span>→</span>
-                <span style="padding: 0.4rem 0.8rem; background: #c3e6cb; border-radius: 4px; font-size: 0.85rem;">Completed</span>
+            <h3 style="font-family: 'Cormorant Garamond', serif; margin-bottom: 1rem;">Created Invoices</h3>
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr>
+                            <th style="padding: 0.9rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9; color: #6f0022;">Invoice No</th>
+                            <th style="padding: 0.9rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9; color: #6f0022;">Order No</th>
+                            <th style="padding: 0.9rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9; color: #6f0022;">Customer</th>
+                            <th style="padding: 0.9rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9; color: #6f0022;">Date</th>
+                            <th style="padding: 0.9rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9; color: #6f0022;">Amount</th>
+                            <th style="padding: 0.9rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9; color: #6f0022;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="createdInvoicesTable">
+                        <tr><td colspan="6" style="padding: 1.5rem; text-align: center; color: #999;">Loading invoices...</td></tr>
+                    </tbody>
+                </table>
             </div>
-            <p style="margin-top: 1rem; color: #666; font-size: 0.9rem;">
-                View receipt → mark Payment Received → Confirm (invoice generated and emailed) → notify inventory → ready for collection. Cancel and refund are available as needed.
-            </p>
         </div>
     </div>
 
@@ -252,7 +244,33 @@
                 orders = await res.json();
                 updateStats();
                 displayOrders();
+                renderCreatedInvoices();
             } catch (e) { showAlert('Error loading orders', 'error'); }
+        }
+
+        function renderCreatedInvoices() {
+            const tbody = document.getElementById('createdInvoicesTable');
+            const invoices = orders
+                .filter(o => o.invoiceNumber)
+                .sort((a, b) => new Date(b.invoiceDate || b.updatedAt || b.createdAt) - new Date(a.invoiceDate || a.updatedAt || a.createdAt));
+
+            if (invoices.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="padding: 1.5rem; text-align: center; color: #999;">No invoices created yet</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = invoices.map(o => `
+                <tr>
+                    <td style="padding: 0.8rem; border-bottom: 1px solid #eee; font-size: 0.9rem;">${o.invoiceNumber}</td>
+                    <td style="padding: 0.8rem; border-bottom: 1px solid #eee; font-size: 0.9rem;">${o.orderNumber || o._id?.slice(-8)}</td>
+                    <td style="padding: 0.8rem; border-bottom: 1px solid #eee; font-size: 0.9rem;">${o.customerName || o.customerEmail || 'N/A'}</td>
+                    <td style="padding: 0.8rem; border-bottom: 1px solid #eee; font-size: 0.9rem;">${new Date(o.invoiceDate || o.updatedAt || o.createdAt).toLocaleDateString()}</td>
+                    <td style="padding: 0.8rem; border-bottom: 1px solid #eee; font-size: 0.9rem; font-weight: 600;">Rs. ${(o.totalAmount || o.total || 0).toLocaleString()}</td>
+                    <td style="padding: 0.8rem; border-bottom: 1px solid #eee;">
+                        <button class="action-btn" style="background: #6f42c1; color: white;" onclick="viewInvoice('${o._id}')">View Invoice</button>
+                    </td>
+                </tr>
+            `).join('');
         }
 
         function updateStats() {
