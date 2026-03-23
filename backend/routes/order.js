@@ -3,8 +3,66 @@ import Order from '../models/Order.js';
 import Customer from '../models/Customer.js';
 import Product from '../models/Product.js';
 import emailService from '../utils/emailService.js';
+import { isAdmin, isApproved } from '../middleware/auth.js';
 
 const router = express.Router();
+
+const generateInvoiceNumber = () => {
+  const date = new Date();
+  const dateStr = date.toISOString().slice(0, 10).replace(/-/g, '');
+  const randomNum = Math.floor(10000 + Math.random() * 90000);
+  return `INV-${dateStr}-${randomNum}`;
+};
+
+const sendInvoiceEmail = async (order) => {
+  const itemsHtml = order.items.map(item =>
+    `<tr>
+      <td style="padding: 0.5rem; border-bottom: 1px solid #eee;">${item.name}</td>
+      <td style="padding: 0.5rem; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
+      <td style="padding: 0.5rem; border-bottom: 1px solid #eee; text-align: right;">Rs. ${item.price.toLocaleString()}</td>
+      <td style="padding: 0.5rem; border-bottom: 1px solid #eee; text-align: right;">Rs. ${(item.price * item.quantity).toLocaleString()}</td>
+    </tr>`
+  ).join('');
+
+  await emailService.sendCustomEmail(
+    order.customerEmail,
+    `Order Confirmed & Invoice #${order.invoiceNumber} - ${order.orderNumber}`,
+    `<div style="font-family: 'Poppins', sans-serif; max-width: 600px; margin: 0 auto;">
+      <div style="background: #6f0022; color: white; padding: 2rem; text-align: center;">
+        <h1 style="margin: 0;">Saranya Jewellery</h1>
+        <p style="margin: 0.5rem 0 0; opacity: 0.9;">ORDER CONFIRMED & INVOICE</p>
+      </div>
+      <div style="padding: 2rem; background: #f9f9f9;">
+        <h2 style="color: #6f0022;">Your Order is Confirmed</h2>
+        <p>Dear ${order.customerName},</p>
+        <p>Your order has been confirmed successfully and the invoice is generated.</p>
+        <div style="background: white; padding: 1rem; border-radius: 8px; margin: 1rem 0;">
+          <p><strong>Order Number:</strong> ${order.orderNumber}</p>
+          <p><strong>Invoice Number:</strong> ${order.invoiceNumber}</p>
+          <p><strong>Status:</strong> Confirmed</p>
+        </div>
+        <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px;">
+          <thead>
+            <tr style="background: #f0f0f0;">
+              <th style="padding: 0.75rem; text-align: left;">Item</th>
+              <th style="padding: 0.75rem; text-align: center;">Qty</th>
+              <th style="padding: 0.75rem; text-align: right;">Price</th>
+              <th style="padding: 0.75rem; text-align: right;">Total</th>
+            </tr>
+          </thead>
+          <tbody>${itemsHtml}</tbody>
+        </table>
+        <div style="background: white; padding: 1rem; margin-top: 1rem; border-radius: 8px; text-align: right;">
+          <p>Subtotal: Rs. ${order.subtotal.toLocaleString()}</p>
+          <p>Tax: Rs. ${order.tax.toLocaleString()}</p>
+          <p style="font-size: 1.3rem; font-weight: 700; color: #6f0022;">Total: Rs. ${order.total.toLocaleString()}</p>
+        </div>
+        <p style="margin-top: 1rem; color: #444;"><strong>You can now collect from Saranya Jewellers our store.</strong></p>
+        <p style="color: #666;">Please bring your Order Number <strong>${order.orderNumber}</strong> when you visit.</p>
+      </div>
+    </div>`
+  );
+};
 
 // Middleware to check if customer is authenticated
 const isCustomerAuthenticated = (req, res, next) => {
@@ -136,13 +194,99 @@ router.get('/my-orders', isCustomerAuthenticated, async (req, res) => {
   }
 });
 
-// GET /api/orders/:id - Get specific order details
-router.get('/:id', isCustomerAuthenticated, async (req, res) => {
+// GET /api/orders/admin/analytics/monthly - Monthly analytics (admin only)
+router.get('/admin/analytics/monthly', isAdmin, isApproved, async (req, res) => {
   try {
-    const order = await Order.findOne({
-      _id: req.params.id,
-      customerId: req.session.customerId
+    const months = Math.max(1, Math.min(parseInt(req.query.months, 10) || 6, 24));
+    const startDate = new Date();
+    startDate.setDate(1);
+    startDate.setMonth(startDate.getMonth() - (months - 1));
+    startDate.setHours(0, 0, 0, 0);
+
+    const monthly = await Order.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: startDate },
+          status: { $nin: ['Cancelled', 'Refunded'] }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            year: { $year: '$createdAt' },
+            month: { $month: '$createdAt' }
+          },
+          ordersCount: { $sum: 1 },
+          revenue: { $sum: '$total' },
+          avgOrderValue: { $avg: '$total' }
+        }
+      },
+      { $sort: { '_id.year': 1, '_id.month': 1 } }
+    ]);
+
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+    const monthlyData = monthly.map(item => ({
+      year: item._id.year,
+      month: item._id.month,
+      label: `${monthNames[item._id.month - 1]} ${item._id.year}`,
+      ordersCount: item.ordersCount,
+      revenue: Math.round(item.revenue || 0),
+      avgOrderValue: Math.round(item.avgOrderValue || 0)
+    }));
+
+    const totals = monthlyData.reduce((acc, item) => {
+      acc.totalOrders += item.ordersCount;
+      acc.totalRevenue += item.revenue;
+      return acc;
+    }, { totalOrders: 0, totalRevenue: 0 });
+
+    const thisMonth = new Date();
+    const thisMonthRevenue = await Order.aggregate([
+      {
+        $match: {
+          createdAt: {
+            $gte: new Date(thisMonth.getFullYear(), thisMonth.getMonth(), 1),
+            $lte: new Date(thisMonth.getFullYear(), thisMonth.getMonth() + 1, 0, 23, 59, 59, 999)
+          },
+          status: { $nin: ['Cancelled', 'Refunded'] }
+        }
+      },
+      { $group: { _id: null, revenue: { $sum: '$total' } } }
+    ]);
+
+    res.json({
+      months,
+      monthlyData,
+      summary: {
+        totalOrders: totals.totalOrders,
+        totalRevenue: totals.totalRevenue,
+        avgOrderValue: totals.totalOrders > 0 ? Math.round(totals.totalRevenue / totals.totalOrders) : 0,
+        thisMonthRevenue: Math.round(thisMonthRevenue[0]?.revenue || 0)
+      }
     });
+  } catch (error) {
+    console.error('Monthly analytics error:', error);
+    res.status(500).json({ message: 'Error fetching monthly analytics', error: error.message });
+  }
+});
+
+// GET /api/orders/:id - Get specific order details
+// Customer: only own order | Staff: any order
+router.get('/:id', async (req, res) => {
+  try {
+    let order = null;
+
+    if (req.session.staffId) {
+      order = await Order.findById(req.params.id);
+    } else if (req.session.customerId) {
+      order = await Order.findOne({
+        _id: req.params.id,
+        customerId: req.session.customerId
+      });
+    } else {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
 
     if (!order) {
       return res.status(404).json({ message: 'Order not found' });
@@ -152,6 +296,166 @@ router.get('/:id', isCustomerAuthenticated, async (req, res) => {
   } catch (error) {
     console.error('Get order details error:', error);
     res.status(500).json({ message: 'Server error while fetching order details' });
+  }
+});
+
+// PATCH /api/orders/:id/payment-received - Mark payment received before confirmation
+router.patch('/:id/payment-received', async (req, res) => {
+  try {
+    if (!req.session.staffId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const order = await Order.findById(req.params.id);
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    if (['Cancelled', 'Refunded', 'Completed'].includes(order.status)) {
+      return res.status(400).json({ message: 'Cannot mark payment for this order status' });
+    }
+
+    order.paymentStatus = 'Paid';
+    if (order.status === 'Pending') {
+      order.status = 'Payment Received';
+    }
+    await order.save();
+
+    try {
+      await emailService.sendCustomEmail(
+        order.customerEmail,
+        `Payment Received - Order #${order.orderNumber}`,
+        `<div style="font-family: 'Poppins', sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: #6f0022; color: white; padding: 2rem; text-align: center;">
+            <h1 style="margin: 0;">Saranya Jewellery</h1>
+          </div>
+          <div style="padding: 2rem; background: #f9f9f9;">
+            <h2 style="color: #6f0022;">Payment Received</h2>
+            <p>Dear ${order.customerName},</p>
+            <p>We have received your payment for Order Number <strong>${order.orderNumber}</strong>.</p>
+            <p>Your order is awaiting final confirmation and invoice generation.</p>
+          </div>
+        </div>`
+      );
+    } catch (emailErr) {
+      console.error('Failed to send payment received email:', emailErr);
+    }
+
+    res.json({ message: 'Payment marked as received', order });
+  } catch (error) {
+    console.error('Payment received update error:', error);
+    res.status(500).json({ message: 'Server error while updating payment status' });
+  }
+});
+
+// PATCH /api/orders/:id/payment-not-received - Cancel order when payment is not received
+router.patch('/:id/payment-not-received', async (req, res) => {
+  try {
+    if (!req.session.staffId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const order = await Order.findById(req.params.id);
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    if (['Cancelled', 'Refunded', 'Completed'].includes(order.status)) {
+      return res.status(400).json({ message: 'Order cannot be cancelled from current status' });
+    }
+
+    order.status = 'Cancelled';
+    order.updatedAt = Date.now();
+
+    for (const item of order.items) {
+      const product = await Product.findById(item.productId);
+      if (product) {
+        product.stockQuantity += item.quantity;
+        await product.save();
+      }
+    }
+
+    await order.save();
+
+    try {
+      await emailService.sendCustomEmail(
+        order.customerEmail,
+        `Order #${order.orderNumber} - Cancelled (Payment Not Received)`,
+        `<div style="font-family: 'Poppins', sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: #6f0022; color: white; padding: 2rem; text-align: center;">
+            <h1 style="margin: 0;">Saranya Jewellery</h1>
+          </div>
+          <div style="padding: 2rem; background: #f9f9f9;">
+            <h2 style="color: #6f0022;">Order Cancelled</h2>
+            <p>Dear ${order.customerName},</p>
+            <p>Your order <strong>${order.orderNumber}</strong> has been cancelled because payment was not received.</p>
+          </div>
+        </div>`
+      );
+    } catch (emailErr) {
+      console.error('Failed to send payment-not-received cancellation email:', emailErr);
+    }
+
+    res.json({ message: 'Order cancelled due to payment not received', order });
+  } catch (error) {
+    console.error('Payment not received flow error:', error);
+    res.status(500).json({ message: 'Server error while cancelling order' });
+  }
+});
+
+// PATCH /api/orders/:id/confirm - Confirm order after payment and generate invoice
+router.patch('/:id/confirm', async (req, res) => {
+  try {
+    if (!req.session.staffId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const order = await Order.findById(req.params.id);
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    if (order.paymentStatus !== 'Paid') {
+      return res.status(400).json({ message: 'Mark payment received before confirming order' });
+    }
+
+    if (['Cancelled', 'Refunded', 'Completed'].includes(order.status)) {
+      return res.status(400).json({ message: 'Cannot confirm this order status' });
+    }
+
+    if (!order.invoiceNumber) {
+      return res.status(400).json({ message: 'Generate invoice first before confirming order' });
+    }
+
+    order.status = 'Confirmed';
+    await order.save();
+
+    try {
+      await emailService.sendCustomEmail(
+        order.customerEmail,
+        `Order Confirmed - ${order.orderNumber}`,
+        `<div style="font-family: 'Poppins', sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: #6f0022; color: white; padding: 2rem; text-align: center;">
+            <h1 style="margin: 0;">Saranya Jewellery</h1>
+          </div>
+          <div style="padding: 2rem; background: #f9f9f9;">
+            <h2 style="color: #6f0022;">Order Confirmed</h2>
+            <p>Dear ${order.customerName},</p>
+            <p>Your order has been confirmed.</p>
+            <p><strong>Order Number:</strong> ${order.orderNumber}</p>
+            <p><strong>Invoice Number:</strong> ${order.invoiceNumber}</p>
+            <p><strong>You can now collect from Saranya Jewellers our store.</strong></p>
+          </div>
+        </div>`
+      );
+    } catch (emailErr) {
+      console.error('Failed to send confirmation email:', emailErr);
+    }
+
+    res.json({ message: 'Order confirmed successfully', order });
+  } catch (error) {
+    console.error('Confirm order error:', error);
+    res.status(500).json({ message: 'Server error while confirming order' });
   }
 });
 
@@ -273,7 +577,7 @@ router.patch('/:id/status', async (req, res) => {
       'Confirmed': {
         subject: `Order #${order.orderNumber} - Confirmed!`,
         heading: 'Order Confirmed!',
-        message: 'Your order has been confirmed by our team. We will create an invoice shortly.'
+        message: 'Your order has been confirmed by our team and is being prepared for collection.'
       },
       'Invoice Created': {
         subject: `Order #${order.orderNumber} - Invoice Created`,
@@ -298,7 +602,7 @@ router.patch('/:id/status', async (req, res) => {
       'Completed': {
         subject: `Order #${order.orderNumber} - Completed`,
         heading: 'Order Completed!',
-        message: 'Thank you for your purchase! We hope you enjoy your jewellery.'
+        message: 'Thank you for your purchase! You can now collect from Saranya Jewellers our store with your order number.'
       }
     };
 
@@ -349,31 +653,23 @@ router.patch('/:id/invoice', async (req, res) => {
       return res.status(404).json({ message: 'Order not found' });
     }
 
-    if (order.status !== 'Confirmed') {
-      return res.status(400).json({ message: 'Order must be confirmed before creating invoice' });
+    if (order.paymentStatus !== 'Paid') {
+      return res.status(400).json({ message: 'Payment must be received before creating invoice' });
+    }
+
+    if (order.invoiceNumber) {
+      return res.json({ message: 'Invoice already generated', order, invoiceNumber: order.invoiceNumber });
     }
 
     // Generate invoice number
-    const date = new Date();
-    const dateStr = date.toISOString().slice(0, 10).replace(/-/g, '');
-    const randomNum = Math.floor(10000 + Math.random() * 90000);
-    order.invoiceNumber = `INV-${dateStr}-${randomNum}`;
+    order.invoiceNumber = generateInvoiceNumber();
     order.invoiceDate = new Date();
     order.status = 'Invoice Created';
-    order.paymentStatus = 'Invoice Sent';
+    order.paymentStatus = 'Paid';
     await order.save();
 
     // Send invoice email
     try {
-      const itemsHtml = order.items.map(item => 
-        `<tr>
-          <td style="padding: 0.5rem; border-bottom: 1px solid #eee;">${item.name}</td>
-          <td style="padding: 0.5rem; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
-          <td style="padding: 0.5rem; border-bottom: 1px solid #eee; text-align: right;">Rs. ${item.price.toLocaleString()}</td>
-          <td style="padding: 0.5rem; border-bottom: 1px solid #eee; text-align: right;">Rs. ${(item.price * item.quantity).toLocaleString()}</td>
-        </tr>`
-      ).join('');
-
       await emailService.sendCustomEmail(
         order.customerEmail,
         `Invoice #${order.invoiceNumber} - Order #${order.orderNumber}`,
@@ -403,7 +699,14 @@ router.patch('/:id/invoice', async (req, res) => {
                 </tr>
               </thead>
               <tbody>
-                ${itemsHtml}
+                ${order.items.map(item => 
+                  `<tr>
+                    <td style="padding: 0.5rem; border-bottom: 1px solid #eee;">${item.name}</td>
+                    <td style="padding: 0.5rem; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
+                    <td style="padding: 0.5rem; border-bottom: 1px solid #eee; text-align: right;">Rs. ${item.price.toLocaleString()}</td>
+                    <td style="padding: 0.5rem; border-bottom: 1px solid #eee; text-align: right;">Rs. ${(item.price * item.quantity).toLocaleString()}</td>
+                  </tr>`
+                ).join('')}
               </tbody>
             </table>
             <div style="background: white; padding: 1rem; margin-top: 1rem; border-radius: 8px; text-align: right;">
@@ -412,6 +715,7 @@ router.patch('/:id/invoice', async (req, res) => {
               <p style="font-size: 1.3rem; font-weight: 700; color: #6f0022;">Total: Rs. ${order.total.toLocaleString()}</p>
             </div>
             <p style="color: #666; margin-top: 1rem;">Please complete payment to proceed with your order.</p>
+            <p style="color: #333;"><strong>You can now collect from Saranya Jewellers our store using your order number ${order.orderNumber} once the order is ready.</strong></p>
           </div>
         </div>`
       );

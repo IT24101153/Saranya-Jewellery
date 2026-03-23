@@ -1,6 +1,8 @@
 import express from 'express';
 import Customer from '../models/Customer.js';
+import Order from '../models/Order.js';
 import emailService from '../utils/emailService.js';
+import { isAdmin, isApproved } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -206,6 +208,49 @@ router.put('/change-password', async (req, res) => {
   } catch (error) {
     console.error('Change password error:', error);
     res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// GET /api/customer/admin/list - Get all customers for admin dashboard
+router.get('/admin/list', isAdmin, isApproved, async (req, res) => {
+  try {
+    const customers = await Customer.find()
+      .select('-password')
+      .sort({ createdAt: -1 });
+
+    res.json(customers);
+  } catch (error) {
+    console.error('Admin customer list error:', error);
+    res.status(500).json({ message: 'Error fetching customers', error: error.message });
+  }
+});
+
+// DELETE /api/customer/admin/:id - Delete customer (admin)
+router.delete('/admin/:id', isAdmin, isApproved, async (req, res) => {
+  try {
+    const customer = await Customer.findById(req.params.id);
+    if (!customer) {
+      return res.status(404).json({ message: 'Customer not found' });
+    }
+
+    const activeOrderStatuses = ['Pending', 'Confirmed', 'Invoice Created', 'Payment Received', 'Preparing', 'Ready for Collection'];
+    const activeOrders = await Order.countDocuments({
+      customerId: customer._id,
+      status: { $in: activeOrderStatuses }
+    });
+
+    if (activeOrders > 0) {
+      return res.status(400).json({
+        message: 'Cannot delete customer with active orders. Complete/cancel their orders first.'
+      });
+    }
+
+    await Customer.findByIdAndDelete(customer._id);
+
+    res.json({ message: 'Customer deleted successfully' });
+  } catch (error) {
+    console.error('Delete customer error:', error);
+    res.status(500).json({ message: 'Error deleting customer', error: error.message });
   }
 });
 

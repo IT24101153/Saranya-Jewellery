@@ -116,11 +116,9 @@
             <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
                 <span style="padding: 0.4rem 0.8rem; background: #fff3cd; border-radius: 4px; font-size: 0.85rem;">Pending</span>
                 <span>→</span>
-                <span style="padding: 0.4rem 0.8rem; background: #d1ecf1; border-radius: 4px; font-size: 0.85rem;">Confirmed</span>
-                <span>→</span>
-                <span style="padding: 0.4rem 0.8rem; background: #e0d4f5; border-radius: 4px; font-size: 0.85rem;">Invoice Created</span>
-                <span>→</span>
                 <span style="padding: 0.4rem 0.8rem; background: #d4edda; border-radius: 4px; font-size: 0.85rem;">Payment Received</span>
+                <span>→</span>
+                <span style="padding: 0.4rem 0.8rem; background: #d1ecf1; border-radius: 4px; font-size: 0.85rem;">Confirmed</span>
                 <span>→</span>
                 <span style="padding: 0.4rem 0.8rem; background: #cce5ff; border-radius: 4px; font-size: 0.85rem;">Preparing (Inventory)</span>
                 <span>→</span>
@@ -129,7 +127,7 @@
                 <span style="padding: 0.4rem 0.8rem; background: #c3e6cb; border-radius: 4px; font-size: 0.85rem;">Completed</span>
             </div>
             <p style="margin-top: 1rem; color: #666; font-size: 0.9rem;">
-                After confirming an order → Create invoice → Mark payment received → Notify inventory to prepare → Inventory prepares & marks ready → Customer collects from shop
+                View receipt → mark Payment Received → Confirm (invoice generated and emailed) → notify inventory → ready for collection. Cancel and refund are available as needed.
             </p>
         </div>
     </div>
@@ -287,26 +285,24 @@
 
             btns += `<button class="action-btn" style="background: #6c757d; color: white;" onclick="viewOrder('${o._id}')">👁️ View</button>`;
 
+            if (o.invoiceNumber) {
+                btns += `<button class="action-btn" style="background: #6f42c1; color: white;" onclick="viewInvoice('${o._id}')">🧾 Invoice</button>`;
+            }
+
             if (o.status === 'Pending') {
-                btns += `<button class="action-btn" style="background: #17a2b8; color: white;" onclick="confirmOrder('${o._id}')">✅ Confirm</button>`;
-                btns += `<button class="action-btn" style="background: #dc3545; color: white;" onclick="changeStatus('${o._id}', 'Cancelled')">❌ Cancel</button>`;
-                btns += `<button class="action-btn" style="background: #e83e8c; color: white;" onclick="deleteOrder('${o._id}')">🗑️ Delete</button>`;
-            }
-            if (o.status === 'Confirmed') {
-                btns += `<button class="action-btn" style="background: #6f42c1; color: white;" onclick="createInvoice('${o._id}')">🧾 Create Invoice</button>`;
-                btns += `<button class="action-btn" style="background: #dc3545; color: white;" onclick="changeStatus('${o._id}', 'Cancelled')">❌ Cancel</button>`;
-            }
-            if (o.status === 'Invoice Created') {
-                btns += `<button class="action-btn" style="background: #28a745; color: white;" onclick="changeStatus('${o._id}', 'Payment Received')">💰 Payment Received</button>`;
-                btns += `<button class="action-btn" style="background: #dc3545; color: white;" onclick="changeStatus('${o._id}', 'Cancelled')">❌ Cancel</button>`;
+                btns += `<button class="action-btn" style="background: #28a745; color: white;" onclick="markPaymentReceived('${o._id}')">💰 Payment Received</button>`;
+                btns += `<button class="action-btn" style="background: #dc3545; color: white;" onclick="markPaymentNotReceived('${o._id}')">❌ Payment Not Received</button>`;
             }
             if (o.status === 'Payment Received') {
-                btns += `<button class="action-btn" style="background: #007bff; color: white;" onclick="notifyInventory('${o._id}')">📦 Notify Inventory</button>`;
+                btns += `<button class="action-btn" style="background: #6f42c1; color: white;" onclick="createInvoice('${o._id}')">🧾 Generate Invoice</button>`;
+                btns += `<button class="action-btn" style="background: #b0b0b0; color: white;" disabled>✅ Confirm</button>`;
+                btns += `<button class="action-btn" style="background: #e83e8c; color: white;" onclick="changeStatus('${o._id}', 'Refunded')">↩️ Refund</button>`;
             }
-            if (o.status === 'Ready for Collection') {
-                btns += `<button class="action-btn" style="background: #28a745; color: white;" onclick="changeStatus('${o._id}', 'Completed')">✔️ Complete</button>`;
+            if (o.status === 'Invoice Created') {
+                btns += `<button class="action-btn" style="background: #17a2b8; color: white;" onclick="confirmOrder('${o._id}')">✅ Confirm</button>`;
+                btns += `<button class="action-btn" style="background: #e83e8c; color: white;" onclick="changeStatus('${o._id}', 'Refunded')">↩️ Refund</button>`;
             }
-            if (['Completed', 'Payment Received'].includes(o.status)) {
+            if (o.status === 'Confirmed') {
                 btns += `<button class="action-btn" style="background: #e83e8c; color: white;" onclick="changeStatus('${o._id}', 'Refunded')">↩️ Refund</button>`;
             }
             return btns;
@@ -346,16 +342,40 @@
         }
 
         async function confirmOrder(id) {
-            if (!confirm('Confirm this order?')) return;
+            if (!confirm('Confirm this order and generate invoice email?')) return;
             try {
-                const res = await fetch(`/api/orders/${id}/status`, {
+                const res = await fetch(`/api/orders/${id}/confirm`, {
                     method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'same-origin',
-                    body: JSON.stringify({ status: 'Confirmed' })
+                    credentials: 'same-origin'
                 });
                 if (!res.ok) { const e = await res.json(); throw new Error(e.message); }
-                showAlert('Order confirmed! Customer notified.', 'success');
+                showAlert('Order confirmed and invoice emailed to customer.', 'success');
+                loadOrders();
+            } catch (e) { showAlert(e.message || 'Error', 'error'); }
+        }
+
+        async function markPaymentReceived(id) {
+            if (!confirm('Mark payment as received for this order?')) return;
+            try {
+                const res = await fetch(`/api/orders/${id}/payment-received`, {
+                    method: 'PATCH',
+                    credentials: 'same-origin'
+                });
+                if (!res.ok) { const e = await res.json(); throw new Error(e.message); }
+                showAlert('Payment marked as received. Generate invoice next.', 'success');
+                loadOrders();
+            } catch (e) { showAlert(e.message || 'Error', 'error'); }
+        }
+
+        async function markPaymentNotReceived(id) {
+            if (!confirm('Payment not received. Cancel this order?')) return;
+            try {
+                const res = await fetch(`/api/orders/${id}/payment-not-received`, {
+                    method: 'PATCH',
+                    credentials: 'same-origin'
+                });
+                if (!res.ok) { const e = await res.json(); throw new Error(e.message); }
+                showAlert('Order cancelled because payment was not received.', 'success');
                 loadOrders();
             } catch (e) { showAlert(e.message || 'Error', 'error'); }
         }
@@ -446,6 +466,45 @@
                 `;
                 document.getElementById('orderDetailModal').style.display = 'flex';
             } catch (e) { showAlert('Error loading order', 'error'); }
+        }
+
+        async function viewInvoice(id) {
+            try {
+                const res = await fetch(`/api/orders/${id}`, { credentials: 'same-origin' });
+                if (!res.ok) throw new Error();
+                const o = await res.json();
+
+                if (!o.invoiceNumber) {
+                    showAlert('Invoice not generated yet for this order.', 'error');
+                    return;
+                }
+
+                document.getElementById('orderDetailContent').innerHTML = `
+                    <h3 style="margin: 0 0 1rem; color: #6f0022;">Invoice Preview</h3>
+                    <p><strong>Invoice #:</strong> ${o.invoiceNumber}</p>
+                    <p><strong>Order #:</strong> ${o.orderNumber}</p>
+                    <p><strong>Customer:</strong> ${o.customerName}</p>
+                    <p><strong>Invoice Date:</strong> ${o.invoiceDate ? new Date(o.invoiceDate).toLocaleDateString() : '-'}</p>
+                    <table style="width: 100%; border-collapse: collapse; margin: 1rem 0; background: #fafafa;">
+                        ${o.items.map(item => `
+                            <tr>
+                                <td style="padding: 0.5rem; border-bottom: 1px solid #eee;">${item.name}</td>
+                                <td style="padding: 0.5rem; border-bottom: 1px solid #eee;">x${item.quantity}</td>
+                                <td style="padding: 0.5rem; border-bottom: 1px solid #eee; text-align: right;">Rs. ${(item.price * item.quantity).toLocaleString()}</td>
+                            </tr>
+                        `).join('')}
+                        <tr>
+                            <td colspan="2" style="padding: 0.5rem; font-weight: 700;">Total</td>
+                            <td style="padding: 0.5rem; font-weight: 700; text-align: right; color: #6f0022;">Rs. ${(o.total || 0).toLocaleString()}</td>
+                        </tr>
+                    </table>
+                    <p style="margin-top: 1rem;"><strong>You can now collect from Saranya Jewellers our store.</strong></p>
+                    <p>Bring your Order Number <strong>${o.orderNumber}</strong> at collection.</p>
+                `;
+                document.getElementById('orderDetailModal').style.display = 'flex';
+            } catch (e) {
+                showAlert('Error loading invoice', 'error');
+            }
         }
 
         function closeDetailModal() {
@@ -699,10 +758,13 @@
         window.logout = logout;
         window.filterOrders = filterOrders;
         window.confirmOrder = confirmOrder;
+        window.markPaymentReceived = markPaymentReceived;
+        window.markPaymentNotReceived = markPaymentNotReceived;
         window.createInvoice = createInvoice;
         window.notifyInventory = notifyInventory;
         window.changeStatus = changeStatus;
         window.viewOrder = viewOrder;
+        window.viewInvoice = viewInvoice;
         window.closeDetailModal = closeDetailModal;
         window.deleteOrder = deleteOrder;
         window.openCreateOrderModal = openCreateOrderModal;

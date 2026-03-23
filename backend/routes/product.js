@@ -8,7 +8,10 @@ const router = express.Router();
 // Get inventory-backed stock options for product manager (protected)
 router.get('/stock-options', isProductManager, async (req, res) => {
   try {
-    const stockItems = await Product.find({ stockQuantity: { $gt: 0 } })
+    const stockItems = await Product.find({
+      stockQuantity: { $gt: 0 },
+      productStatus: 'Draft'
+    })
       .select('name category stockQuantity kType weight supplier image productStatus')
       .sort({ updatedAt: -1 });
 
@@ -48,10 +51,11 @@ router.get('/stats/overview', isAuthenticated, async (req, res) => {
 // Get all products (public route)
 router.get('/', async (req, res) => {
   try {
-    const { category, kType, karat, availabilityStatus, isAvailable, featured } = req.query;
+    const { category, kType, karat, availabilityStatus, isAvailable, featured, productStatus } = req.query;
     
     let filter = {};
     if (category) filter.category = category;
+    if (productStatus) filter.productStatus = productStatus;
     // Support both kType and karat parameters
     if (kType) filter.kType = kType;
     if (karat) filter.kType = karat;

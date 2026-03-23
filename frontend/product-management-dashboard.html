@@ -124,7 +124,7 @@
                     <select id="stockSelector" style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
                         <option value="">Create New Product (Manual)</option>
                     </select>
-                    <p id="stockHint" style="margin: 0.5rem 0 0; color: #666; font-size: 0.85rem;">Pick an inventory item to prefill product details and use available stock.</p>
+                    <p id="stockHint" style="margin: 0.5rem 0 0; color: #666; font-size: 0.85rem;">Pick an unpublished inventory item to prefill details and publish it live.</p>
                 </div>
                 <div style="margin-bottom: 1rem;">
                     <label style="display: block; margin-bottom: 0.5rem;">Product Name *</label>
@@ -191,7 +191,7 @@
 
         async function loadProducts() {
             try {
-                let url = '/api/products?';
+            let url = '/api/products?productStatus=Active&';
                 const cat = document.getElementById('categoryFilter').value;
                 
                 if (cat) url += `category=${cat}&`;
@@ -246,10 +246,11 @@
             `).join('');
         }
 
-        function openAddModal() {
+        async function openAddModal() {
             editingId = null;
             document.getElementById('modalTitle').textContent = 'Add Product';
             document.getElementById('productForm').reset();
+            await loadStockOptions();
             populateStockSelector();
             document.getElementById('productModal').style.display = 'flex';
         }
@@ -307,8 +308,8 @@
 
             select.innerHTML = '<option value="">Create New Product (Manual)</option>' + optionsHtml;
             document.getElementById('stockHint').textContent = stockOptions.length
-                ? `Available stock items: ${stockOptions.length}`
-                : 'No inventory stock available. Create product manually.';
+                ? `Available unpublished stock items: ${stockOptions.length}`
+                : 'No unpublished stock items available. Create product manually.';
         }
 
         function onStockSelect() {
@@ -435,7 +436,8 @@
                 }
                 showAlert(editingId ? 'Product updated' : 'Product created', 'success');
                 closeModal();
-                loadProducts();
+                await loadProducts();
+                await loadStockOptions();
             } catch (error) {
                 showAlert(error.message, 'error');
             }

@@ -2,14 +2,43 @@ import nodemailer from 'nodemailer';
 
 // Create email transporter
 export const createTransporter = () => {
-  // For development, you can use Gmail or any SMTP service
-  // For production, use a service like SendGrid, AWS SES, etc.
-  
+  const service = (process.env.EMAIL_SERVICE || 'gmail').toLowerCase();
+
+  // Prefer explicit SMTP configuration for predictable TLS behavior.
+  if (process.env.SMTP_HOST) {
+    return createCustomTransporter();
+  }
+
+  const defaultHosts = {
+    gmail: 'smtp.gmail.com',
+    outlook: 'smtp-mail.outlook.com',
+    hotmail: 'smtp-mail.outlook.com',
+    yahoo: 'smtp.mail.yahoo.com'
+  };
+
+  const host = process.env.EMAIL_HOST || defaultHosts[service] || 'smtp.gmail.com';
+  const tlsServerName = process.env.EMAIL_TLS_SERVERNAME || defaultHosts[service] || host;
+  const port = Number(process.env.EMAIL_PORT || 587);
+  const secure = process.env.EMAIL_SECURE
+    ? process.env.EMAIL_SECURE === 'true'
+    : port === 465;
+
   const transporter = nodemailer.createTransport({
-    service: process.env.EMAIL_SERVICE || 'gmail', // 'gmail', 'outlook', etc.
+    host,
+    port,
+    secure,
+    requireTLS: !secure,
+    family: 4,
+    connectionTimeout: Number(process.env.EMAIL_CONNECTION_TIMEOUT || 15000),
+    greetingTimeout: Number(process.env.EMAIL_GREETING_TIMEOUT || 10000),
+    socketTimeout: Number(process.env.EMAIL_SOCKET_TIMEOUT || 20000),
     auth: {
-      user: process.env.EMAIL_USER, // Your email address
-      pass: process.env.EMAIL_PASSWORD // Your email password or app-specific password
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASSWORD
+    },
+    tls: {
+      minVersion: 'TLSv1.2',
+      servername: tlsServerName
     }
   });
 
@@ -18,13 +47,28 @@ export const createTransporter = () => {
 
 // Alternative configuration for custom SMTP
 export const createCustomTransporter = () => {
+  const port = Number(process.env.SMTP_PORT || 587);
+  const secure = process.env.SMTP_SECURE
+    ? process.env.SMTP_SECURE === 'true'
+    : port === 465;
+  const tlsServerName = process.env.SMTP_TLS_SERVERNAME || process.env.SMTP_HOST;
+
   return nodemailer.createTransport({
     host: process.env.SMTP_HOST,
-    port: process.env.SMTP_PORT || 587,
-    secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
+    port,
+    secure,
+    requireTLS: !secure,
+    family: 4,
+    connectionTimeout: Number(process.env.EMAIL_CONNECTION_TIMEOUT || 15000),
+    greetingTimeout: Number(process.env.EMAIL_GREETING_TIMEOUT || 10000),
+    socketTimeout: Number(process.env.EMAIL_SOCKET_TIMEOUT || 20000),
     auth: {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASSWORD
+    },
+    tls: {
+      minVersion: 'TLSv1.2',
+      servername: tlsServerName
     }
   });
 };

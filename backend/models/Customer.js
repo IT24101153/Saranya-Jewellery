@@ -33,6 +33,27 @@ const customerSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  isLoyalty: {
+    type: Boolean,
+    default: false
+  },
+  loyaltyTier: {
+    type: String,
+    enum: ['Silver', 'Gold', 'Platinum', null],
+    default: null
+  },
+  totalSpent: {
+    type: Number,
+    default: 0
+  },
+  pointsRedeemed: {
+    type: Number,
+    default: 0
+  },
+  loyaltyJoinedDate: {
+    type: Date,
+    default: null
+  },
   isActive: {
     type: Boolean,
     default: true

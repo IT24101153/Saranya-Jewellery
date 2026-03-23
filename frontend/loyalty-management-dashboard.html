@@ -13,7 +13,7 @@
     <!-- Pending Approval Overlay -->
     <div id="pendingOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 9999; align-items: center; justify-content: center;">
         <div style="background: white; padding: 3rem; border-radius: 8px; text-align: center; max-width: 500px;">
-            <h2 style="color: #6f0022; margin-bottom: 1rem;">⏳ Pending Approval</h2>
+            <h2 style="color: #6f0022; margin-bottom: 1rem;">Pending Approval</h2>
             <p style="color: #666; margin-bottom: 2rem;">Your account is awaiting admin approval. Please check back later.</p>
             <button onclick="logout()" style="background: #6f0022; color: white; padding: 0.8rem 2rem; border: none; border-radius: 4px; cursor: pointer;">Logout</button>
         </div>
@@ -24,7 +24,7 @@
         <!-- Header -->
         <div style="display: flex; justify-content: space-between; align-items: center; background: #6f0022; color: white; padding: 1.5rem 2rem; border-radius: 8px; margin-bottom: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
             <div>
-                <h1 style="margin: 0; font-family: 'Cormorant Garamond', serif; font-size: 2rem;">💎 Loyalty Management</h1>
+                <h1 style="margin: 0; font-family: 'Cormorant Garamond', serif; font-size: 2rem;">Loyalty Management</h1>
                 <p style="margin: 0.5rem 0 0; opacity: 0.9;">Welcome, <span id="userName">Manager</span></p>
             </div>
             <button onclick="logout()" style="background: white; color: #6f0022; border: none; padding: 0.75rem 1.5rem; border-radius: 4px; cursor: pointer; font-weight: 600;">Logout</button>
@@ -39,54 +39,46 @@
             <a href="/customer-care-dashboard">Customer Care</a>
         </nav>
 
-        <!-- Loyalty Tiers -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
-            <div style="background: linear-gradient(135deg, #c0c0c0 0%, #e8e8e8 100%); padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); position: relative; overflow: hidden;">
-                <div style="position: absolute; top: 10px; right: 10px; font-size: 3rem; opacity: 0.2;">🥈</div>
-                <h3 style="margin: 0 0 0.5rem; font-size: 1.5rem; color: #4a4a4a;">Silver Tier</h3>
-                <p style="margin: 0 0 1rem; color: #666;">Rs. 0 - Rs. 50,000</p>
-                <div style="background: rgba(255,255,255,0.7); padding: 1rem; border-radius: 4px;">
-                    <p style="margin: 0 0 0.5rem; font-weight: 600;">Benefits:</p>
-                    <ul style="margin: 0; padding-left: 1.5rem; color: #555;">
-                        <li>1 point per Rs. 100 spent</li>
-                        <li>Birthday discount</li>
-                        <li>Priority support</li>
-                    </ul>
-                </div>
-                <p style="margin-top: 1rem; font-weight: 600; color: #4a4a4a;" id="silverCount">0 members</p>
+        <!-- Alert -->
+        <div id="alertBox" style="padding: 1rem; border-radius: 4px; margin-bottom: 1rem; display: none;"></div>
+
+        <!-- TIER CONFIGURATION SECTION -->
+        <div style="background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h2 style="margin: 0; font-family: 'Cormorant Garamond', serif;">Tier Configuration</h2>
+                <button onclick="openEditTierModal(null)" style="background: #6f0022; color: white; padding: 0.8rem 1.5rem; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Edit Tier Settings</button>
             </div>
 
-            <div style="background: linear-gradient(135deg, #e0bf63 0%, #d4a747 100%); padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); position: relative; overflow: hidden;">
-                <div style="position: absolute; top: 10px; right: 10px; font-size: 3rem; opacity: 0.2;">🥇</div>
-                <h3 style="margin: 0 0 0.5rem; font-size: 1.5rem; color: #3e2723;">Gold Tier</h3>
-                <p style="margin: 0 0 1rem; color: #5d4037;">Rs. 50,000 - Rs. 2,00,000</p>
-                <div style="background: rgba(255,255,255,0.8); padding: 1rem; border-radius: 4px;">
-                    <p style="margin: 0 0 0.5rem; font-weight: 600;">Benefits:</p>
-                    <ul style="margin: 0; padding-left: 1.5rem; color: #3e2723;">
-                        <li>1.5 points per Rs. 100 spent</li>
-                        <li>Exclusive previews</li>
-                        <li>Free cleaning service</li>
-                        <li>10% discount on repairs</li>
-                    </ul>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+                <div id="silverTierCard" style="background: linear-gradient(135deg, #c0c0c0 0%, #e8e8e8 100%); padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <h3 style="margin: 0 0 0.5rem; font-size: 1.3rem; color: #4a4a4a;">Silver Tier</h3>
+                    <p id="silverRange" style="margin: 0 0 1rem; color: #666; font-size: 0.9rem;">Spent: Rs. 0 - Rs. 50,000</p>
+                    <p id="silverMultiplier" style="margin: 0 0 0.5rem; color: #4a4a4a; font-weight: 600;">Points Multiplier: 1x</p>
+                    <div id="silverBenefits" style="background: rgba(255,255,255,0.7); padding: 0.8rem; border-radius: 4px; font-size: 0.9rem;">
+                        <ul style="margin: 0; padding-left: 1.5rem; color: #555;"></ul>
+                    </div>
+                    <button onclick="openEditTierModal('Silver')" style="width: 100%; margin-top: 1rem; padding: 0.6rem; background: #6f0022; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 0.9rem;">Edit</button>
                 </div>
-                <p style="margin-top: 1rem; font-weight: 600; color: #3e2723;" id="goldCount">0 members</p>
-            </div>
 
-            <div style="background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%); padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); position: relative; overflow: hidden; color: white;">
-                <div style="position: absolute; top: 10px; right: 10px; font-size: 3rem; opacity: 0.2;">💎</div>
-                <h3 style="margin: 0 0 0.5rem; font-size: 1.5rem;">Platinum Tier</h3>
-                <p style="margin: 0 0 1rem; opacity: 0.9;">Above Rs. 2,00,000</p>
-                <div style="background: rgba(255,255,255,0.15); padding: 1rem; border-radius: 4px;">
-                    <p style="margin: 0 0 0.5rem; font-weight: 600;">Benefits:</p>
-                    <ul style="margin: 0; padding-left: 1.5rem;">
-                        <li>2 points per Rs. 100 spent</li>
-                        <li>VIP events access</li>
-                        <li>Personal shopper</li>
-                        <li>15% discount on all repairs</li>
-                        <li>Complimentary gift wrapping</li>
-                    </ul>
+                <div id="goldTierCard" style="background: linear-gradient(135deg, #e0bf63 0%, #d4a747 100%); padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <h3 style="margin: 0 0 0.5rem; font-size: 1.3rem; color: #3e2723;">Gold Tier</h3>
+                    <p id="goldRange" style="margin: 0 0 1rem; color: #5d4037; font-size: 0.9rem;">Spent: Rs. 50,000 - Rs. 2,00,000</p>
+                    <p id="goldMultiplier" style="margin: 0 0 0.5rem; color: #3e2723; font-weight: 600;">Points Multiplier: 1.5x</p>
+                    <div id="goldBenefits" style="background: rgba(255,255,255,0.8); padding: 0.8rem; border-radius: 4px; font-size: 0.9rem;">
+                        <ul style="margin: 0; padding-left: 1.5rem; color: #3e2723;"></ul>
+                    </div>
+                    <button onclick="openEditTierModal('Gold')" style="width: 100%; margin-top: 1rem; padding: 0.6rem; background: #3e2723; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 0.9rem;">Edit</button>
                 </div>
-                <p style="margin-top: 1rem; font-weight: 600;" id="platinumCount">0 members</p>
+
+                <div id="platinumTierCard" style="background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%); padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); color: white;">
+                    <h3 style="margin: 0 0 0.5rem; font-size: 1.3rem;">Platinum Tier</h3>
+                    <p id="platinumRange" style="margin: 0 0 1rem; opacity: 0.9; font-size: 0.9rem;">Spent: Above Rs. 2,00,000</p>
+                    <p id="platinumMultiplier" style="margin: 0 0 0.5rem; font-weight: 600;">Points Multiplier: 2x</p>
+                    <div id="platinumBenefits" style="background: rgba(255,255,255,0.15); padding: 0.8rem; border-radius: 4px; font-size: 0.9rem;">
+                        <ul style="margin: 0; padding-left: 1.5rem;"></ul>
+                    </div>
+                    <button onclick="openEditTierModal('Platinum')" style="width: 100%; margin-top: 1rem; padding: 0.6rem; background: white; color: #2d3748; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 0.9rem;">Edit</button>
+                </div>
             </div>
         </div>
 
@@ -97,8 +89,16 @@
                 <p style="margin: 0; color: #666;">Active Members</p>
             </div>
             <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center;">
-                <h3 style="font-size: 2.5rem; color: #28a745; margin: 0 0 0.5rem;" id="newMembers">0</h3>
-                <p style="margin: 0; color: #666;">New This Month</p>
+                <h3 style="font-size: 2.5rem; color: #c0c0c0; margin: 0 0 0.5rem;" id="silverCount">0</h3>
+                <p style="margin: 0; color: #666;">Silver Members</p>
+            </div>
+            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center;">
+                <h3 style="font-size: 2.5rem; color: #e0bf63; margin: 0 0 0.5rem;" id="goldCount">0</h3>
+                <p style="margin: 0; color: #666;">Gold Members</p>
+            </div>
+            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center;">
+                <h3 style="font-size: 2.5rem; color: #4a5568; margin: 0 0 0.5rem;" id="platinumCount">0</h3>
+                <p style="margin: 0; color: #666;">Platinum Members</p>
             </div>
             <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center;">
                 <h3 style="font-size: 2.5rem; color: #e0bf63; margin: 0 0 0.5rem;" id="pointsRedeemed">0</h3>
@@ -110,22 +110,20 @@
             </div>
         </div>
 
-        <!-- Members Management -->
-        <div style="background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <!-- MEMBER MANAGEMENT SECTION -->
+        <div style="background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
                 <h2 style="margin: 0; font-family: 'Cormorant Garamond', serif;">Loyalty Members</h2>
-                <div style="display: flex; gap: 1rem;">
+                <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
                     <button onclick="openPointsModal()" style="background: #e0bf63; color: #3e2723; padding: 0.8rem 1.5rem; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Award Points</button>
-                    <button onclick="openProfileModal()" style="background: #6f0022; color: white; padding: 0.8rem 1.5rem; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Create Profile</button>
+                    <button onclick="openAddLoyaltyModal()" style="background: #28a745; color: white; padding: 0.8rem 1.5rem; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Add to Loyalty</button>
                 </div>
             </div>
 
-            <!-- Alert -->
-            <div id="alert" style="padding: 1rem; border-radius: 4px; margin-bottom: 1rem; display: none;"></div>
-
-            <!-- Tier Filter -->
+            <!-- Filter -->
             <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
-                <button class="filter-btn active" onclick="filterMembers('all')">All</button>
+                <button class="filter-btn active" onclick="filterMembers('all')">All Customers</button>
+                <button class="filter-btn" onclick="filterMembers('loyalty')">Loyalty Members</button>
                 <button class="filter-btn" onclick="filterMembers('Silver')">Silver</button>
                 <button class="filter-btn" onclick="filterMembers('Gold')">Gold</button>
                 <button class="filter-btn" onclick="filterMembers('Platinum')">Platinum</button>
@@ -133,73 +131,87 @@
 
             <!-- Members Table -->
             <div style="overflow-x: auto;">
-                <table style="width: 100%; border-collapse: collapse;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 0.95rem;">
                     <thead>
                         <tr>
                             <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Name</th>
                             <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Email</th>
+                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Status</th>
                             <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Tier</th>
                             <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Points</th>
                             <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Total Spent</th>
-                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Actions</th>
+                            <th style="padding: 1rem; text-align: center; border-bottom: 2px solid #eee; background: #f9f9f9;">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="membersTable">
-                        <tr><td colspan="6" style="padding: 2rem; text-align: center; color: #999;">Loading members...</td></tr>
+                        <tr><td colspan="7" style="padding: 2rem; text-align: center; color: #999;">Loading members...</td></tr>
                     </tbody>
                 </table>
             </div>
         </div>
 
-        <!-- Loyalty Info -->
-        <div style="background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-top: 2rem;">
-            <h3 style="font-family: 'Cormorant Garamond', serif; margin-bottom: 1rem;">Loyalty Program Rules</h3>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
-                <div>
-                    <h4 style="color: #6f0022; margin-bottom: 0.5rem;">Points Generation</h4>
-                    <ul style="color: #666; line-height: 1.8;">
-                        <li>Automatic on purchase completion</li>
-                        <li>1 point = Rs. 100 spent (base rate)</li>
-                        <li>Multipliers: Silver 1x, Gold 1.5x, Platinum 2x</li>
-                    </ul>
-                </div>
-                <div>
-                    <h4 style="color: #6f0022; margin-bottom: 0.5rem;">Tier Advancement</h4>
-                    <ul style="color: #666; line-height: 1.8;">
-                        <li>Based on total purchase amount</li>
-                        <li>Automatic tier upgrades</li>
-                        <li>Annual review on anniversary</li>
-                    </ul>
-                </div>
-                <div>
-                    <h4 style="color: #6f0022; margin-bottom: 0.5rem;">Redemptions</h4>
-                    <ul style="color: #666; line-height: 1.8;">
-                        <li>100 points = Rs. 100 discount</li>
-                        <li>Minimum redemption: 500 points</li>
-                        <li>Valid for 12 months</li>
-                    </ul>
-                </div>
+        <!-- PROMOTIONAL OFFERS SECTION -->
+        <div style="background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h2 style="margin: 0; font-family: 'Cormorant Garamond', serif;">Promotional Offers</h2>
+                <button onclick="openCreateOfferModal()" style="background: #6f0022; color: white; padding: 0.8rem 1.5rem; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Create New Offer</button>
+            </div>
+
+            <div id="offersContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem;">
+                <p style="grid-column: 1/-1; text-align: center; color: #999;">Loading offers...</p>
             </div>
         </div>
     </div>
 
-    <!-- Create Profile Modal -->
-    <div id="profileModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000;">
-        <div style="background: white; padding: 2rem; border-radius: 8px; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto;">
+    <!-- Edit Tier Modal -->
+    <div id="editTierModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000;">
+        <div style="background: white; padding: 2rem; border-radius: 8px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto;">
             <div style="display: flex; justify-content: space-between; margin-bottom: 1.5rem;">
-                <h3 style="margin: 0;">Create Loyalty Profile</h3>
-                <button onclick="closeProfileModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+                <h3 id="editTierTitle" style="margin: 0;">Edit Tier Configuration</h3>
+                <button onclick="closeEditTierModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
             </div>
-            <form id="profileForm">
+            <form id="editTierForm">
+                <input type="hidden" id="tierName">
                 <div style="margin-bottom: 1rem;">
-                    <label style="display: block; margin-bottom: 0.5rem;">Customer Email *</label>
-                    <input type="email" id="customerEmail" required style="width: 95%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
+                    <label style="display: block; margin-bottom: 0.5rem;">Min Spent (Rs.) *</label>
+                    <input type="number" id="tierMinSpent" required style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
                 </div>
                 <div style="margin-bottom: 1rem;">
-                    <label style="display: block; margin-bottom: 0.5rem;">Initial Points</label>
-                    <input type="number" id="initialPoints" value="0" min="0" style="width: 95%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
+                    <label style="display: block; margin-bottom: 0.5rem;">Max Spent (Rs.) *</label>
+                    <input type="number" id="tierMaxSpent" required style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
                 </div>
-                <button type="submit" style="width: 100%; background: #6f0022; color: white; padding: 0.8rem; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Create Profile</button>
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem;">Points Multiplier *</label>
+                    <input type="number" id="tierMultiplier" required step="0.1" min="1" style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem;">Benefits (one per line)</label>
+                    <textarea id="tierBenefits" rows="4" style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; font-family: monospace;"></textarea>
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem;">Description</label>
+                    <textarea id="tierDescription" rows="3" style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;"></textarea>
+                </div>
+                <button type="submit" style="width: 100%; background: #6f0022; color: white; padding: 0.8rem; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Save Changes</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add to Loyalty Modal -->
+    <div id="addLoyaltyModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000;">
+        <div style="background: white; padding: 2rem; border-radius: 8px; max-width: 500px; width: 90%;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 1.5rem;">
+                <h3 style="margin: 0;">Add Customer to Loyalty</h3>
+                <button onclick="closeAddLoyaltyModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+            </div>
+            <form id="addLoyaltyForm">
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem;">Customer *</label>
+                    <select id="loyaltyCustomer" required style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
+                        <option value="">Select a customer...</option>
+                    </select>
+                </div>
+                <button type="submit" style="width: 100%; background: #28a745; color: white; padding: 0.8rem; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Add to Loyalty (Silver Tier)</button>
             </form>
         </div>
     </div>
@@ -213,18 +225,69 @@
             </div>
             <form id="pointsForm">
                 <div style="margin-bottom: 1rem;">
-                    <label style="display: block; margin-bottom: 0.5rem;">Customer ID *</label>
-                    <input type="text" id="customerId" required style="width: 95%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
+                    <label style="display: block; margin-bottom: 0.5rem;">Loyalty Customer *</label>
+                    <select id="pointsCustomerId" required style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
+                        <option value="">Select a customer...</option>
+                    </select>
                 </div>
                 <div style="margin-bottom: 1rem;">
                     <label style="display: block; margin-bottom: 0.5rem;">Points to Award *</label>
-                    <input type="number" id="pointsAmount" required min="1" style="width: 95%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
+                    <input type="number" id="pointsAmount" required min="1" style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
                 </div>
                 <div style="margin-bottom: 1rem;">
                     <label style="display: block; margin-bottom: 0.5rem;">Reason</label>
-                    <textarea id="pointsReason" rows="3" style="width: 95%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;" placeholder="e.g., Special promotion, compensation, bonus"></textarea>
+                    <textarea id="pointsReason" rows="3" style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;" placeholder="e.g., Special promotion, compensation, bonus"></textarea>
                 </div>
                 <button type="submit" style="width: 100%; background: #e0bf63; color: #3e2723; padding: 0.8rem; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Award Points</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Create/Edit Offer Modal -->
+    <div id="offerModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000;">
+        <div style="background: white; padding: 2rem; border-radius: 8px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 1.5rem;">
+                <h3 id="offerModalTitle" style="margin: 0;">Create Promotional Offer</h3>
+                <button onclick="closeOfferModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+            </div>
+            <form id="offerForm">
+                <input type="hidden" id="offerId">
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem;">Offer Title *</label>
+                    <input type="text" id="offerTitle" required placeholder="e.g., New Year Special" style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem;">Description *</label>
+                    <textarea id="offerDescription" required rows="3" placeholder="Offer details and terms..." style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;"></textarea>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem;">Discount % *</label>
+                        <input type="number" id="discountPercentage" required min="0" max="100" style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem;">Or Discount Amount (Rs.)</label>
+                        <input type="number" id="discountAmount" min="0" style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
+                    </div>
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem;">Applicable Tier *</label>
+                    <select id="offerTierType" required style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
+                        <option value="">Select tier...</option>
+                        <option value="Silver">Silver</option>
+                        <option value="Gold">Gold</option>
+                        <option value="Platinum">Platinum</option>
+                        <option value="All">All Tiers</option>
+                    </select>
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem;">Valid Until *</label>
+                    <input type="date" id="offerValidUntil" required style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
+                </div>
+                <div style="display: flex; gap: 1rem;">
+                    <button type="submit" style="flex: 1; background: #6f0022; color: white; padding: 0.8rem; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Save Offer</button>
+                    <button type="button" onclick="sendOfferEmail()" id="sendEmailBtn" style="flex: 1; background: #17a2b8; color: white; padding: 0.8rem; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; display: none;">Send via Email</button>
+                </div>
             </form>
         </div>
     </div>
@@ -233,13 +296,22 @@
         .filter-btn { padding: 0.6rem 1.2rem; border: 1px solid #6f0022; background: white; color: #6f0022; cursor: pointer; border-radius: 4px; font-weight: 500; transition: all 0.3s; }
         .filter-btn:hover { background: #f5f5f5; }
         .filter-btn.active { background: #6f0022; color: white; }
+        .offer-card { background: #f9f9f9; border-left: 4px solid #e0bf63; padding: 1.5rem; border-radius: 4px; }
+        .offer-card h4 { margin: 0 0 0.5rem; color: #6f0022; }
+        .offer-actions { display: flex; gap: 0.5rem; margin-top: 1rem; }
+        .offer-actions button { padding: 0.4rem 0.8rem; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem; font-weight: 600; }
     </style>
 
     <script type="module">
         import authManager from '/src/auth.js';
 
-        let members = [];
+        let allMembers = [];
+        let allCustomers = [];
+        let loyaltyTiers = {};
         let currentFilter = 'all';
+        let allOffers = [];
+        let editingOfferId = null;
+        let editingTierId = null;
 
         async function checkAuth() {
             const user = await authManager.checkStaffAuth('Loyalty Management');
@@ -252,57 +324,143 @@
             return true;
         }
 
+        async function loadAllData() {
+            await Promise.all([
+                loadMembers(),
+                loadAllCustomers(),
+                loadTiers(),
+                loadOffers()
+            ]);
+        }
+
         async function loadMembers() {
             try {
-                const res = await fetch('/api/loyalty/members', {
-                    credentials: 'same-origin'
-                });
+                const res = await fetch('/api/loyalty/members', { credentials: 'same-origin' });
+                if (res.ok) allMembers = await res.json();
+                else allMembers = [];
+            } catch (e) { allMembers = []; }
+            updateStats();
+            displayMembers();
+        }
+
+        async function loadAllCustomers() {
+            try {
+                const res = await fetch('/api/customer', { credentials: 'same-origin' });
+                if (res.ok) allCustomers = await res.json();
+                else allCustomers = [];
+            } catch (e) { allCustomers = []; }
+            populateCustomerSelects();
+        }
+
+        async function loadTiers() {
+            try {
+                const res = await fetch('/api/loyalty/tiers', { credentials: 'same-origin' });
                 if (res.ok) {
-                    members = await res.json();
-                } else {
-                    members = [];
+                    const tiers = await res.json();
+                    loyaltyTiers = {};
+                    tiers.forEach(tier => loyaltyTiers[tier.tierName] = tier);
+                    displayTierCards();
                 }
-                updateStats();
-                displayMembers();
-            } catch (e) { 
-                members = [];
-                updateStats();
-                displayMembers();
+            } catch (e) { console.error('Error loading tiers:', e); }
+        }
+
+        async function loadOffers() {
+            try {
+                const res = await fetch('/api/loyalty/offers', { credentials: 'same-origin' });
+                if (res.ok) { allOffers = await res.json(); }
+                else { allOffers = []; }
+            } catch (e) { allOffers = []; }
+            displayOffers();
+        }
+
+        function displayTierCards() {
+            const tierNames = ['Silver', 'Gold', 'Platinum'];
+            tierNames.forEach(tierName => {
+                const tier = loyaltyTiers[tierName];
+                if (!tier) return;
+                
+                const benefitsHtml = (tier.benefits || []).map(b => `<li>${b}</li>`).join('');
+                const card = document.getElementById(tierName.toLowerCase() + 'TierCard');
+                
+                card.querySelector(`#${tierName.toLowerCase()}Range`).textContent = 
+                    `Spent: Rs. ${tier.minSpent.toLocaleString()} - Rs. ${tier.maxSpent.toLocaleString()}`;
+                card.querySelector(`#${tierName.toLowerCase()}Multiplier`).textContent = 
+                    `Points Multiplier: ${tier.pointMultiplier}x`;
+                card.querySelector(`#${tierName.toLowerCase()}Benefits ul`).innerHTML = benefitsHtml;
+            });
+        }
+
+        function displayOffers() {
+            const container = document.getElementById('offersContainer');
+            if (allOffers.length === 0) {
+                container.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #999;">No offers created yet</p>';
+                return;
             }
+
+            container.innerHTML = allOffers.map(offer => `
+                <div class="offer-card">
+                    <h4>${offer.title}</h4>
+                    <p style="font-size: 0.9rem; color: #666; margin: 0 0 0.5rem;">${offer.description}</p>
+                    <div style="font-size: 0.9rem; color: #333; margin-bottom: 0.5rem;">
+                        <strong>Discount:</strong> ${offer.discountPercentage}%${offer.discountAmount ? ` or Rs. ${offer.discountAmount}` : ''}<br>
+                        <strong>Tier:</strong> ${offer.tierType}<br>
+                        <strong>Valid Until:</strong> ${new Date(offer.validUntil).toLocaleDateString()}<br>
+                        <strong>Status:</strong> ${offer.emailSent ? 'Email Sent' : 'Not Sent'} ${offer.recipientsCount ? `(${offer.recipientsCount} recipients)` : ''}
+                    </div>
+                    <div class="offer-actions">
+                        <button onclick="editOffer('${offer._id}')" style="background: #e0bf63; color: #3e2723;">Edit</button>
+                        <button onclick="sendOfferEmailAction('${offer._id}')" style="background: #17a2b8; color: white;">Send Email</button>
+                        <button onclick="deleteOffer('${offer._id}')" style="background: #dc3545; color: white;">Delete</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function populateCustomerSelects() {
+            const loyaltyCustomers = allMembers.filter(m => m.isLoyalty);
+            const nonLoyaltyCustomers = allCustomers.filter(c => !c.isLoyalty);
+            
+            const pointsSelect = document.getElementById('pointsCustomerId');
+            pointsSelect.innerHTML = '<option value="">Select a customer...</option>' +
+                loyaltyCustomers.map(c => `<option value="${c._id}">${c.fullName} (${c.loyaltyTier})</option>`).join('');
+            
+            const loyaltySelect = document.getElementById('loyaltyCustomer');
+            loyaltySelect.innerHTML = '<option value="">Select a customer...</option>' +
+                nonLoyaltyCustomers.map(c => `<option value="${c._id}">${c.fullName} (${c.email})</option>`).join('');
         }
 
         function updateStats() {
-            document.getElementById('activeMembers').textContent = members.length;
-            document.getElementById('silverCount').textContent = members.filter(m => m.tier === 'Silver').length + ' members';
-            document.getElementById('goldCount').textContent = members.filter(m => m.tier === 'Gold').length + ' members';
-            document.getElementById('platinumCount').textContent = members.filter(m => m.tier === 'Platinum').length + ' members';
-            
-            const monthAgo = new Date();
-            monthAgo.setMonth(monthAgo.getMonth() - 1);
-            document.getElementById('newMembers').textContent = members.filter(m => new Date(m.createdAt) > monthAgo).length;
-            
-            const totalRedeemed = members.reduce((sum, m) => sum + (m.pointsRedeemed || 0), 0);
-            document.getElementById('pointsRedeemed').textContent = totalRedeemed;
-            
-            const totalIssued = members.reduce((sum, m) => sum + (m.points || 0), 0);
-            document.getElementById('pointsIssued').textContent = totalIssued;
+            const loyal = allMembers.filter(m => m.isLoyalty);
+            document.getElementById('activeMembers').textContent = loyal.length;
+            document.getElementById('silverCount').textContent = allMembers.filter(m => m.loyaltyTier === 'Silver').length;
+            document.getElementById('goldCount').textContent = allMembers.filter(m => m.loyaltyTier === 'Gold').length;
+            document.getElementById('platinumCount').textContent = allMembers.filter(m => m.loyaltyTier === 'Platinum').length;
+            document.getElementById('pointsRedeemed').textContent = allMembers.reduce((sum, m) => sum + (m.pointsRedeemed || 0), 0);
+            document.getElementById('pointsIssued').textContent = allMembers.reduce((sum, m) => sum + (m.loyaltyPoints || 0), 0);
         }
 
         function getTierBadge(tier) {
+            if (!tier) return '<span style="padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.85rem; background: #ddd; color: #666;">Regular</span>';
             const colors = {
                 'Silver': 'background: #c0c0c0; color: #4a4a4a;',
                 'Gold': 'background: #e0bf63; color: #3e2723;',
                 'Platinum': 'background: #4a5568; color: white;'
             };
-            return `<span style="${colors[tier] || ''} padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600;">${tier}</span>`;
+            return `<span style="${colors[tier]} padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600;">${tier}</span>`;
         }
 
         function displayMembers() {
             const tbody = document.getElementById('membersTable');
-            let filtered = currentFilter === 'all' ? members : members.filter(m => m.tier === currentFilter);
-            
+            let filtered = allMembers;
+
+            if (currentFilter === 'loyalty') {
+                filtered = allMembers.filter(m => m.isLoyalty);
+            } else if (currentFilter !== 'all' && ['Silver', 'Gold', 'Platinum'].includes(currentFilter)) {
+                filtered = allMembers.filter(m => m.loyaltyTier === currentFilter);
+            }
+
             if (filtered.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" style="padding: 2rem; text-align: center; color: #999;">No loyalty members found</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" style="padding: 2rem; text-align: center; color: #999;">No members found</td></tr>';
                 return;
             }
 
@@ -310,11 +468,24 @@
                 <tr>
                     <td style="padding: 1rem; border-bottom: 1px solid #eee;">${m.fullName || 'N/A'}</td>
                     <td style="padding: 1rem; border-bottom: 1px solid #eee;">${m.email}</td>
-                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">${getTierBadge(m.tier)}</td>
-                    <td style="padding: 1rem; border-bottom: 1px solid #eee; font-weight: 600; color: #e0bf63;">${m.points || 0}</td>
-                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">Rs. ${(m.totalSpent || 0).toLocaleString()}</td>
                     <td style="padding: 1rem; border-bottom: 1px solid #eee;">
-                        <button onclick="viewMember('${m._id}')" style="padding: 0.4rem 0.8rem; background: #17a2b8; color: white; border: none; border-radius: 4px; cursor: pointer;">View</button>
+                        <span style="padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.85rem; background: ${m.isLoyalty ? '#d4edda' : '#f8d7da'}; color: ${m.isLoyalty ? '#155724' : '#721c24'};">
+                            ${m.isLoyalty ? 'Loyalty' : 'Regular'}
+                        </span>
+                    </td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">${getTierBadge(m.loyaltyTier)}</td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #eee; font-weight: 600; color: #e0bf63;">${m.loyaltyPoints || 0}</td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">Rs. ${(m.totalSpent || 0).toLocaleString()}</td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #eee; text-align: center;">
+                        <div style="display: flex; gap: 0.4rem; justify-content: center;">
+                            ${m.isLoyalty ? `
+                                <button onclick="upgradeMember('${m._id}')" title="Upgrade" style="padding: 0.4rem 0.6rem; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">Up</button>
+                                <button onclick="downgradeMember('${m._id}')" title="Downgrade" style="padding: 0.4rem 0.6rem; background: #ffc107; color: #333; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">Down</button>
+                                <button onclick="removeLoyalty('${m._id}')" title="Remove" style="padding: 0.4rem 0.6rem; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">Remove</button>
+                            ` : `
+                                <button onclick="addLoyaltyDirectly('${m._id}')" title="Add" style="padding: 0.4rem 0.6rem; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">Add</button>
+                            `}
+                        </div>
                     </td>
                 </tr>
             `).join('');
@@ -327,62 +498,317 @@
             displayMembers();
         }
 
-        function viewMember(id) {
-            const member = members.find(m => m._id === id);
-            if (member) {
-                alert(`Member Details\n\nName: ${member.fullName || 'N/A'}\nEmail: ${member.email}\nTier: ${member.tier}\nPoints: ${member.points || 0}\nTotal Spent: Rs. ${(member.totalSpent || 0).toLocaleString()}\nMember Since: ${new Date(member.createdAt).toLocaleDateString()}`);
+        async function addLoyaltyDirectly(customerId) {
+            try {
+                const res = await fetch('/api/loyalty/members/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ customerId })
+                });
+                if (!res.ok) throw new Error('Failed to add to loyalty');
+                showAlert('Customer added to loyalty as Silver tier', 'success');
+                await loadAllData();
+            } catch (e) {
+                showAlert(e.message, 'error');
             }
         }
 
-        function openProfileModal() { document.getElementById('profileModal').style.display = 'flex'; }
-        function closeProfileModal() { document.getElementById('profileModal').style.display = 'none'; document.getElementById('profileForm').reset(); }
-        
-        function openPointsModal() { document.getElementById('pointsModal').style.display = 'flex'; }
-        function closePointsModal() { document.getElementById('pointsModal').style.display = 'none'; document.getElementById('pointsForm').reset(); }
-
-        document.getElementById('profileForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const data = {
-                email: document.getElementById('customerEmail').value,
-                initialPoints: parseInt(document.getElementById('initialPoints').value) || 0
-            };
+        async function removeLoyalty(customerId) {
+            if (!confirm('Remove customer from loyalty program?')) return;
             try {
-                const res = await fetch('/api/loyalty/create-profile', {
+                const res = await fetch('/api/loyalty/members/remove', {
                     method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ customerId })
+                });
+                if (!res.ok) throw new Error('Failed to remove from loyalty');
+                showAlert('Customer removed from loyalty program', 'success');
+                await loadAllData();
+            } catch (e) {
+                showAlert(e.message, 'error');
+            }
+        }
+
+        async function upgradeMember(customerId) {
+            const member = allMembers.find(m => m._id === customerId);
+            if (!member) return;
+            
+            const tiers = ['Silver', 'Gold', 'Platinum'];
+            const currentIndex = tiers.indexOf(member.loyaltyTier);
+            if (currentIndex === -1 || currentIndex === tiers.length - 1) {
+                showAlert('Already at highest tier', 'error');
+                return;
+            }
+            
+            const newTier = tiers[currentIndex + 1];
+            try {
+                const res = await fetch(`/api/loyalty/members/upgrade/${customerId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ newTier })
+                });
+                if (!res.ok) throw new Error('Failed to upgrade');
+                showAlert(`Upgraded to ${newTier} tier`, 'success');
+                await loadAllData();
+            } catch (e) { showAlert(e.message, 'error'); }
+        }
+
+        async function downgradeMember(customerId) {
+            const member = allMembers.find(m => m._id === customerId);
+            if (!member) return;
+            
+            const tiers = ['Silver', 'Gold', 'Platinum'];
+            const currentIndex = tiers.indexOf(member.loyaltyTier);
+            if (currentIndex <= 0) {
+                showAlert('Already at lowest tier', 'error');
+                return;
+            }
+            
+            const newTier = tiers[currentIndex - 1];
+            try {
+                const res = await fetch(`/api/loyalty/members/downgrade/${customerId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ newTier })
+                });
+                if (!res.ok) throw new Error('Failed to downgrade');
+                showAlert(`Downgraded to ${newTier} tier`, 'success');
+                await loadAllData();
+            } catch (e) { showAlert(e.message, 'error'); }
+        }
+
+        // Tier Management
+        async function openEditTierModal(tierName) {
+            const selectedTierName = tierName || 'Silver';
+
+            if (!loyaltyTiers[selectedTierName]) {
+                await loadTiers();
+            }
+
+            const tier = loyaltyTiers[selectedTierName];
+            if (!tier) {
+                showAlert('Unable to load tier data. Please refresh and try again.', 'error');
+                return;
+            }
+
+            editingTierId = tier._id || null;
+            document.getElementById('editTierTitle').textContent = `Edit ${selectedTierName} Tier Configuration`;
+            document.getElementById('tierName').value = selectedTierName;
+            document.getElementById('tierMinSpent').value = tier?.minSpent || 0;
+            document.getElementById('tierMaxSpent').value = tier?.maxSpent || 50000;
+            document.getElementById('tierMultiplier').value = tier?.pointMultiplier || 1;
+            document.getElementById('tierBenefits').value = (tier?.benefits || []).join('\n');
+            document.getElementById('tierDescription').value = tier?.description || '';
+            document.getElementById('editTierModal').style.display = 'flex';
+        }
+
+        function closeEditTierModal() {
+            editingTierId = null;
+            document.getElementById('editTierModal').style.display = 'none';
+        }
+
+        document.getElementById('editTierForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const selectedTierName = document.getElementById('tierName').value;
+            let tierId = editingTierId || loyaltyTiers[selectedTierName]?._id;
+
+            if (!tierId) {
+                await loadTiers();
+                tierId = loyaltyTiers[selectedTierName]?._id;
+            }
+
+            if (!tierId) {
+                showAlert('Tier not found', 'error');
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/loyalty/tiers/${tierId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({
+                        minSpent: parseInt(document.getElementById('tierMinSpent').value),
+                        maxSpent: parseInt(document.getElementById('tierMaxSpent').value),
+                        pointMultiplier: parseFloat(document.getElementById('tierMultiplier').value),
+                        benefits: document.getElementById('tierBenefits').value.split('\n').filter(b => b.trim()),
+                        description: document.getElementById('tierDescription').value
+                    })
+                });
+
+                if (!res.ok) {
+                    let errMsg = 'Failed to update tier';
+                    try {
+                        const errData = await res.json();
+                        errMsg = errData.message || errData.error || errMsg;
+                    } catch (_) {
+                        // Keep default error message when response body is not JSON.
+                    }
+                    throw new Error(errMsg);
+                }
+
+                showAlert('Tier updated successfully', 'success');
+                closeEditTierModal();
+                await loadTiers();
+            } catch (e) { showAlert(e.message, 'error'); }
+        });
+
+        // Offer Management
+        function openCreateOfferModal() {
+            editingOfferId = null;
+            document.getElementById('offerModalTitle').textContent = 'Create Promotional Offer';
+            document.getElementById('offerId').value = '';
+            document.getElementById('offerForm').reset();
+            document.getElementById('sendEmailBtn').style.display = 'none';
+            document.getElementById('offerModal').style.display = 'flex';
+        }
+
+        function closeOfferModal() {
+            document.getElementById('offerModal').style.display = 'none';
+        }
+
+        function editOffer(offerId) {
+            const offer = allOffers.find(o => o._id === offerId);
+            if (!offer) return;
+            
+            editingOfferId = offerId;
+            document.getElementById('offerModalTitle').textContent = 'Edit Promotional Offer';
+            document.getElementById('offerId').value = offerId;
+            document.getElementById('offerTitle').value = offer.title;
+            document.getElementById('offerDescription').value = offer.description;
+            document.getElementById('discountPercentage').value = offer.discountPercentage;
+            document.getElementById('discountAmount').value = offer.discountAmount || 0;
+            document.getElementById('offerTierType').value = offer.tierType;
+            document.getElementById('offerValidUntil').value = new Date(offer.validUntil).toISOString().split('T')[0];
+            document.getElementById('sendEmailBtn').style.display = 'block';
+            document.getElementById('offerModal').style.display = 'flex';
+        }
+
+        document.getElementById('offerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const offerId = document.getElementById('offerId').value;
+            const data = {
+                title: document.getElementById('offerTitle').value,
+                description: document.getElementById('offerDescription').value,
+                discountPercentage: parseInt(document.getElementById('discountPercentage').value),
+                discountAmount: parseInt(document.getElementById('discountAmount').value) || 0,
+                tierType: document.getElementById('offerTierType').value,
+                validUntil: document.getElementById('offerValidUntil').value
+            };
+
+            try {
+                const method = offerId ? 'PUT' : 'POST';
+                const url = offerId ? `/api/loyalty/offers/${offerId}` : '/api/loyalty/offers';
+                const res = await fetch(url, {
+                    method,
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'same-origin',
                     body: JSON.stringify(data)
                 });
-                if (!res.ok) { const err = await res.json(); throw new Error(err.message); }
-                showAlert('Loyalty profile created', 'success');
-                closeProfileModal();
-                loadMembers();
+                if (!res.ok) throw new Error('Failed to save offer');
+                showAlert('Offer saved successfully', 'success');
+                closeOfferModal();
+                await loadOffers();
+            } catch (e) { showAlert(e.message, 'error'); }
+        });
+
+        async function sendOfferEmailAction(offerId) {
+            try {
+                const res = await fetch(`/api/loyalty/offers/${offerId}/send-email`, {
+                    method: 'POST',
+                    credentials: 'same-origin'
+                });
+                if (!res.ok) throw new Error('Failed to send emails');
+                const data = await res.json();
+                showAlert(`Emails sent to ${data.successCount} customers`, 'success');
+                await loadOffers();
+            } catch (e) { showAlert(e.message, 'error'); }
+        }
+
+        function sendOfferEmail() {
+            if (!editingOfferId) {
+                showAlert('Please save offer first', 'error');
+                return;
+            }
+            sendOfferEmailAction(editingOfferId);
+        }
+
+        async function deleteOffer(offerId) {
+            if (!confirm('Delete this offer?')) return;
+            try {
+                const res = await fetch(`/api/loyalty/offers/${offerId}`, {
+                    method: 'DELETE',
+                    credentials: 'same-origin'
+                });
+                if (!res.ok) throw new Error('Failed to delete offer');
+                showAlert('Offer deleted', 'success');
+                await loadOffers();
+            } catch (e) { showAlert(e.message, 'error'); }
+        }
+
+        // Modals
+        function openAddLoyaltyModal() {
+            populateCustomerSelects();
+            document.getElementById('addLoyaltyModal').style.display = 'flex';
+        }
+
+        function closeAddLoyaltyModal() {
+            document.getElementById('addLoyaltyModal').style.display = 'none';
+        }
+
+        function openPointsModal() {
+            populateCustomerSelects();
+            document.getElementById('pointsModal').style.display = 'flex';
+        }
+
+        function closePointsModal() {
+            document.getElementById('pointsModal').style.display = 'none';
+        }
+
+        document.getElementById('addLoyaltyForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const customerId = document.getElementById('loyaltyCustomer').value;
+            try {
+                const res = await fetch('/api/loyalty/members/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ customerId })
+                });
+                if (!res.ok) throw new Error('Failed to add to loyalty');
+                showAlert('Customer added to loyalty as Silver tier', 'success');
+                closeAddLoyaltyModal();
+                await loadAllData();
             } catch (e) { showAlert(e.message, 'error'); }
         });
 
         document.getElementById('pointsForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const data = {
-                customerId: document.getElementById('customerId').value,
-                points: parseInt(document.getElementById('pointsAmount').value),
-                reason: document.getElementById('pointsReason').value
-            };
             try {
-                const res = await fetch('/api/loyalty/award-points', {
+                const res = await fetch('/api/loyalty/members/award-points', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'same-origin',
-                    body: JSON.stringify(data)
+                    body: JSON.stringify({
+                        customerId: document.getElementById('pointsCustomerId').value,
+                        points: parseInt(document.getElementById('pointsAmount').value),
+                        reason: document.getElementById('pointsReason').value
+                    })
                 });
-                if (!res.ok) { const err = await res.json(); throw new Error(err.message); }
+                if (!res.ok) throw new Error('Failed to award points');
                 showAlert('Points awarded successfully', 'success');
                 closePointsModal();
-                loadMembers();
+                await loadAllData();
             } catch (e) { showAlert(e.message, 'error'); }
         });
 
         function showAlert(msg, type) {
-            const alert = document.getElementById('alert');
+            const alert = document.getElementById('alertBox');
             alert.textContent = msg;
             alert.style.display = 'block';
             alert.style.background = type === 'success' ? '#d4edda' : '#f8d7da';
@@ -393,16 +819,29 @@
 
         function logout() { authManager.logout(); }
 
-        // Make functions available globally for onclick/onchange handlers
         window.logout = logout;
         window.filterMembers = filterMembers;
-        window.viewMember = viewMember;
-        window.openProfileModal = openProfileModal;
-        window.closeProfileModal = closeProfileModal;
+        window.openEditTierModal = openEditTierModal;
+        window.closeEditTierModal = closeEditTierModal;
+        window.openAddLoyaltyModal = openAddLoyaltyModal;
+        window.closeAddLoyaltyModal = closeAddLoyaltyModal;
         window.openPointsModal = openPointsModal;
         window.closePointsModal = closePointsModal;
+        window.openCreateOfferModal = openCreateOfferModal;
+        window.closeOfferModal = closeOfferModal;
+        window.editOffer = editOffer;
+        window.deleteOffer = deleteOffer;
+        window.sendOfferEmailAction = sendOfferEmailAction;
+        window.sendOfferEmail = sendOfferEmail;
+        window.addLoyaltyDirectly = addLoyaltyDirectly;
+        window.removeLoyalty = removeLoyalty;
+        window.upgradeMember = upgradeMember;
+        window.downgradeMember = downgradeMember;
 
-        (async () => { const auth = await checkAuth(); if (auth) loadMembers(); })();
+        (async () => {
+            const auth = await checkAuth();
+            if (auth) loadAllData();
+        })();
     </script>
 </body>
 </html>

@@ -16,7 +16,7 @@
         <!-- Header -->
         <div style="display: flex; justify-content: space-between; align-items: center; background: #6f0022; color: white; padding: 1.5rem 2rem; border-radius: 8px; margin-bottom: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
             <div>
-                <h1 style="margin: 0; font-family: 'Cormorant Garamond', serif; font-size: 2rem;">👑 Admin Dashboard</h1>
+                <h1 style="margin: 0; font-family: 'Cormorant Garamond', serif; font-size: 2rem;">Admin Dashboard</h1>
                 <p style="margin: 0.5rem 0 0; opacity: 0.9;">Welcome, <span id="adminName">Admin</span></p>
             </div>
             <button onclick="logout()" style="background: white; color: #6f0022; border: none; padding: 0.75rem 1.5rem; border-radius: 4px; cursor: pointer; font-weight: 600; transition: all 0.3s;">
@@ -89,6 +89,78 @@
                     <tbody id="staffTableBody">
                         <tr>
                             <td colspan="6" style="padding: 2rem; text-align: center; color: #999;">Loading staff...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Order Analytics -->
+        <div style="background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-top: 2rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h2 style="margin: 0; font-family: 'Cormorant Garamond', serif;">Order Analytics (Monthly)</h2>
+                <button onclick="loadOrderAnalytics()" style="background: #6f0022; color: white; padding: 0.7rem 1.2rem; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Refresh</button>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+                <div style="background: #f9f9f9; border-left: 4px solid #6f0022; padding: 1rem; border-radius: 4px;">
+                    <p style="margin: 0; color: #666; font-size: 0.9rem;">Total Orders</p>
+                    <h3 id="totalOrdersCount" style="margin: 0.4rem 0 0; color: #6f0022; font-size: 1.8rem;">0</h3>
+                </div>
+                <div style="background: #f9f9f9; border-left: 4px solid #28a745; padding: 1rem; border-radius: 4px;">
+                    <p style="margin: 0; color: #666; font-size: 0.9rem;">Total Revenue</p>
+                    <h3 id="totalRevenueAmount" style="margin: 0.4rem 0 0; color: #28a745; font-size: 1.8rem;">Rs. 0</h3>
+                </div>
+                <div style="background: #f9f9f9; border-left: 4px solid #17a2b8; padding: 1rem; border-radius: 4px;">
+                    <p style="margin: 0; color: #666; font-size: 0.9rem;">Average Order Value</p>
+                    <h3 id="avgOrderValue" style="margin: 0.4rem 0 0; color: #17a2b8; font-size: 1.8rem;">Rs. 0</h3>
+                </div>
+                <div style="background: #f9f9f9; border-left: 4px solid #ffc107; padding: 1rem; border-radius: 4px;">
+                    <p style="margin: 0; color: #666; font-size: 0.9rem;">This Month Revenue</p>
+                    <h3 id="thisMonthRevenue" style="margin: 0.4rem 0 0; color: #b07d00; font-size: 1.8rem;">Rs. 0</h3>
+                </div>
+            </div>
+
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr>
+                            <th style="padding: 0.9rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Month</th>
+                            <th style="padding: 0.9rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Orders</th>
+                            <th style="padding: 0.9rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Revenue</th>
+                            <th style="padding: 0.9rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Avg Order Value</th>
+                        </tr>
+                    </thead>
+                    <tbody id="monthlyAnalyticsTableBody">
+                        <tr>
+                            <td colspan="4" style="padding: 1.5rem; text-align: center; color: #999;">Loading monthly analytics...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Customer Management -->
+        <div style="background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-top: 2rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h2 style="margin: 0; font-family: 'Cormorant Garamond', serif;">Customer Management</h2>
+                <button onclick="loadCustomers()" style="background: #6f0022; color: white; padding: 0.7rem 1.2rem; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Refresh</button>
+            </div>
+
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr>
+                            <th style="padding: 0.9rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Name</th>
+                            <th style="padding: 0.9rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Email</th>
+                            <th style="padding: 0.9rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Phone</th>
+                            <th style="padding: 0.9rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Loyalty</th>
+                            <th style="padding: 0.9rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="customersTableBody">
+                        <tr>
+                            <td colspan="5" style="padding: 1.5rem; text-align: center; color: #999;">Loading customers...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -176,6 +248,8 @@
         import authManager from '/src/auth.js';
 
         let staffList = [];
+        let customersList = [];
+        let monthlyAnalytics = [];
         let currentFilter = 'all';
         let editingStaffId = null;
 
@@ -200,6 +274,105 @@
             } catch (error) {
                 console.error('Error loading staff:', error);
                 showAlert('Error loading staff members', 'error');
+            }
+        }
+
+        // Load monthly order analytics
+        async function loadOrderAnalytics() {
+            try {
+                const response = await fetch('/api/orders/admin/analytics/monthly?months=6', {
+                    credentials: 'same-origin'
+                });
+                if (!response.ok) throw new Error('Failed to load monthly analytics');
+
+                const data = await response.json();
+                monthlyAnalytics = data.monthlyData || [];
+
+                document.getElementById('totalOrdersCount').textContent = data.summary?.totalOrders || 0;
+                document.getElementById('totalRevenueAmount').textContent = `Rs. ${(data.summary?.totalRevenue || 0).toLocaleString()}`;
+                document.getElementById('avgOrderValue').textContent = `Rs. ${(data.summary?.avgOrderValue || 0).toLocaleString()}`;
+                document.getElementById('thisMonthRevenue').textContent = `Rs. ${(data.summary?.thisMonthRevenue || 0).toLocaleString()}`;
+
+                displayMonthlyAnalytics();
+            } catch (error) {
+                console.error('Error loading monthly analytics:', error);
+                showAlert('Error loading monthly order analytics', 'error');
+            }
+        }
+
+        function displayMonthlyAnalytics() {
+            const tbody = document.getElementById('monthlyAnalyticsTableBody');
+
+            if (!monthlyAnalytics.length) {
+                tbody.innerHTML = '<tr><td colspan="4" style="padding: 1.5rem; text-align: center; color: #999;">No analytics data available</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = monthlyAnalytics.map(item => `
+                <tr>
+                    <td style="padding: 0.9rem; border-bottom: 1px solid #eee;">${item.label}</td>
+                    <td style="padding: 0.9rem; border-bottom: 1px solid #eee;">${item.ordersCount}</td>
+                    <td style="padding: 0.9rem; border-bottom: 1px solid #eee; color: #28a745; font-weight: 600;">Rs. ${(item.revenue || 0).toLocaleString()}</td>
+                    <td style="padding: 0.9rem; border-bottom: 1px solid #eee;">Rs. ${(item.avgOrderValue || 0).toLocaleString()}</td>
+                </tr>
+            `).join('');
+        }
+
+        // Load customers for admin management
+        async function loadCustomers() {
+            try {
+                const response = await fetch('/api/customer/admin/list', {
+                    credentials: 'same-origin'
+                });
+                if (!response.ok) throw new Error('Failed to load customers');
+
+                customersList = await response.json();
+                displayCustomers();
+            } catch (error) {
+                console.error('Error loading customers:', error);
+                showAlert('Error loading customers', 'error');
+            }
+        }
+
+        function displayCustomers() {
+            const tbody = document.getElementById('customersTableBody');
+
+            if (!customersList.length) {
+                tbody.innerHTML = '<tr><td colspan="5" style="padding: 1.5rem; text-align: center; color: #999;">No customers found</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = customersList.map(customer => `
+                <tr>
+                    <td style="padding: 0.9rem; border-bottom: 1px solid #eee;">${customer.fullName || 'N/A'}</td>
+                    <td style="padding: 0.9rem; border-bottom: 1px solid #eee;">${customer.email || 'N/A'}</td>
+                    <td style="padding: 0.9rem; border-bottom: 1px solid #eee;">${customer.phone || '-'}</td>
+                    <td style="padding: 0.9rem; border-bottom: 1px solid #eee;">
+                        ${customer.isLoyalty ? `<span style="background: #d4edda; color: #155724; padding: 0.3rem 0.7rem; border-radius: 12px; font-size: 0.8rem;">${customer.loyaltyTier || 'Loyalty'}</span>` : '<span style="color: #777;">Regular</span>'}
+                    </td>
+                    <td style="padding: 0.9rem; border-bottom: 1px solid #eee;">
+                        <button onclick="deleteCustomer('${customer._id}', '${(customer.fullName || '').replace(/'/g, "\\'")}')" style="padding: 0.4rem 0.8rem; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;" title="Delete Customer">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function deleteCustomer(customerId, customerName) {
+            if (!confirm(`Are you sure you want to delete customer ${customerName}?`)) return;
+
+            try {
+                const response = await fetch(`/api/customer/admin/${customerId}`, {
+                    method: 'DELETE',
+                    credentials: 'same-origin'
+                });
+
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message || 'Failed to delete customer');
+
+                showAlert('Customer deleted successfully', 'success');
+                loadCustomers();
+            } catch (error) {
+                showAlert(error.message, 'error');
             }
         }
 
@@ -436,12 +609,17 @@
         window.toggleActive = toggleActive;
         window.editStaff = editStaff;
         window.deleteStaff = deleteStaff;
+        window.loadOrderAnalytics = loadOrderAnalytics;
+        window.loadCustomers = loadCustomers;
+        window.deleteCustomer = deleteCustomer;
 
         // Initialize
         (async function() {
             const isAuth = await checkAuth();
             if (isAuth) {
                 loadStaff();
+                loadOrderAnalytics();
+                loadCustomers();
             }
         })();
     </script>

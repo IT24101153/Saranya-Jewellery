@@ -134,7 +134,7 @@ router.post('/stock', isInventoryManager, async (req, res) => {
       stockQuantity: Number(quantity),
       supplier: supplier || '',
       sku,
-      productStatus: 'Active',
+      productStatus: 'Draft',
       createdBy: req.session.staffId
     });
 
@@ -173,9 +173,8 @@ router.put('/stock/:id', isInventoryManager, async (req, res) => {
     if (quantity !== undefined) product.stockQuantity = Number(quantity);
     if (supplier !== undefined) product.supplier = supplier;
 
-    if (product.weight > 0 && product.kType && product.karatRate >= 0) {
-      product.productStatus = 'Active';
-    }
+    // Inventory updates should not auto-publish a product.
+    // Product goes live only when Product Manager publishes it.
 
     await product.save();
 
@@ -247,10 +246,8 @@ router.patch('/products/:id', isInventoryManager, async (req, res) => {
     if (sku !== undefined) product.sku = sku;
     if (stockQuantity !== undefined) product.stockQuantity = stockQuantity;
 
-    // If all inventory fields are filled, mark as Active
-    if (product.weight > 0 && product.kType && product.karatRate > 0 && product.stockQuantity > 0) {
-      product.productStatus = 'Active';
-    }
+    // Inventory edits should not change publish status.
+    // Keep Draft/Active as-is; publishing is handled by Product Manager flow.
 
     // Price auto-calculated in pre-save hook
     await product.save();
