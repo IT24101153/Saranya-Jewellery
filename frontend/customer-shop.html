@@ -196,14 +196,17 @@
 
         async function loadProducts() {
             try {
-                let url = '/api/products?isAvailable=true';
+                const params = new URLSearchParams();
                 const cat = document.getElementById('categoryFilter').value;
                 const kar = document.getElementById('karatFilter').value;
                 const avail = document.getElementById('availabilityFilter').value;
                 
-                if (cat) url += `&category=${cat}`;
-                if (kar) url += `&karat=${kar}`;
-                if (avail) url += `&isAvailable=${avail}`;
+                if (cat) params.set('category', cat);
+                if (kar) params.set('karat', kar);
+                if (avail) params.set('isAvailable', avail);
+
+                const query = params.toString();
+                const url = query ? `/api/products?${query}` : '/api/products';
 
                 const res = await authManager.apiRequest(url);
                 if (!res.ok) throw new Error('Failed to load products');
@@ -230,6 +233,7 @@
                     <h3 style="margin: 1rem 0 0.5rem; color: var(--brand-burgundy);">${product.name}</h3>
                     <p style="color: #666; font-size: 0.9rem; margin: 0.5rem 0;">${product.category} - ${product.karat}</p>
                     <p style="color: var(--brand-gold-strong); font-weight: 600; font-size: 1.1rem; margin: 0.5rem 0;">Rs. ${product.price?.toLocaleString() || 'N/A'}</p>
+                    <p style="color: #666; font-size: 0.85rem; margin: 0.25rem 0;">Stock: ${product.stockQuantity ?? 0}</p>
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
                         <span style="font-size: 0.85rem; color: ${product.isAvailable ? '#28a745' : '#dc3545'};">
                             ${product.isAvailable ? '✓ In Stock' : '✗ Out of Stock'}

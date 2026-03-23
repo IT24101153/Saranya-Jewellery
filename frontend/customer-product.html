@@ -305,6 +305,8 @@
                                 <p style="margin: 0;"><strong>Karat:</strong> ${currentProduct.karat || currentProduct.kType || 'N/A'}</p>
                                 <p style="margin: 0;"><strong>Weight:</strong> ${currentProduct.weight || 0}g</p>
                                 <p style="margin: 0;"><strong>SKU:</strong> ${currentProduct.sku || 'N/A'}</p>
+                                <p style="margin: 0;"><strong>Stock:</strong> ${currentProduct.stockQuantity ?? 0}</p>
+                                <p style="margin: 0;"><strong>Tax:</strong> ${(currentProduct.taxPercentage ?? 0).toFixed(1)}%</p>
                                 <p style="margin: 0;"><strong>Availability:</strong> <span style="color: ${availabilityColor};">${availabilityText}</span></p>
                             </div>
 

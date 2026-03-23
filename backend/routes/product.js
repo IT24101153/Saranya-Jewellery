@@ -51,7 +51,7 @@ router.get('/stats/overview', isAuthenticated, async (req, res) => {
 // Get all products (public route)
 router.get('/', async (req, res) => {
   try {
-    const { category, kType, karat, availabilityStatus, isAvailable, featured, productStatus } = req.query;
+    const { category, kType, karat, availabilityStatus, isAvailable, featured, productStatus, isAvailableForSale, isVisibleToCustomers, q } = req.query;
     
     let filter = {};
     if (category) filter.category = category;
@@ -62,9 +62,45 @@ router.get('/', async (req, res) => {
     // Support both availabilityStatus and isAvailable parameters
     if (availabilityStatus) filter.availabilityStatus = availabilityStatus;
     if (isAvailable !== undefined) {
-      filter.availabilityStatus = isAvailable === 'true' ? 'In Stock' : { $ne: 'In Stock' };
+      if (isAvailable === 'true') {
+        filter.availabilityStatus = 'In Stock';
+        filter.isAvailableForSale = true;
+      } else {
+        filter.$or = [
+          { availabilityStatus: { $ne: 'In Stock' } },
+          { isAvailableForSale: false }
+        ];
+      }
     }
     if (featured) filter.featured = featured === 'true';
+    if (isAvailableForSale !== undefined) filter.isAvailableForSale = isAvailableForSale === 'true';
+    if (isVisibleToCustomers !== undefined) filter.isVisibleToCustomers = isVisibleToCustomers === 'true';
+
+    // Public storefront should not receive hidden products
+    if (!req.session?.staffId) {
+      filter.isVisibleToCustomers = true;
+      filter.productStatus = 'Active';
+    }
+
+    if (q && q.trim()) {
+      const safeQuery = q.trim();
+      const searchOr = [
+        { name: { $regex: safeQuery, $options: 'i' } },
+        { category: { $regex: safeQuery, $options: 'i' } },
+        { description: { $regex: safeQuery, $options: 'i' } }
+      ];
+
+      if (filter.$or) {
+        const existingOr = filter.$or;
+        delete filter.$or;
+        filter.$and = [
+          { $or: existingOr },
+          { $or: searchOr }
+        ];
+      } else {
+        filter.$or = searchOr;
+      }
+    }
 
     const products = await Product.find(filter)
       .populate('createdBy', 'fullName email')
@@ -76,6 +112,68 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Toggle customer visibility (product manager only)
+router.patch('/:id/customer-visibility', isProductManager, async (req, res) => {
+  try {
+    const { isVisibleToCustomers } = req.body;
+
+    if (typeof isVisibleToCustomers !== 'boolean') {
+      return res.status(400).json({ message: 'isVisibleToCustomers must be boolean' });
+    }
+
+    const product = await Product.findById(req.params.id);
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    product.isVisibleToCustomers = isVisibleToCustomers;
+    await product.save();
+
+    res.json({ message: 'Customer visibility updated', product });
+  } catch (error) {
+    res.status(500).json({ message: 'Error updating customer visibility', error: error.message });
+  }
+});
+
+// Toggle sale availability (product manager only)
+router.patch('/:id/availability', isProductManager, async (req, res) => {
+  try {
+    const { isAvailableForSale } = req.body;
+
+    if (typeof isAvailableForSale !== 'boolean') {
+      return res.status(400).json({ message: 'isAvailableForSale must be boolean' });
+    }
+
+    const product = await Product.findById(req.params.id);
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    if (isAvailableForSale) {
+      if ((product.stockQuantity || 0) > 0) {
+        product.isAvailableForSale = true;
+        product.availabilityStatus = 'In Stock';
+      } else {
+        product.isAvailableForSale = false;
+        product.availabilityStatus = 'Out of Stock';
+      }
+    } else {
+      // Explicitly mark as out of stock when Product Manager sets unavailable.
+      product.isAvailableForSale = false;
+      product.availabilityStatus = 'Out of Stock';
+    }
+    await product.save();
+
+    if (isAvailableForSale && (product.stockQuantity || 0) <= 0) {
+      return res.json({ message: 'Cannot mark available because stock is 0. Product remains out of stock.', product });
+    }
+
+    res.json({ message: 'Availability updated', product });
+  } catch (error) {
+    res.status(500).json({ message: 'Error updating availability', error: error.message });
+  }
+});
+
 // Get single product (public route)
 router.get('/:id', async (req, res) => {
   try {
@@ -83,6 +181,11 @@ router.get('/:id', async (req, res) => {
       .populate('createdBy', 'fullName email');
     
     if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    // Customers can only view active + visible products.
+    if (!req.session?.staffId && (!product.isVisibleToCustomers || product.productStatus !== 'Active')) {
       return res.status(404).json({ message: 'Product not found' });
     }
     
@@ -102,7 +205,8 @@ router.post('/', isProductManager, async (req, res) => {
       description,
       image,
       category,
-      featured
+      featured,
+      taxPercentage
     } = req.body;
 
     // Debug logging
@@ -133,6 +237,7 @@ router.post('/', isProductManager, async (req, res) => {
       if (description) stockProduct.description = description;
       if (image) stockProduct.image = image;
       if (featured !== undefined) stockProduct.featured = featured;
+      if (taxPercentage !== undefined) stockProduct.taxPercentage = Math.max(0, Math.min(100, Number(taxPercentage) || 0));
 
       // Keep inventory values as source of truth, but allow optional overrides.
       if (name) stockProduct.name = name;
@@ -158,6 +263,7 @@ router.post('/', isProductManager, async (req, res) => {
       image,
       category,
       featured: featured || false,
+      taxPercentage: Math.max(0, Math.min(100, Number(taxPercentage) || 0)),
       productStatus: 'Draft',
       createdBy: req.session.staffId
     });
@@ -190,7 +296,8 @@ router.put('/:id', isProductManager, async (req, res) => {
       description,
       image,
       category,
-      featured
+      featured,
+      taxPercentage
     } = req.body;
 
     if (name) product.name = name;
@@ -198,6 +305,7 @@ router.put('/:id', isProductManager, async (req, res) => {
     if (image) product.image = image;
     if (category) product.category = category;
     if (featured !== undefined) product.featured = featured;
+    if (taxPercentage !== undefined) product.taxPercentage = Math.max(0, Math.min(100, Number(taxPercentage) || 0));
 
     await product.save();
     
@@ -219,9 +327,15 @@ router.delete('/:id', isProductManager, async (req, res) => {
       return res.status(404).json({ message: 'Product not found' });
     }
 
-    await Product.findByIdAndDelete(req.params.id);
-    
-    res.json({ message: 'Product deleted successfully' });
+    // Product Manager delete should NOT remove stock record.
+    // Keep stock for inventory and allow republish later.
+    product.productStatus = 'Draft';
+    product.isVisibleToCustomers = false;
+    product.isAvailableForSale = false;
+    product.availabilityStatus = 'Out of Stock';
+    await product.save();
+
+    res.json({ message: 'Product removed from customer view. Stock is retained in inventory.' });
   } catch (error) {
     res.status(500).json({ message: 'Error deleting product', error: error.message });
   }

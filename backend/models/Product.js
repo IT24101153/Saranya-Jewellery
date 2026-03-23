@@ -39,6 +39,12 @@ const productSchema = new mongoose.Schema({
     default: 0,
     min: 0
   },
+  taxPercentage: {
+    type: Number,
+    default: 0,
+    min: 0,
+    max: 100
+  },
   stockQuantity: {
     type: Number,
     default: 0,
@@ -67,6 +73,14 @@ const productSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  isAvailableForSale: {
+    type: Boolean,
+    default: true
+  },
+  isVisibleToCustomers: {
+    type: Boolean,
+    default: true
+  },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Staff',
@@ -92,7 +106,7 @@ productSchema.virtual('karat').get(function() {
 });
 
 productSchema.virtual('isAvailable').get(function() {
-  return this.availabilityStatus === 'In Stock';
+  return this.availabilityStatus === 'In Stock' && this.isAvailableForSale !== false;
 });
 
 // Ensure virtual fields are included when converting to JSON
