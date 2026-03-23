@@ -24,20 +24,11 @@
         <!-- Header -->
         <div style="display: flex; justify-content: space-between; align-items: center; background: #6f0022; color: white; padding: 1.5rem 2rem; border-radius: 8px; margin-bottom: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
             <div>
-                <h1 style="margin: 0; font-family: 'Cormorant Garamond', serif; font-size: 2rem;">Loyalty Management</h1>
-                <p style="margin: 0.5rem 0 0; opacity: 0.9;">Welcome, <span id="userName">Manager</span></p>
+                <h1 style="margin: 0; font-family: 'Cormorant Garamond', serif; font-size: 2rem; color: #ffffff;">Loyalty Management</h1>
+                <p style="margin: 0.5rem 0 0; opacity: 0.9; color: #ffffff;">Welcome, <span id="userName" style="color: #ffffff;">Manager</span></p>
             </div>
             <button onclick="logout()" style="background: white; color: #6f0022; border: none; padding: 0.75rem 1.5rem; border-radius: 4px; cursor: pointer; font-weight: 600;">Logout</button>
         </div>
-
-        <nav class="dashboard-nav-strip">
-            <a href="/admin-dashboard">Admin</a>
-            <a href="/product-management-dashboard">Products</a>
-            <a href="/order-management-dashboard">Orders</a>
-            <a href="/inventory-dashboard">Inventory</a>
-            <a href="/loyalty-management-dashboard" class="active">Loyalty</a>
-            <a href="/customer-care-dashboard">Customer Care</a>
-        </nav>
 
         <!-- Alert -->
         <div id="alertBox" style="padding: 1rem; border-radius: 4px; margin-bottom: 1rem; display: none;"></div>
@@ -46,13 +37,12 @@
         <div style="background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
                 <h2 style="margin: 0; font-family: 'Cormorant Garamond', serif;">Tier Configuration</h2>
-                <button onclick="openEditTierModal(null)" style="background: #6f0022; color: white; padding: 0.8rem 1.5rem; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Edit Tier Settings</button>
             </div>
 
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
                 <div id="silverTierCard" style="background: linear-gradient(135deg, #c0c0c0 0%, #e8e8e8 100%); padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                     <h3 style="margin: 0 0 0.5rem; font-size: 1.3rem; color: #4a4a4a;">Silver Tier</h3>
-                    <p id="silverRange" style="margin: 0 0 1rem; color: #666; font-size: 0.9rem;">Spent: Rs. 0 - Rs. 50,000</p>
+                    <p id="silverRange" style="margin: 0 0 1rem; color: #666; font-size: 0.9rem;">Points Range: 0 - 500 pts (Rs. 0 - Rs. 50,000)</p>
                     <p id="silverMultiplier" style="margin: 0 0 0.5rem; color: #4a4a4a; font-weight: 600;">Points Multiplier: 1x</p>
                     <div id="silverBenefits" style="background: rgba(255,255,255,0.7); padding: 0.8rem; border-radius: 4px; font-size: 0.9rem;">
                         <ul style="margin: 0; padding-left: 1.5rem; color: #555;"></ul>
@@ -62,7 +52,7 @@
 
                 <div id="goldTierCard" style="background: linear-gradient(135deg, #e0bf63 0%, #d4a747 100%); padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                     <h3 style="margin: 0 0 0.5rem; font-size: 1.3rem; color: #3e2723;">Gold Tier</h3>
-                    <p id="goldRange" style="margin: 0 0 1rem; color: #5d4037; font-size: 0.9rem;">Spent: Rs. 50,000 - Rs. 2,00,000</p>
+                    <p id="goldRange" style="margin: 0 0 1rem; color: #5d4037; font-size: 0.9rem;">Points Range: 500 - 2,000 pts (Rs. 50,000 - Rs. 2,00,000)</p>
                     <p id="goldMultiplier" style="margin: 0 0 0.5rem; color: #3e2723; font-weight: 600;">Points Multiplier: 1.5x</p>
                     <div id="goldBenefits" style="background: rgba(255,255,255,0.8); padding: 0.8rem; border-radius: 4px; font-size: 0.9rem;">
                         <ul style="margin: 0; padding-left: 1.5rem; color: #3e2723;"></ul>
@@ -72,7 +62,7 @@
 
                 <div id="platinumTierCard" style="background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%); padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); color: white;">
                     <h3 style="margin: 0 0 0.5rem; font-size: 1.3rem;">Platinum Tier</h3>
-                    <p id="platinumRange" style="margin: 0 0 1rem; opacity: 0.9; font-size: 0.9rem;">Spent: Above Rs. 2,00,000</p>
+                    <p id="platinumRange" style="margin: 0 0 1rem; opacity: 0.9; font-size: 0.9rem;">Points Range: 2,000+ pts (Rs. 2,00,000+)</p>
                     <p id="platinumMultiplier" style="margin: 0 0 0.5rem; font-weight: 600;">Points Multiplier: 2x</p>
                     <div id="platinumBenefits" style="background: rgba(255,255,255,0.15); padding: 0.8rem; border-radius: 4px; font-size: 0.9rem;">
                         <ul style="margin: 0; padding-left: 1.5rem;"></ul>
@@ -116,7 +106,6 @@
                 <h2 style="margin: 0; font-family: 'Cormorant Garamond', serif;">Loyalty Members</h2>
                 <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
                     <button onclick="openPointsModal()" style="background: #e0bf63; color: #3e2723; padding: 0.8rem 1.5rem; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Award Points</button>
-                    <button onclick="openAddLoyaltyModal()" style="background: #28a745; color: white; padding: 0.8rem 1.5rem; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Add to Loyalty</button>
                 </div>
             </div>
 
@@ -173,13 +162,14 @@
             <form id="editTierForm">
                 <input type="hidden" id="tierName">
                 <div style="margin-bottom: 1rem;">
-                    <label style="display: block; margin-bottom: 0.5rem;">Min Spent (Rs.) *</label>
+                    <label style="display: block; margin-bottom: 0.5rem;">Min Spent (Rs.) * (1 point = Rs. 100)</label>
                     <input type="number" id="tierMinSpent" required style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
                 </div>
                 <div style="margin-bottom: 1rem;">
                     <label style="display: block; margin-bottom: 0.5rem;">Max Spent (Rs.) *</label>
                     <input type="number" id="tierMaxSpent" required style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
                 </div>
+                <p id="tierPointRangePreview" style="margin: -0.4rem 0 1rem; color: #666; font-size: 0.9rem;"></p>
                 <div style="margin-bottom: 1rem;">
                     <label style="display: block; margin-bottom: 0.5rem;">Points Multiplier *</label>
                     <input type="number" id="tierMultiplier" required step="0.1" min="1" style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
@@ -373,6 +363,25 @@
             displayOffers();
         }
 
+        function formatTierRangeWithPoints(minSpent, maxSpent) {
+            const min = Number(minSpent) || 0;
+            const max = Number(maxSpent) || 0;
+            const minPoints = Math.floor(min / 100);
+            const maxPoints = Math.floor(max / 100);
+
+            if (max >= 999999999) {
+                return `Points Range: ${minPoints.toLocaleString()}+ pts (Rs. ${min.toLocaleString()}+)`;
+            }
+
+            return `Points Range: ${minPoints.toLocaleString()} - ${maxPoints.toLocaleString()} pts (Rs. ${min.toLocaleString()} - Rs. ${max.toLocaleString()})`;
+        }
+
+        function updateTierPointRangePreview() {
+            const minSpent = parseInt(document.getElementById('tierMinSpent').value, 10) || 0;
+            const maxSpent = parseInt(document.getElementById('tierMaxSpent').value, 10) || 0;
+            document.getElementById('tierPointRangePreview').textContent = formatTierRangeWithPoints(minSpent, maxSpent);
+        }
+
         function displayTierCards() {
             const tierNames = ['Silver', 'Gold', 'Platinum'];
             tierNames.forEach(tierName => {
@@ -383,7 +392,7 @@
                 const card = document.getElementById(tierName.toLowerCase() + 'TierCard');
                 
                 card.querySelector(`#${tierName.toLowerCase()}Range`).textContent = 
-                    `Spent: Rs. ${tier.minSpent.toLocaleString()} - Rs. ${tier.maxSpent.toLocaleString()}`;
+                    formatTierRangeWithPoints(tier.minSpent, tier.maxSpent);
                 card.querySelector(`#${tierName.toLowerCase()}Multiplier`).textContent = 
                     `Points Multiplier: ${tier.pointMultiplier}x`;
                 card.querySelector(`#${tierName.toLowerCase()}Benefits ul`).innerHTML = benefitsHtml;
@@ -603,6 +612,7 @@
             document.getElementById('tierMultiplier').value = tier?.pointMultiplier || 1;
             document.getElementById('tierBenefits').value = (tier?.benefits || []).join('\n');
             document.getElementById('tierDescription').value = tier?.description || '';
+            updateTierPointRangePreview();
             document.getElementById('editTierModal').style.display = 'flex';
         }
 
@@ -610,6 +620,9 @@
             editingTierId = null;
             document.getElementById('editTierModal').style.display = 'none';
         }
+
+        document.getElementById('tierMinSpent').addEventListener('input', updateTierPointRangePreview);
+        document.getElementById('tierMaxSpent').addEventListener('input', updateTierPointRangePreview);
 
         document.getElementById('editTierForm').addEventListener('submit', async (e) => {
             e.preventDefault();

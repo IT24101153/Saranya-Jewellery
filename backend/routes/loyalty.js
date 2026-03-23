@@ -123,12 +123,13 @@ router.post('/members/add', isLoyaltyManager, isApproved, async (req, res) => {
     
     const customer = await Customer.findById(customerId);
     if (!customer) return res.status(404).json({ message: 'Customer not found' });
+    if (customer.isLoyalty) return res.status(400).json({ message: 'Customer is already a loyalty member' });
     
     // Set customer to Silver tier by default
     customer.isLoyalty = true;
     customer.loyaltyTier = 'Silver';
     customer.loyaltyJoinedDate = new Date();
-    customer.loyaltyPoints = 0;
+    customer.loyaltyPoints = customer.loyaltyPoints || 0;
     
     await customer.save();
     
@@ -183,7 +184,11 @@ router.post('/members/upgrade/:customerId', isLoyaltyManager, isApproved, async 
     if (!customer.isLoyalty) return res.status(400).json({ message: 'Customer is not a loyalty member' });
     
     const oldTier = customer.loyaltyTier;
+    const preservedPoints = customer.loyaltyPoints || 0;
+    const preservedTotalSpent = customer.totalSpent || 0;
     customer.loyaltyTier = newTier;
+    customer.loyaltyPoints = preservedPoints;
+    customer.totalSpent = preservedTotalSpent;
     await customer.save();
     
     res.json({ 
@@ -211,7 +216,11 @@ router.post('/members/downgrade/:customerId', isLoyaltyManager, isApproved, asyn
     if (!customer.isLoyalty) return res.status(400).json({ message: 'Customer is not a loyalty member' });
     
     const oldTier = customer.loyaltyTier;
+    const preservedPoints = customer.loyaltyPoints || 0;
+    const preservedTotalSpent = customer.totalSpent || 0;
     customer.loyaltyTier = newTier;
+    customer.loyaltyPoints = preservedPoints;
+    customer.totalSpent = preservedTotalSpent;
     await customer.save();
     
     res.json({ 
