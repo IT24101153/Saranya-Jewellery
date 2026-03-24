@@ -98,6 +98,15 @@
 
         let cart = JSON.parse(localStorage.getItem('saranyaCart') || '[]');
         let isAuthenticated = false;
+        let reviewSummaryByProduct = {};
+
+        function renderStars(rating) {
+            const value = Number(rating) || 0;
+            return [1, 2, 3, 4, 5].map((star) => {
+                const filled = star <= Math.round(value);
+                return `<span style="color: ${filled ? '#e0bf63' : '#ddd'}; font-size: 0.95rem;">${filled ? '★' : '☆'}</span>`;
+            }).join('');
+        }
 
         function getCurrentReturnPath() {
             return `${window.location.pathname}${window.location.search}${window.location.hash}`;
@@ -212,10 +221,38 @@
                 if (!res.ok) throw new Error('Failed to load products');
                 
                 const products = await res.json();
+                await loadReviewSummary(products);
                 displayProducts(products);
             } catch (error) {
                 console.error('Error loading products:', error);
                 document.getElementById('productsGrid').innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: #999;">Error loading products</div>';
+            }
+        }
+
+        async function loadReviewSummary(products) {
+            try {
+                const productIds = products
+                    .map((product) => product?._id)
+                    .filter(Boolean);
+
+                if (!productIds.length) {
+                    reviewSummaryByProduct = {};
+                    return;
+                }
+
+                const query = encodeURIComponent(productIds.join(','));
+                const response = await authManager.apiRequest(`/api/reviews/summary?productIds=${query}`);
+
+                if (!response.ok) {
+                    reviewSummaryByProduct = {};
+                    return;
+                }
+
+                const data = await response.json();
+                reviewSummaryByProduct = data.summary || {};
+            } catch (error) {
+                console.error('Error loading review summary:', error);
+                reviewSummaryByProduct = {};
             }
         }
 
@@ -227,11 +264,22 @@
                 return;
             }
 
-            grid.innerHTML = products.map(product => `
+            grid.innerHTML = products.map((product) => {
+                const summary = reviewSummaryByProduct[product._id] || { avgRating: 0, totalReviews: 0 };
+                const hasReviews = Number(summary.totalReviews || 0) > 0;
+                const reviewBlock = hasReviews
+                    ? `<div style="display: flex; align-items: center; gap: 0.45rem; margin: 0.35rem 0 0.5rem;">
+                        <span>${renderStars(summary.avgRating)}</span>
+                        <span style="font-size: 0.82rem; color: #666;">${summary.avgRating.toFixed(1)} (${summary.totalReviews})</span>
+                    </div>`
+                    : `<p style="font-size: 0.82rem; color: #999; margin: 0.35rem 0 0.5rem;">No reviews yet</p>`;
+
+                return `
                 <div class="category-card" style="cursor: pointer; padding: 1rem; background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: transform 0.3s;" onclick="openProductPage('${product._id}')">
                     <img src="${product.imageUrl || '/SaranyaLOGO.jpg'}" alt="${product.name}" style="width: 100%; height: 250px; object-fit: cover; border-radius: 4px;">
                     <h3 style="margin: 1rem 0 0.5rem; color: var(--brand-burgundy);">${product.name}</h3>
                     <p style="color: #666; font-size: 0.9rem; margin: 0.5rem 0;">${product.category} - ${product.karat}</p>
+                    ${reviewBlock}
                     <p style="color: var(--brand-gold-strong); font-weight: 600; font-size: 1.1rem; margin: 0.5rem 0;">Rs. ${product.price?.toLocaleString() || 'N/A'}</p>
                     <p style="color: #666; font-size: 0.85rem; margin: 0.25rem 0;">Stock: ${product.stockQuantity ?? 0}</p>
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
@@ -245,7 +293,8 @@
                         ` : ''}
                     </div>
                 </div>
-            `).join('');
+            `;
+            }).join('');
         }
 
         function openProductPage(productId) {

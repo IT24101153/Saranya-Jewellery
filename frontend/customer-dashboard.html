@@ -123,6 +123,18 @@
                 </div>
             </div>
         </div>
+
+        <div class="section" style="margin-top: 2rem;">
+            <div class="section-header">
+                <h2>Rate Your Purchased Items</h2>
+            </div>
+            <div id="reviewItemsList" class="section-content">
+                <div class="empty-state">
+                    <i class="fas fa-star" style="font-size: 2.5rem; color: #ddd; margin-bottom: 1rem;"></i>
+                    <p style="margin: 0;">Loading your purchased items...</p>
+                </div>
+            </div>
+        </div>
     </div>
     </main>
 
@@ -297,6 +309,7 @@
 
         let cart = JSON.parse(localStorage.getItem('saranyaCart') || '[]');
         let currentCustomer = null;
+        let reviewItems = [];
 
         function setActiveNavLink() {
             const currentPath = window.location.pathname;
@@ -330,6 +343,144 @@
             // Load customer orders and stats
             loadOrderStats();
             loadPromotions();
+            loadReviewItems();
+        }
+
+        function renderStars(rating) {
+            return [1, 2, 3, 4, 5].map((value) => {
+                const active = value <= rating;
+                return `<span style="color: ${active ? '#e0bf63' : '#ddd'}; font-size: 1rem;">${active ? '★' : '☆'}</span>`;
+            }).join('');
+        }
+
+        async function loadReviewItems() {
+            try {
+                const response = await authManager.apiRequest('/api/reviews/customer/eligible-items');
+                if (!response.ok) throw new Error('Failed to load review items');
+                reviewItems = await response.json();
+                renderReviewItems();
+            } catch (error) {
+                console.error('Error loading review items:', error);
+                document.getElementById('reviewItemsList').innerHTML = '<p style="text-align: center; color: #999;">Unable to load review items</p>';
+            }
+        }
+
+        function renderReviewItems() {
+            const container = document.getElementById('reviewItemsList');
+            if (!reviewItems.length) {
+                container.innerHTML = '<p style="text-align: center; color: #999;">Place an order to start adding product reviews.</p>';
+                return;
+            }
+
+            container.innerHTML = reviewItems.slice(0, 20).map((item) => {
+                const selectedRating = item.review?.rating || 0;
+                const reviewText = item.review?.comment || '';
+                return `
+                    <div style="border: 1px solid #eee; border-radius: 10px; padding: 1rem; margin-bottom: 1rem;">
+                        <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 0.9rem;">
+                            <img src="${item.productImage || '/SaranyaLOGO.jpg'}" alt="${item.productName}" style="width: 70px; height: 70px; object-fit: cover; border-radius: 8px; border: 1px solid #eee;">
+                            <div style="flex: 1;">
+                                <h4 style="margin: 0 0 0.3rem; color: var(--brand-burgundy);">${item.productName}</h4>
+                                <p style="margin: 0.2rem 0; color: #666; font-size: 0.9rem;">Order: ${item.orderNumber} • ${new Date(item.orderDate).toLocaleDateString()}</p>
+                                <p style="margin: 0.2rem 0; color: #666; font-size: 0.9rem;">Status: ${item.orderStatus}</p>
+                            </div>
+                        </div>
+
+                        <form class="review-form" data-order-id="${item.orderId}" data-product-id="${item.productId}">
+                            <div style="display: flex; gap: 0.35rem; margin-bottom: 0.6rem;">
+                                ${[1, 2, 3, 4, 5].map((starValue) => `
+                                    <button type="button" class="star-picker" data-rating="${starValue}" style="border: none; background: transparent; cursor: pointer; font-size: 1.35rem; line-height: 1; color: ${starValue <= selectedRating ? '#e0bf63' : '#ddd'};">★</button>
+                                `).join('')}
+                            </div>
+                            <input type="hidden" name="rating" value="${selectedRating}">
+                            <textarea name="comment" rows="2" maxlength="1000" placeholder="Write a short review (optional)" style="width: 100%; border: 1px solid #ddd; border-radius: 6px; padding: 0.65rem; margin-bottom: 0.6rem;">${reviewText}</textarea>
+                            <div style="display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: center;">
+                                <button type="submit" style="background: var(--brand-burgundy); color: white; border: none; border-radius: 6px; padding: 0.6rem 1rem; cursor: pointer; font-weight: 600;">${item.review ? 'Update Review' : 'Submit Review'}</button>
+                                ${item.review ? `<button type="button" class="delete-review-btn" data-review-id="${item.review._id}" style="background: #dc3545; color: white; border: none; border-radius: 6px; padding: 0.6rem 1rem; cursor: pointer; font-weight: 600;">Delete Rating</button>` : ''}
+                            </div>
+                        </form>
+
+                        ${item.review ? `
+                            <div style="margin-top: 0.9rem; background: #faf7ee; border-radius: 6px; padding: 0.8rem;">
+                                <p style="margin: 0 0 0.35rem; color: #666; font-size: 0.9rem;">Your review: ${renderStars(item.review.rating)}</p>
+                                ${item.review.careReply?.comment ? `<p style="margin: 0; color: #6f0022; font-size: 0.92rem;"><strong>Customer Care Reply:</strong> ${item.review.careReply.comment}</p>` : ''}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+
+            attachReviewActionHandlers();
+        }
+
+        function attachReviewActionHandlers() {
+            document.querySelectorAll('.star-picker').forEach((starBtn) => {
+                starBtn.addEventListener('click', () => {
+                    const form = starBtn.closest('form');
+                    const selected = Number(starBtn.dataset.rating || 0);
+                    const ratingInput = form.querySelector('input[name="rating"]');
+                    ratingInput.value = selected;
+
+                    form.querySelectorAll('.star-picker').forEach((btn) => {
+                        const value = Number(btn.dataset.rating || 0);
+                        btn.style.color = value <= selected ? '#e0bf63' : '#ddd';
+                    });
+                });
+            });
+
+            document.querySelectorAll('.review-form').forEach((form) => {
+                form.addEventListener('submit', async (event) => {
+                    event.preventDefault();
+
+                    const orderId = form.dataset.orderId;
+                    const productId = form.dataset.productId;
+                    const rating = Number(form.querySelector('input[name="rating"]').value || 0);
+                    const comment = form.querySelector('textarea[name="comment"]').value || '';
+
+                    if (rating < 1 || rating > 5) {
+                        alert('Please select a rating between 1 and 5 stars.');
+                        return;
+                    }
+
+                    try {
+                        const response = await authManager.apiRequest('/api/reviews', {
+                            method: 'POST',
+                            body: JSON.stringify({ orderId, productId, rating, comment })
+                        });
+
+                        const result = await response.json();
+                        if (!response.ok) throw new Error(result.message || 'Failed to save review');
+
+                        alert('Review saved successfully.');
+                        loadReviewItems();
+                    } catch (error) {
+                        alert(error.message || 'Failed to save review');
+                    }
+                });
+            });
+
+            document.querySelectorAll('.delete-review-btn').forEach((button) => {
+                button.addEventListener('click', async () => {
+                    const reviewId = button.dataset.reviewId;
+                    if (!reviewId) return;
+
+                    if (!confirm('Delete this rating and review?')) return;
+
+                    try {
+                        const response = await authManager.apiRequest(`/api/reviews/${reviewId}`, {
+                            method: 'DELETE'
+                        });
+
+                        const result = await response.json();
+                        if (!response.ok) throw new Error(result.message || 'Failed to delete review');
+
+                        alert('Review deleted successfully.');
+                        loadReviewItems();
+                    } catch (error) {
+                        alert(error.message || 'Failed to delete review');
+                    }
+                });
+            });
         }
 
         function updateCartBadge() {

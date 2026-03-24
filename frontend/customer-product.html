@@ -53,6 +53,13 @@
                 <div style="text-align: center; padding: 3rem; color: #999;">Loading product details...</div>
             </section>
 
+            <section style="margin-top: 2rem; background: white; border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.08); padding: 1.5rem;">
+                <h2 style="margin: 0 0 1rem; color: var(--brand-burgundy); font-family: 'Cormorant Garamond', serif; font-size: 2rem;">Customer Reviews</h2>
+                <div id="productReviewsList" style="display: grid; gap: 0.85rem;">
+                    <div style="text-align: center; padding: 1rem; color: #999;">Loading reviews...</div>
+                </div>
+            </section>
+
             <section style="margin-top: 3rem;">
                 <h2 style="margin-bottom: 1rem; color: var(--brand-burgundy); font-family: 'Cormorant Garamond', serif; font-size: 2rem;">Related Products</h2>
                 <div id="relatedProducts" class="category-grid" style="grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1.2rem;">
@@ -125,6 +132,20 @@
         let cart = JSON.parse(localStorage.getItem('saranyaCart') || '[]');
         let isAuthenticated = false;
         let currentProduct = null;
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text ?? '';
+            return div.innerHTML;
+        }
+
+        function renderStars(rating) {
+            const value = Number(rating) || 0;
+            return [1, 2, 3, 4, 5].map((star) => {
+                const filled = star <= value;
+                return `<span style="color: ${filled ? '#e0bf63' : '#ddd'}; font-size: 1rem;">${filled ? '★' : '☆'}</span>`;
+            }).join('');
+        }
 
         function getCurrentReturnPath() {
             return `${window.location.pathname}${window.location.search}${window.location.hash}`;
@@ -328,11 +349,60 @@
                     </div>
                 `;
 
+                await loadProductReviews();
                 await loadRelatedProducts();
             } catch (error) {
                 console.error('Error loading product details:', error);
                 document.getElementById('productDetails').innerHTML = '<div style="text-align: center; padding: 3rem; color: #999;">Unable to load product details</div>';
+                document.getElementById('productReviewsList').innerHTML = '<div style="text-align: center; padding: 1rem; color: #999;">Unable to load reviews</div>';
                 document.getElementById('relatedProducts').innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 2rem; color: #999;">No related products to display</div>';
+            }
+        }
+
+        async function loadProductReviews() {
+            if (!currentProduct?._id) return;
+
+            try {
+                const response = await authManager.apiRequest(`/api/reviews/product/${currentProduct._id}`);
+                if (!response.ok) throw new Error('Failed to load reviews');
+
+                const data = await response.json();
+                const list = document.getElementById('productReviewsList');
+
+                if (!data.reviews || data.reviews.length === 0) {
+                    list.innerHTML = '<div style="text-align: center; color: #999;">No reviews yet for this product.</div>';
+                    return;
+                }
+
+                const summary = `
+                    <div style="padding: 0.8rem 1rem; border: 1px solid #eee; border-radius: 8px; background: #faf7ee;">
+                        <strong style="color: var(--brand-burgundy);">${data.avgRating.toFixed(1)} / 5</strong>
+                        <span style="margin-left: 0.4rem;">${renderStars(Math.round(data.avgRating))}</span>
+                        <span style="color: #666; margin-left: 0.6rem;">(${data.totalReviews} review${data.totalReviews > 1 ? 's' : ''})</span>
+                    </div>
+                `;
+
+                const reviewCards = data.reviews.map((review) => `
+                    <div style="border: 1px solid #eee; border-radius: 8px; padding: 0.9rem;">
+                        <div style="display: flex; justify-content: space-between; gap: 0.7rem; align-items: center; margin-bottom: 0.4rem;">
+                            <strong>${escapeHtml(review.customerName || 'Customer')}</strong>
+                            <small style="color: #888;">${new Date(review.createdAt).toLocaleDateString()}</small>
+                        </div>
+                        <div style="margin-bottom: 0.4rem;">${renderStars(review.rating)}</div>
+                        <p style="margin: 0; color: #555; line-height: 1.6;">${escapeHtml(review.comment || '') || 'No comment provided.'}</p>
+                        ${review.careReply?.comment ? `
+                            <div style="margin-top: 0.7rem; background: #f8f9fa; border-left: 3px solid #6f0022; padding: 0.65rem; border-radius: 6px;">
+                                <p style="margin: 0 0 0.3rem; font-weight: 600; color: #6f0022;">Customer Care Reply</p>
+                                <p style="margin: 0; color: #555;">${escapeHtml(review.careReply.comment)}</p>
+                            </div>
+                        ` : ''}
+                    </div>
+                `).join('');
+
+                list.innerHTML = `${summary}${reviewCards}`;
+            } catch (error) {
+                console.error('Error loading product reviews:', error);
+                document.getElementById('productReviewsList').innerHTML = '<div style="text-align: center; color: #999;">Unable to load reviews</div>';
             }
         }
 

@@ -85,11 +85,11 @@
             </div>
         </div>
 
-        <!-- Customer Feedback -->
+        <!-- Customer Reviews -->
         <div style="background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-            <h2 style="margin: 0 0 1.5rem; font-family: 'Cormorant Garamond', serif;">Customer Feedback</h2>
+            <h2 style="margin: 0 0 1.5rem; font-family: 'Cormorant Garamond', serif;">Customer Reviews</h2>
             <div id="feedbackList">
-                <p style="text-align: center; color: #999;">Loading feedback...</p>
+                <p style="text-align: center; color: #999;">Loading reviews...</p>
             </div>
         </div>
 
@@ -625,36 +625,89 @@
 
         async function loadFeedback() {
             try {
-                const res = await fetch('/api/feedback', {
-                    credentials: 'same-origin'
-                });
+                const res = await authManager.apiRequest('/api/reviews/staff/all');
                 if (res.ok) {
                     feedback = await res.json();
                     displayFeedback();
                 } else {
-                    document.getElementById('feedbackList').innerHTML = '<p style="text-align: center; color: #999;">No feedback available</p>';
+                    document.getElementById('feedbackList').innerHTML = '<p style="text-align: center; color: #999;">No reviews available</p>';
                 }
             } catch (e) {
-                document.getElementById('feedbackList').innerHTML = '<p style="text-align: center; color: #999;">No feedback available</p>';
+                document.getElementById('feedbackList').innerHTML = '<p style="text-align: center; color: #999;">No reviews available</p>';
             }
+        }
+
+        function renderStars(rating) {
+            const value = Number(rating) || 0;
+            return [1, 2, 3, 4, 5].map((star) => {
+                const active = star <= value;
+                return `<span style="color: ${active ? '#e0bf63' : '#ddd'}; font-size: 1rem;">${active ? '★' : '☆'}</span>`;
+            }).join('');
         }
 
         function displayFeedback() {
             const list = document.getElementById('feedbackList');
             if (feedback.length === 0) {
-                list.innerHTML = '<p style="text-align: center; color: #999;">No feedback yet</p>';
+                list.innerHTML = '<p style="text-align: center; color: #999;">No reviews yet</p>';
                 return;
             }
-            list.innerHTML = feedback.slice(0, 5).map(f => `
-                <div style="border-bottom: 1px solid #eee; padding: 1rem 0;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                        <strong>${f.customerName || 'Anonymous'}</strong>
-                        <span style="color: #e0bf63;">Rating: ${f.rating || 5}/5</span>
+
+            list.innerHTML = feedback.slice(0, 20).map((f) => `
+                <div style="border: 1px solid #eee; border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 0.6rem;">
+                        <div>
+                            <strong>${f.customerName || 'Customer'}</strong>
+                            <p style="margin: 0.2rem 0 0; color: #666; font-size: 0.9rem;">Product: ${f.productId?.name || f.productName || 'Unknown Product'}</p>
+                        </div>
+                        <div style="text-align: right;">
+                            <div>${renderStars(f.rating)}</div>
+                            <small style="color: #999;">${new Date(f.createdAt).toLocaleDateString()}</small>
+                        </div>
                     </div>
-                    <p style="margin: 0.5rem 0; color: #666;">${f.message || f.comment}</p>
-                    <small style="color: #999;">${new Date(f.createdAt).toLocaleDateString()}</small>
+
+                    <p style="margin: 0.5rem 0; color: #666;">${f.comment || 'No comment provided.'}</p>
+
+                    ${f.careReply?.comment ? `
+                        <div style="background: #f8f9fa; border-left: 3px solid #6f0022; padding: 0.7rem; border-radius: 6px; margin-bottom: 0.8rem;">
+                            <p style="margin: 0 0 0.2rem; font-weight: 600; color: #6f0022;">Current Reply ${f.careReply.staffName ? `by ${f.careReply.staffName}` : ''}</p>
+                            <p style="margin: 0; color: #555;">${f.careReply.comment}</p>
+                        </div>
+                    ` : ''}
+
+                    <form class="review-reply-form" data-review-id="${f._id}">
+                        <textarea name="replyComment" rows="2" maxlength="1000" placeholder="Write a customer care reply..." style="width: 100%; padding: 0.7rem; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 0.6rem;">${f.careReply?.comment || ''}</textarea>
+                        <button type="submit" style="background: #6f0022; color: white; border: none; border-radius: 6px; padding: 0.55rem 1rem; cursor: pointer; font-weight: 600;">${f.careReply?.comment ? 'Update Reply' : 'Send Reply'}</button>
+                    </form>
                 </div>
             `).join('');
+
+            document.querySelectorAll('.review-reply-form').forEach((form) => {
+                form.addEventListener('submit', async (event) => {
+                    event.preventDefault();
+                    const reviewId = form.dataset.reviewId;
+                    const comment = form.querySelector('textarea[name="replyComment"]').value.trim();
+
+                    if (!comment) {
+                        showAlert('Reply comment is required', 'error');
+                        return;
+                    }
+
+                    try {
+                        const res = await authManager.apiRequest(`/api/reviews/${reviewId}/reply`, {
+                            method: 'PATCH',
+                            body: JSON.stringify({ comment })
+                        });
+
+                        const result = await res.json();
+                        if (!res.ok) throw new Error(result.message || 'Failed to save reply');
+
+                        showAlert('Reply saved successfully', 'success');
+                        loadFeedback();
+                    } catch (error) {
+                        showAlert(error.message || 'Failed to save reply', 'error');
+                    }
+                });
+            });
         }
 
         function openCampaignModal() {

@@ -18,6 +18,7 @@ import orderRoutes from './routes/order.js';
 import chatRoutes from './routes/chat.js';
 import inventoryRoutes from './routes/inventory.js';
 import loyaltyRoutes from './routes/loyalty.js';
+import reviewRoutes from './routes/review.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -69,6 +70,7 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/loyalty', loyaltyRoutes);
+app.use('/api/reviews', reviewRoutes);
 
 // Serve static files from frontend directory
 app.use(express.static(frontendDir));
