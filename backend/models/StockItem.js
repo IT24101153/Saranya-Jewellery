@@ -20,11 +20,10 @@ const stockItemSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-stockItemSchema.pre('save', function(next) {
+stockItemSchema.pre('save', function() {
   if (this.quantity === 0)     this.status = 'Out of Stock';
   else if (this.quantity <= 3) this.status = 'Low Stock';
   else                         this.status = 'In Stock';
-  next();
 });
 
 const StockItem = mongoose.model('StockItem', stockItemSchema);

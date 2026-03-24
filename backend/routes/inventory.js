@@ -1,5 +1,7 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import Product from '../models/Product.js';
+import StockItem from '../models/StockItem.js';
 import GoldRate from '../models/GoldRate.js';
 import Order from '../models/Order.js';
 import Supplier from '../models/Supplier.js';
@@ -8,27 +10,42 @@ import emailService from '../utils/emailService.js';
 
 const router = express.Router();
 
-const CATEGORY_MAP = {
-  Bangle: 'Bangles'
-};
-
-function normalizeCategory(category) {
-  if (!category) return category;
-  return CATEGORY_MAP[category] || category;
+function buildStockRow(stockItem) {
+  const supplierName = stockItem?.supplier?.name || stockItem?.supplier || '-';
+  return {
+    _id: stockItem._id,
+    serial: stockItem.serial,
+    name: stockItem.name,
+    category: stockItem.category,
+    karat: stockItem.karat,
+    weight: stockItem.weight,
+    quantity: stockItem.quantity,
+    supplier: supplierName,
+    status: stockItem.status
+  };
 }
 
-function buildStockRow(product) {
-  return {
-    _id: product._id,
-    serial: product.sku || `SKU-${String(product._id).slice(-6).toUpperCase()}`,
-    name: product.name,
-    category: product.category,
-    karat: product.kType,
-    weight: product.weight,
-    quantity: product.stockQuantity,
-    supplier: product.supplier || '-',
-    status: product.availabilityStatus
-  };
+async function generateStockSerial() {
+  // Avoid duplicate serials when rows are deleted and count is reused.
+  let nextNumber = (await StockItem.countDocuments()) + 1;
+  while (true) {
+    const candidate = `SJI-${String(nextNumber).padStart(3, '0')}`;
+    const exists = await StockItem.exists({ serial: candidate });
+    if (!exists) return candidate;
+    nextNumber += 1;
+  }
+}
+
+async function resolveSupplierRef(supplierInput) {
+  if (!supplierInput) return undefined;
+
+  if (mongoose.Types.ObjectId.isValid(supplierInput)) {
+    const supplierById = await Supplier.findById(supplierInput).select('_id');
+    if (supplierById) return supplierById._id;
+  }
+
+  const supplierByName = await Supplier.findOne({ name: supplierInput }).select('_id');
+  return supplierByName?._id;
 }
 
 // ===== GOLD RATE MANAGEMENT =====
@@ -95,13 +112,14 @@ router.post('/gold-rates', isInventoryManager, async (req, res) => {
 // GET /api/inventory/stock - Get stock rows for inventory dashboard
 router.get('/stock', isInventoryManager, async (req, res) => {
   try {
-    const products = await Product.find()
+    const stockItems = await StockItem.find()
+      .populate('supplier', 'name contact')
       .sort({ createdAt: -1 })
-      .select('name category kType weight stockQuantity sku supplier availabilityStatus');
+      .select('serial name category karat weight quantity supplier status');
 
     res.json({
       success: true,
-      data: products.map(buildStockRow)
+      data: stockItems.map(buildStockRow)
     });
   } catch (error) {
     res.status(500).json({ message: 'Error fetching stock', error: error.message });
@@ -111,41 +129,49 @@ router.get('/stock', isInventoryManager, async (req, res) => {
 // POST /api/inventory/stock - Create a stock item from inventory dashboard
 router.post('/stock', isInventoryManager, async (req, res) => {
   try {
-    const { name, category, karat, weight, quantity, supplier } = req.body;
+    const { name, category, karat, weight, quantity, supplier, notes } = req.body;
 
     if (!name || !category || weight === undefined || quantity === undefined) {
       return res.status(400).json({ message: 'name, category, weight and quantity are required' });
     }
 
-    const normalizedCategory = normalizeCategory(category);
-    const latestRates = await GoldRate.findOne().sort({ lastUpdated: -1 });
-    const karatRate = latestRates?.[karat] || 0;
-    const count = await Product.countDocuments();
-    const sku = `INV-${String(count + 1).padStart(4, '0')}`;
+    const supplierRef = await resolveSupplierRef(supplier);
+    const serial = await generateStockSerial();
 
-    const product = new Product({
+    const stockItem = new StockItem({
+      serial,
       name,
-      description: `${name} inventory entry`,
-      image: '/assets/placeholder-product.jpg',
-      category: normalizedCategory,
+      category,
+      karat,
       weight: Number(weight),
-      kType: karat,
-      karatRate,
-      stockQuantity: Number(quantity),
-      supplier: supplier || '',
-      sku,
-      productStatus: 'Draft',
-      createdBy: req.session.staffId
+      quantity: Number(quantity),
+      supplier: supplierRef,
+      notes
     });
 
-    await product.save();
+    await stockItem.save();
+
+    const populatedStockItem = await StockItem.findById(stockItem._id)
+      .populate('supplier', 'name contact');
 
     res.status(201).json({
       success: true,
       message: 'Stock added successfully',
-      data: buildStockRow(product)
+      data: buildStockRow(populatedStockItem)
     });
   } catch (error) {
+    console.error('Create stock failed:', {
+      message: error.message,
+      name: error.name,
+      code: error.code,
+      body: req.body
+    });
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ message: 'Invalid stock data', error: error.message });
+    }
+    if (error.code === 11000) {
+      return res.status(409).json({ message: 'Duplicate stock serial. Please retry.', error: error.message });
+    }
     res.status(500).json({ message: 'Error adding stock', error: error.message });
   }
 });
@@ -153,35 +179,37 @@ router.post('/stock', isInventoryManager, async (req, res) => {
 // PUT /api/inventory/stock/:id - Update a stock item
 router.put('/stock/:id', isInventoryManager, async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id);
-    if (!product) {
+    const stockItem = await StockItem.findById(req.params.id);
+    if (!stockItem) {
       return res.status(404).json({ message: 'Stock item not found' });
     }
 
-    const { name, category, karat, weight, quantity, supplier } = req.body;
+    const { name, category, karat, weight, quantity, supplier, notes } = req.body;
 
-    if (name !== undefined) product.name = name;
-    if (category !== undefined) product.category = normalizeCategory(category);
-    if (karat !== undefined) {
-      product.kType = karat;
-      const latestRates = await GoldRate.findOne().sort({ lastUpdated: -1 });
-      if (latestRates?.[karat]) {
-        product.karatRate = latestRates[karat];
+    if (name !== undefined) stockItem.name = name;
+    if (category !== undefined) stockItem.category = category;
+    if (karat !== undefined) stockItem.karat = karat;
+    if (weight !== undefined) stockItem.weight = Number(weight);
+    if (quantity !== undefined) stockItem.quantity = Number(quantity);
+    if (notes !== undefined) stockItem.notes = notes;
+    if (supplier !== undefined) {
+      if (!supplier) {
+        stockItem.supplier = undefined;
+      } else {
+        const supplierRef = await resolveSupplierRef(supplier);
+        stockItem.supplier = supplierRef;
       }
     }
-    if (weight !== undefined) product.weight = Number(weight);
-    if (quantity !== undefined) product.stockQuantity = Number(quantity);
-    if (supplier !== undefined) product.supplier = supplier;
 
-    // Inventory updates should not auto-publish a product.
-    // Product goes live only when Product Manager publishes it.
+    await stockItem.save();
 
-    await product.save();
+    const updatedStockItem = await StockItem.findById(stockItem._id)
+      .populate('supplier', 'name contact');
 
     res.json({
       success: true,
       message: 'Stock updated successfully',
-      data: buildStockRow(product)
+      data: buildStockRow(updatedStockItem)
     });
   } catch (error) {
     res.status(500).json({ message: 'Error updating stock', error: error.message });
@@ -191,8 +219,8 @@ router.put('/stock/:id', isInventoryManager, async (req, res) => {
 // DELETE /api/inventory/stock/:id - Delete a stock item
 router.delete('/stock/:id', isInventoryManager, async (req, res) => {
   try {
-    const product = await Product.findByIdAndDelete(req.params.id);
-    if (!product) {
+    const stockItem = await StockItem.findByIdAndDelete(req.params.id);
+    if (!stockItem) {
       return res.status(404).json({ message: 'Stock item not found' });
     }
 

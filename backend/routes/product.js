@@ -1,21 +1,50 @@
 import express from 'express';
 import Product from '../models/Product.js';
+import StockItem from '../models/StockItem.js';
+import GoldRate from '../models/GoldRate.js';
 import { isAuthenticated, isProductManager } from '../middleware/auth.js';
 import Staff from '../models/Staff.js';
 
 const router = express.Router();
 
+const CATEGORY_MAP = {
+  Bangle: 'Bangles'
+};
+
+function normalizeProductCategory(category) {
+  if (!category) return category;
+  return CATEGORY_MAP[category] || category;
+}
+
 // Get inventory-backed stock options for product manager (protected)
 router.get('/stock-options', isProductManager, async (req, res) => {
   try {
-    const stockItems = await Product.find({
-      stockQuantity: { $gt: 0 },
-      productStatus: 'Draft'
-    })
-      .select('name category stockQuantity kType weight supplier image productStatus')
-      .sort({ updatedAt: -1 });
+    const stockItems = await StockItem.find({ quantity: { $gt: 0 } })
+      .populate('supplier', 'name')
+      .select('serial name category karat weight quantity supplier status updatedAt createdAt')
+      .sort({ updatedAt: -1, createdAt: -1 });
 
-    res.json(stockItems);
+    const linkedSkus = new Set(
+      (await Product.find({ sku: { $in: stockItems.map((item) => item.serial) } }).select('sku'))
+        .map((item) => item.sku)
+        .filter(Boolean)
+    );
+
+    const options = stockItems
+      .filter((item) => !linkedSkus.has(item.serial))
+      .map((item) => ({
+        _id: item._id,
+        serial: item.serial,
+        name: item.name,
+        category: normalizeProductCategory(item.category),
+        kType: item.karat,
+        weight: item.weight,
+        stockQuantity: item.quantity,
+        supplier: item?.supplier?.name || '',
+        status: item.status
+      }));
+
+    res.json(options);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching stock options', error: error.message });
   }
@@ -227,23 +256,42 @@ router.post('/', isProductManager, async (req, res) => {
     }
 
     // If product manager selected an existing inventory stock item,
-    // update and publish that same product instead of creating a duplicate.
+    // publish into Product collection using stock item as source of truth.
     if (stockProductId) {
-      const stockProduct = await Product.findById(stockProductId);
-      if (!stockProduct) {
+      const stockItem = await StockItem.findById(stockProductId).populate('supplier', 'name');
+      if (!stockItem) {
         return res.status(404).json({ message: 'Selected stock item not found' });
       }
 
-      if (description) stockProduct.description = description;
-      if (image) stockProduct.image = image;
-      if (featured !== undefined) stockProduct.featured = featured;
-      if (taxPercentage !== undefined) stockProduct.taxPercentage = Math.max(0, Math.min(100, Number(taxPercentage) || 0));
+      const latestRates = await GoldRate.findOne().sort({ lastUpdated: -1 });
+      const inferredKaratRate = latestRates?.[stockItem.karat] || 0;
+      const sourceCategory = normalizeProductCategory(stockItem.category);
+      const sourceName = stockItem.name;
+      const sourceSupplier = stockItem?.supplier?.name || '';
 
-      // Keep inventory values as source of truth, but allow optional overrides.
-      if (name) stockProduct.name = name;
-      if (category) stockProduct.category = category;
+      let stockProduct = await Product.findOne({ sku: stockItem.serial });
+      if (!stockProduct) {
+        stockProduct = new Product({
+          createdBy: req.session.staffId
+        });
+      }
 
+      stockProduct.name = name || sourceName;
+      stockProduct.description = description || `${sourceName} product entry`;
+      stockProduct.image = image || '/assets/placeholder-product.jpg';
+      stockProduct.category = category || sourceCategory;
+      stockProduct.featured = featured !== undefined ? featured : !!stockProduct.featured;
+      stockProduct.taxPercentage = Math.max(0, Math.min(100, Number(taxPercentage) || 0));
+      stockProduct.weight = Number(stockItem.weight) || 0;
+      stockProduct.kType = stockItem.karat || null;
+      stockProduct.karatRate = inferredKaratRate;
+      stockProduct.stockQuantity = Number(stockItem.quantity) || 0;
+      stockProduct.supplier = sourceSupplier;
+      stockProduct.sku = stockItem.serial;
       stockProduct.productStatus = 'Active';
+      stockProduct.isVisibleToCustomers = true;
+      stockProduct.isAvailableForSale = (Number(stockItem.quantity) || 0) > 0;
+
       await stockProduct.save();
 
       const populatedStockProduct = await Product.findById(stockProduct._id)
@@ -261,7 +309,7 @@ router.post('/', isProductManager, async (req, res) => {
       name,
       description,
       image,
-      category,
+      category: normalizeProductCategory(category),
       featured: featured || false,
       taxPercentage: Math.max(0, Math.min(100, Number(taxPercentage) || 0)),
       productStatus: 'Draft',
@@ -303,7 +351,7 @@ router.put('/:id', isProductManager, async (req, res) => {
     if (name) product.name = name;
     if (description) product.description = description;
     if (image) product.image = image;
-    if (category) product.category = category;
+    if (category) product.category = normalizeProductCategory(category);
     if (featured !== undefined) product.featured = featured;
     if (taxPercentage !== undefined) product.taxPercentage = Math.max(0, Math.min(100, Number(taxPercentage) || 0));
 

@@ -622,10 +622,11 @@ async function addStock() {
       showToast(`✓ Stock entry ${data.data.serial} added.`, 'success');
       loadStock();
     } else {
-      showToast(data.message || 'Failed to add stock.', 'error');
+      const reason = data.error || data.message || 'Failed to add stock.';
+      showToast(reason, 'error');
     }
   } catch (err) {
-    showToast('Server error. Try again.', 'error');
+    showToast(err?.message || 'Server error. Try again.', 'error');
   }
 }
 
