@@ -9,9 +9,7 @@
     "frontend:install": "npm --prefix frontend install",
     "frontend:build": "npm --prefix frontend run build",
     "start:mern": "npm run frontend:build && node backend/server.js",
-    "seed:admin": "node backend/seedAdmin.js",
-    "test:email": "node test-testmail.js",
-    "test:flow": "node test-email-flow.js"
+    "seed:admin": "node backend/seedAdmin.js"
   },
   "keywords": [],
   "author": "",
