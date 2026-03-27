@@ -1,0 +1,615 @@
+const page = {
+  title: `Product Management - Saranya Jewellery`,
+  html: `<!-- Pending Approval Overlay -->
+    <div id="pendingOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 9999; align-items: center; justify-content: center;">
+        <div style="background: white; padding: 3rem; border-radius: 8px; text-align: center; max-width: 500px;">
+            <h2 style="color: #6f0022; margin-bottom: 1rem;">⏳ Pending Approval</h2>
+            <p style="color: #666; margin-bottom: 2rem;">Your account is awaiting admin approval. Please check back later.</p>
+            <button onclick="logout()" style="background: #6f0022; color: white; padding: 0.8rem 2rem; border: none; border-radius: 4px; cursor: pointer;">Logout</button>
+        </div>
+    </div>
+
+    <!-- Dashboard Container -->
+    <div style="max-width: 1400px; margin: 0 auto; padding: 2rem;">
+        
+        <!-- Header -->
+        <div style="display: flex; justify-content: space-between; align-items: center; background: #6f0022; color: white; padding: 1.5rem 2rem; border-radius: 8px; margin-bottom: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            <div>
+                <h1 style="margin: 0; font-family: 'Cormorant Garamond', serif; font-size: 2rem; color: #ffffff;">Product Management</h1>
+                <p style="margin: 0.5rem 0 0; opacity: 0.9; color: #ffffff;">Welcome, <span id="userName" style="color: #ffffff;">Manager</span></p>
+            </div>
+            <button onclick="logout()" style="background: white; color: #6f0022; border: none; padding: 0.75rem 1.5rem; border-radius: 4px; cursor: pointer; font-weight: 600;">
+                Logout
+            </button>
+        </div>
+
+        <!-- Stats Cards -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center;">
+                <h3 style="font-size: 2.5rem; color: #6f0022; margin: 0 0 0.5rem;" id="totalProducts">0</h3>
+                <p style="margin: 0; color: #666;">Total Products</p>
+            </div>
+            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center;">
+                <h3 style="font-size: 2.5rem; color: #28a745; margin: 0 0 0.5rem;" id="inStock">0</h3>
+                <p style="margin: 0; color: #666;">Active (Inventory Done)</p>
+            </div>
+            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center;">
+                <h3 style="font-size: 2.5rem; color: #e0bf63; margin: 0 0 0.5rem;" id="featured">0</h3>
+                <p style="margin: 0; color: #666;">Featured</p>
+            </div>
+            <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center;">
+                <h3 style="font-size: 2.5rem; color: #17a2b8; margin: 0 0 0.5rem;" id="categories">0</h3>
+                <p style="margin: 0; color: #666;">Categories</p>
+            </div>
+        </div>
+
+        <!-- Product Management -->
+        <div style="background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h2 style="margin: 0; font-family: 'Cormorant Garamond', serif;">Products</h2>
+                <button onclick="openAddModal()" style="background: #6f0022; color: white; padding: 0.8rem 1.5rem; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">
+                    + Add Product
+                </button>
+            </div>
+
+            <!-- Alert -->
+            <div id="alert" style="padding: 1rem; border-radius: 4px; margin-bottom: 1rem; display: none;"></div>
+            <div id="stockWarning" style="padding: 0.8rem 1rem; border-radius: 4px; margin-bottom: 1rem; display: none; background: #fff3cd; border: 1px solid #ffe69c; color: #856404;"></div>
+
+            <!-- Category Filter Tabs -->
+            <div style="margin-bottom: 1.5rem;">
+                <p style="margin: 0 0 0.6rem; color: #6f0022; font-weight: 600;">Filter by Category</p>
+                <div style="display: flex; flex-wrap: wrap; gap: 0.6rem;">
+                    <button class="category-tab-btn active" onclick="setCategoryFilter('')">All Products</button>
+                    <button class="category-tab-btn" onclick="setCategoryFilter('Ring')">Rings</button>
+                    <button class="category-tab-btn" onclick="setCategoryFilter('Necklace')">Necklaces</button>
+                    <button class="category-tab-btn" onclick="setCategoryFilter('Bracelet')">Bracelets</button>
+                    <button class="category-tab-btn" onclick="setCategoryFilter('Earring')">Earrings</button>
+                    <button class="category-tab-btn" onclick="setCategoryFilter('Pendant')">Pendants</button>
+                    <button class="category-tab-btn" onclick="setCategoryFilter('Chain')">Chains</button>
+                    <button class="category-tab-btn" onclick="setCategoryFilter('Bangles')">Bangles</button>
+                    <button class="category-tab-btn" onclick="setCategoryFilter('Anklet')">Anklets</button>
+                </div>
+                <input type="hidden" id="categoryFilter" value="">
+            </div>
+
+            <div style="margin-bottom: 1.5rem;">
+                <label for="productSearch" style="display: block; margin: 0 0 0.45rem; color: #6f0022; font-weight: 600;">Search Products</label>
+                <input id="productSearch" type="text" placeholder="Search by name, category, or description" style="width: 100%; max-width: 420px; padding: 0.75rem 0.9rem; border: 1px solid #ddd; border-radius: 6px;">
+            </div>
+
+            <!-- Products Table -->
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr>
+                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9; color: #6f0022;">Image</th>
+                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9; color: #6f0022;">Name</th>
+                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9; color: #6f0022;">Category</th>
+                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9; color: #6f0022;">Stock</th>
+                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9; color: #6f0022;">Status</th>
+                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9; color: #6f0022;">Tax (%)</th>
+                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9; color: #6f0022;">Sale Availability</th>
+                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9; color: #6f0022;">Visible to Customers</th>
+                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9; color: #6f0022;">Featured</th>
+                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background: #f9f9f9; color: #6f0022;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="productsTable">
+                        <tr><td colspan="10" style="padding: 2rem; text-align: center; color: #999;">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Product Modal -->
+    <div id="productModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000;">
+        <div style="background: white; padding: 2rem; border-radius: 8px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 1.5rem;">
+                <h3 id="modalTitle" style="margin: 0;">Add Product</h3>
+                <button onclick="closeModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+            </div>
+            <form id="productForm">
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem;">Select From Inventory Stock</label>
+                    <select id="stockSelector" style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
+                        <option value="">Create New Product (Manual)</option>
+                    </select>
+                    <p id="stockHint" style="margin: 0.5rem 0 0; color: #666; font-size: 0.85rem;">Pick an unpublished inventory item to link stock, then enter product details manually.</p>
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem;">Product Name *</label>
+                    <input type="text" id="name" required style="width: 95%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem;">Description *</label>
+                    <textarea id="description" required rows="3" style="width: 95%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;"></textarea>
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem;">Category *</label>
+                    <select id="category" required style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
+                        <option value="">Select</option>
+                        <option value="Ring">Ring</option>
+                        <option value="Necklace">Necklace</option>
+                        <option value="Bracelet">Bracelet</option>
+                        <option value="Earring">Earring</option>
+                        <option value="Pendant">Pendant</option>
+                        <option value="Chain">Chain</option>
+                        <option value="Bangles">Bangles</option>
+                        <option value="Anklet">Anklet</option>
+                    </select>
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem;">Tax (%) *</label>
+                    <input type="number" id="taxPercentage" min="0" max="100" step="0.1" value="0" required style="width: 95%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem;">Product Image *</label>
+                    <input type="file" id="imageFile" accept="image/*" style="width: 95%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
+                    <input type="hidden" id="image">
+                    <div id="imagePreview" style="margin-top: 0.5rem; display: none;">
+                        <img id="previewImg" src="" alt="Preview" style="max-width: 200px; max-height: 200px; border-radius: 4px; border: 1px solid #ddd;">
+                        <p style="margin-top: 0.5rem; font-size: 0.875rem; color: #666;" id="imageName"></p>
+                    </div>
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                        <input type="checkbox" id="isFeatured" style="width: 20px; height: 20px;">
+                        <span>Featured Product</span>
+                    </label>
+                </div>
+                <p style="color: #888; font-size: 0.85rem; margin-bottom: 1rem;">Note: Weight, karat, price, and stock details will be added by the Inventory team.</p>
+                <button type="submit" style="width: 100%; background: #6f0022; color: white; padding: 0.8rem; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">
+                    Save Product
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <style>
+        .category-tab-btn {
+            border: 1px solid #6f0022;
+            background: #ffffff;
+            color: #6f0022;
+            padding: 0.45rem 0.9rem;
+            border-radius: 999px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.85rem;
+            transition: all 0.2s ease;
+        }
+
+        .category-tab-btn:hover {
+            background: #f8eef2;
+        }
+
+        .category-tab-btn.active {
+            background: #6f0022;
+            color: #ffffff;
+        }
+    </style>`,
+  scripts: [
+    {
+      type: `module`,
+      content: `
+        import authManager from '/src/auth.js';
+
+        let products = [];
+        let stockOptions = [];
+        let editingId = null;
+
+        async function checkAuth() {
+            const user = await authManager.checkStaffAuth('Product Management');
+            if (!user) return false;
+            if (user.needsApproval) {
+                document.getElementById('pendingOverlay').style.display = 'flex';
+                return false;
+            }
+            document.getElementById('userName').textContent = user.fullName || user.email;
+            return true;
+        }
+
+        async function loadProducts() {
+            try {
+            let url = '/api/products?productStatus=Active&';
+                const cat = document.getElementById('categoryFilter').value;
+                
+                if (cat) url += \`category=\${cat}&\`;
+
+                const res = await fetch(url, {
+                    credentials: 'same-origin'
+                });
+                if (!res.ok) throw new Error();
+                products = await res.json();
+                updateStats();
+                displayProducts();
+                updateStockWarning();
+            } catch (error) {
+                showAlert('Error loading products', 'error');
+            }
+        }
+
+        function setCategoryFilter(categoryValue) {
+            document.getElementById('categoryFilter').value = categoryValue;
+
+            const buttons = document.querySelectorAll('.category-tab-btn');
+            buttons.forEach((button) => {
+                button.classList.remove('active');
+                const onclickText = button.getAttribute('onclick') || '';
+                const normalizedValue = categoryValue === '' ? "''" : \`'\${categoryValue}'\`;
+                if (onclickText.includes(\`setCategoryFilter(\${normalizedValue})\`)) {
+                    button.classList.add('active');
+                }
+            });
+
+            loadProducts();
+        }
+
+        function updateStats() {
+            document.getElementById('totalProducts').textContent = products.length;
+            document.getElementById('inStock').textContent = products.filter(p => (p.stockQuantity ?? 0) > 0).length;
+            document.getElementById('featured').textContent = products.filter(p => p.featured).length;
+            const uniqueCats = [...new Set(products.map(p => p.category))];
+            document.getElementById('categories').textContent = uniqueCats.length;
+        }
+
+        function updateStockWarning() {
+            const outOfStockCount = products.filter((p) => (p.stockQuantity ?? 0) === 0 && p.productStatus === 'Active').length;
+            const warning = document.getElementById('stockWarning');
+
+            if (outOfStockCount > 0) {
+                warning.textContent = \`\${outOfStockCount} active product(s) are out of stock.\`;
+                warning.style.display = 'block';
+            } else {
+                warning.style.display = 'none';
+            }
+        }
+
+        function getProductIdValue(product) {
+            if (!product) return '';
+            if (typeof product._id === 'string') return product._id;
+            if (product._id && typeof product._id === 'object' && typeof product._id.$oid === 'string') {
+                return product._id.$oid;
+            }
+            return String(product._id || '');
+        }
+
+        function displayProducts() {
+            const tbody = document.getElementById('productsTable');
+            const searchValue = (document.getElementById('productSearch')?.value || '').trim().toLowerCase();
+
+            const filteredProducts = products.filter((p) => {
+                if (!searchValue) return true;
+                return [p.name, p.category, p.description]
+                    .filter(Boolean)
+                    .some((field) => String(field).toLowerCase().includes(searchValue));
+            });
+
+            if (filteredProducts.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="10" style="padding: 2rem; text-align: center; color: #999;">No products found</td></tr>';
+                return;
+            }
+            tbody.innerHTML = filteredProducts.map(p => {
+                const productId = getProductIdValue(p);
+                return \`
+                <tr>
+                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">
+                        <img src="\${p.image || '/placeholder.jpg'}" alt="\${p.name}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;">
+                    </td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">\${p.name}</td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">\${p.category}</td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">
+                        <div style="font-weight: 600; color: \${(p.stockQuantity ?? 0) > 0 ? '#155724' : '#721c24'};">\${p.stockQuantity ?? 0}</div>
+                        <div style="font-size: 0.8rem; color: \${(p.stockQuantity ?? 0) > 0 ? '#155724' : '#721c24'};">\${(p.stockQuantity ?? 0) > 0 ? 'In Stock' : 'Out of Stock'}</div>
+                    </td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">
+                        <span style="padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.85rem; background: \${p.productStatus === 'Active' ? '#d4edda' : '#fff3cd'}; color: \${p.productStatus === 'Active' ? '#155724' : '#856404'};">
+                            \${p.productStatus || 'Draft'}
+                        </span>
+                    </td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">\${(p.taxPercentage ?? 0).toFixed(1)}%</td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">
+                        <span style="padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.85rem; background: \${(p.isAvailableForSale ?? true) ? '#d4edda' : '#f8d7da'}; color: \${(p.isAvailableForSale ?? true) ? '#155724' : '#721c24'};">
+                            \${(p.isAvailableForSale ?? true) ? 'Available' : 'Unavailable'}
+                        </span>
+                    </td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">
+                        <span style="padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.85rem; background: \${(p.isVisibleToCustomers ?? true) ? '#d4edda' : '#f8d7da'}; color: \${(p.isVisibleToCustomers ?? true) ? '#155724' : '#721c24'};">
+                            \${(p.isVisibleToCustomers ?? true) ? 'Visible' : 'Hidden'}
+                        </span>
+                    </td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">\${p.featured ? '⭐' : '-'}</td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #eee;">
+                        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                            <button onclick="toggleAvailability('\${productId}', \${!(p.isAvailableForSale ?? true)})" style="padding: 0.4rem 0.8rem; background: \${(p.isAvailableForSale ?? true) ? '#ffc107' : '#28a745'}; color: \${(p.isAvailableForSale ?? true) ? '#333' : 'white'}; border: none; border-radius: 4px; cursor: pointer;">
+                                \${(p.isAvailableForSale ?? true) ? 'Set Unavailable' : 'Set Available'}
+                            </button>
+                            <button onclick="toggleCustomerVisibility('\${productId}', \${!(p.isVisibleToCustomers ?? true)})" style="padding: 0.4rem 0.8rem; background: \${(p.isVisibleToCustomers ?? true) ? '#6c757d' : '#17a2b8'}; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                                \${(p.isVisibleToCustomers ?? true) ? 'Hide from Customers' : 'Unhide for Customers'}
+                            </button>
+                            <button onclick="editProduct('\${productId}')" style="padding: 0.4rem 0.8rem; background: #17a2b8; color: white; border: none; border-radius: 4px; cursor: pointer;">Edit Product</button>
+                            <button onclick="deleteProduct('\${productId}', '\${p.name}')" style="padding: 0.4rem 0.8rem; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">Remove Product (Keep Stock)</button>
+                        </div>
+                    </td>
+                </tr>
+            \`;
+            }).join('');
+        }
+
+        async function toggleAvailability(id, newAvailability) {
+            try {
+                const safeId = encodeURIComponent(String(id || '').trim());
+                if (!safeId) throw new Error('Invalid product id');
+                const res = await fetch(\`/api/products/\${safeId}/availability\`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ isAvailableForSale: newAvailability })
+                });
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.message || 'Failed to update availability');
+                }
+                const data = await res.json();
+                showAlert(data.message || 'Sale availability updated', 'success');
+                await loadProducts();
+            } catch (error) {
+                showAlert(error.message, 'error');
+            }
+        }
+
+        async function toggleCustomerVisibility(id, newVisibility) {
+            try {
+                const safeId = encodeURIComponent(String(id || '').trim());
+                if (!safeId) throw new Error('Invalid product id');
+                const res = await fetch(\`/api/products/\${safeId}/customer-visibility\`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ isVisibleToCustomers: newVisibility })
+                });
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.message || 'Failed to update customer visibility');
+                }
+                showAlert('Customer visibility updated', 'success');
+                await loadProducts();
+            } catch (error) {
+                showAlert(error.message, 'error');
+            }
+        }
+
+        async function openAddModal() {
+            editingId = null;
+            document.getElementById('modalTitle').textContent = 'Add Product';
+            document.getElementById('productForm').reset();
+            document.getElementById('taxPercentage').value = '0';
+            await loadStockOptions();
+            populateStockSelector();
+            document.getElementById('productModal').style.display = 'flex';
+        }
+
+        function editProduct(id) {
+            const product = products.find(p => p._id === id);
+            if (!product) return;
+            editingId = id;
+            document.getElementById('modalTitle').textContent = 'Edit Product';
+            document.getElementById('name').value = product.name;
+            document.getElementById('description').value = product.description;
+            document.getElementById('category').value = product.category;
+            document.getElementById('taxPercentage').value = product.taxPercentage ?? 0;
+            document.getElementById('image').value = product.image || '';
+            
+            // Show current image if exists
+            if (product.image) {
+                document.getElementById('previewImg').src = product.image;
+                document.getElementById('imageName').textContent = 'Current image';
+                document.getElementById('imagePreview').style.display = 'block';
+            }
+            
+            document.getElementById('isFeatured').checked = product.featured;
+            document.getElementById('productModal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('productModal').style.display = 'none';
+            document.getElementById('productForm').reset();
+            document.getElementById('imagePreview').style.display = 'none';
+            document.getElementById('image').value = '';
+            editingId = null;
+        }
+
+        async function loadStockOptions() {
+            try {
+                const res = await fetch('/api/products/stock-options', { credentials: 'same-origin' });
+                if (!res.ok) throw new Error();
+                stockOptions = await res.json();
+                populateStockSelector();
+            } catch (error) {
+                stockOptions = [];
+                populateStockSelector();
+            }
+        }
+
+        function populateStockSelector() {
+            const select = document.getElementById('stockSelector');
+            if (!select) return;
+
+            const optionsHtml = stockOptions.map((item) => {
+                const stock = item.stockQuantity ?? 0;
+                const kType = item.kType || '-';
+                return \`<option value="\${item._id}">\${item.name} | \${item.category} | \${kType} | Stock: \${stock}</option>\`;
+            }).join('');
+
+            select.innerHTML = '<option value="">Create New Product (Manual)</option>' + optionsHtml;
+            document.getElementById('stockHint').textContent = stockOptions.length
+                ? \`Available unpublished stock items: \${stockOptions.length}\`
+                : 'No unpublished stock items available. Create product manually.';
+        }
+
+        function onStockSelect() {
+            const selectedId = document.getElementById('stockSelector').value;
+            if (!selectedId) {
+                document.getElementById('stockHint').textContent = stockOptions.length
+                    ? \`Available unpublished stock items: \${stockOptions.length}\`
+                    : 'No unpublished stock items available. Create product manually.';
+                return;
+            }
+
+            const selected = stockOptions.find((item) => item._id === selectedId);
+            if (!selected) return;
+
+            const stock = selected.stockQuantity ?? 0;
+            const kType = selected.kType || 'N/A';
+            document.getElementById('stockHint').textContent = \`Selected stock item: \${selected.name} (\${kType}) | Available stock: \${stock}. Fill name, description, image, featured, and tax manually.\`;
+        }
+
+        async function deleteProduct(id, name) {
+            if (!confirm(\`Remove \${name} from product list? Stock will be kept in inventory.\`)) return;
+            try {
+                const res = await fetch(\`/api/products/\${id}\`, { 
+                    method: 'DELETE',
+                    credentials: 'same-origin'
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.message || 'Failed to remove product');
+                showAlert(data.message || 'Product removed', 'success');
+                loadProducts();
+            } catch (error) {
+                showAlert(error.message || 'Error removing product', 'error');
+            }
+        }
+
+        // Image file preview
+        document.getElementById('imageFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('previewImg').src = e.target.result;
+                    document.getElementById('imageName').textContent = file.name;
+                    document.getElementById('imagePreview').style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        document.getElementById('stockSelector').addEventListener('change', onStockSelect);
+
+        document.getElementById('productForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            let imagePath = document.getElementById('image').value;
+            
+            // Upload image first if a file is selected
+            const imageFile = document.getElementById('imageFile').files[0];
+            if (imageFile) {
+                try {
+                    const formData = new FormData();
+                    formData.append('image', imageFile);
+                    
+                    const uploadRes = await fetch('/api/upload', {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        body: formData
+                    });
+                    
+                    if (!uploadRes.ok) {
+                        const err = await uploadRes.json();
+                        throw new Error(err.message || 'Failed to upload image');
+                    }
+                    
+                    const uploadData = await uploadRes.json();
+                    imagePath = uploadData.imagePath;
+                } catch (error) {
+                    showAlert('Error uploading image: ' + error.message, 'error');
+                    return;
+                }
+            }
+            
+            // Validate that we have an image
+            if (!imagePath) {
+                showAlert('Please select an image', 'error');
+                return;
+            }
+            
+            const data = {
+                stockProductId: editingId ? null : (document.getElementById('stockSelector').value || null),
+                name: document.getElementById('name').value,
+                description: document.getElementById('description').value,
+                category: document.getElementById('category').value,
+                image: imagePath,
+                featured: document.getElementById('isFeatured').checked,
+                taxPercentage: parseFloat(document.getElementById('taxPercentage').value) || 0
+            };
+
+            try {
+                let res;
+                if (editingId) {
+                    res = await fetch(\`/api/products/\${editingId}\`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'same-origin',
+                        body: JSON.stringify(data)
+                    });
+                } else {
+                    res = await fetch('/api/products', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'same-origin',
+                        body: JSON.stringify(data)
+                    });
+                }
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.message);
+                }
+                showAlert(editingId ? 'Product updated' : 'Product created', 'success');
+                closeModal();
+                await loadProducts();
+                await loadStockOptions();
+            } catch (error) {
+                showAlert(error.message, 'error');
+            }
+        });
+
+        function showAlert(msg, type) {
+            const alert = document.getElementById('alert');
+            alert.textContent = msg;
+            alert.style.display = 'block';
+            alert.style.background = type === 'success' ? '#d4edda' : '#f8d7da';
+            alert.style.color = type === 'success' ? '#155724' : '#721c24';
+            alert.style.border = \`1px solid \${type === 'success' ? '#c3e6cb' : '#f5c6cb'}\`;
+            setTimeout(() => alert.style.display = 'none', 5000);
+        }
+
+        function logout() {
+            authManager.logout();
+        }
+
+        // Make functions available globally for onclick/onchange handlers
+        window.logout = logout;
+        window.openAddModal = openAddModal;
+        window.closeModal = closeModal;
+        window.editProduct = editProduct;
+        window.deleteProduct = deleteProduct;
+        window.loadProducts = loadProducts;
+        window.setCategoryFilter = setCategoryFilter;
+        window.toggleAvailability = toggleAvailability;
+        window.toggleCustomerVisibility = toggleCustomerVisibility;
+
+        (async () => {
+            const auth = await checkAuth();
+            if (auth) {
+                await loadStockOptions();
+                loadProducts();
+                document.getElementById('productSearch').addEventListener('input', displayProducts);
+            }
+        })();
+    `
+    },
+  ]
+};
+
+export default page;

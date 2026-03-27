@@ -1,0 +1,92 @@
+const page = {
+  title: `Staff Login - Saranya Jewellery`,
+  html: `<div class="login-container">
+        <div class="logo-area">
+            <h1>Saranya</h1>
+            <p>Staff Portal Login</p>
+        </div>
+
+        <div id="alert" class="alert"></div>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input type="email" id="email" name="email" placeholder="Enter your email" required>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" placeholder="Enter your password" required>
+            </div>
+
+            <button type="submit" class="btn" id="loginBtn">Login</button>
+        </form>
+
+        <div class="footer-links">
+            <a href="/staff-register">Create Account</a>
+            <span class="divider">|</span>
+            <a href="/">Back to Home</a>
+        </div>
+    </div>`,
+  scripts: [
+    {
+      type: `module`,
+      content: `
+        import authManager from '/src/auth.js';
+
+        const loginForm = document.getElementById('loginForm');
+        const loginBtn = document.getElementById('loginBtn');
+        const alertDiv = document.getElementById('alert');
+
+        function showAlert(message, type = 'error') {
+            alertDiv.textContent = message;
+            alertDiv.className = \`alert alert-\${type} show\`;
+            setTimeout(() => {
+                alertDiv.className = 'alert';
+            }, 5000);
+        }
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+
+            // Validation
+            if (!email || !password) {
+                showAlert('Please fill in all fields');
+                return;
+            }
+
+            // Email format validation
+            const emailRegex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
+            if (!emailRegex.test(email)) {
+                showAlert('Please enter a valid email address');
+                return;
+            }
+
+            loginBtn.disabled = true;
+            loginBtn.textContent = 'Logging in...';
+
+            const result = await authManager.loginStaff(email, password);
+
+            if (result.success) {
+                showAlert('Login successful! Redirecting...', 'success');
+                
+                // Redirect based on role
+                setTimeout(() => {
+                    const redirectUrl = authManager.getRoleDashboard(result.data.staff?.role);
+                    window.location.href = redirectUrl;
+                }, 500);
+            } else {
+                showAlert(result.error || 'Invalid email or password');
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Login';
+            }
+        });
+    `
+    },
+  ]
+};
+
+export default page;
