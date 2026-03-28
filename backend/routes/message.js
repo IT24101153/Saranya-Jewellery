@@ -338,4 +338,62 @@ router.post('/broadcast/:id', hasRole('Customer Care', 'Admin'), async (req, res
   }
 });
 
+// POST /api/messages/:id/send-email - Send message to all customers (new endpoint name)
+router.post('/:id/send-email', hasRole('Customer Care', 'Admin'), async (req, res) => {
+  try {
+    const message = await Message.findById(req.params.id);
+    
+    if (!message) {
+      return res.status(404).json({ message: 'Message not found' });
+    }
+    
+    // Get all customers
+    const customers = await Customer.find({});
+    
+    // Send emails to all customers
+    let successCount = 0;
+    let failCount = 0;
+    
+    for (const customer of customers) {
+      try {
+        const emailHtml = `
+          <h2>${message.title}</h2>
+          <p>${message.message}</p>
+          ${message.validUntil ? `<p><small>Valid until ${new Date(message.validUntil).toLocaleDateString()}</small></p>` : ''}
+        `;
+        
+        const result = await emailService.sendCustomEmail(
+          customer.email,
+          message.title,
+          emailHtml
+        );
+        
+        if (result.success) {
+          successCount++;
+        } else {
+          failCount++;
+        }
+      } catch (error) {
+        console.error(`Failed to send email to ${customer.email}:`, error);
+        failCount++;
+      }
+    }
+    
+    // Update message sent count
+    message.sentCount += successCount;
+    await message.save();
+
+    res.json({
+      message: `Offer sent to ${successCount} customers`,
+      successCount,
+      failCount,
+      recipientsCount: successCount,
+      total: customers.length
+    });
+  } catch (error) {
+    console.error('Error sending offer emails:', error);
+    res.status(500).json({ message: 'Error sending offer emails', error: error.message });
+  }
+});
+
 export default router;

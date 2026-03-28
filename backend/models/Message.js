@@ -40,6 +40,12 @@ const messageSchema = new mongoose.Schema({
   sentCount: {
     type: Number,
     default: 0
+  },
+  discountPercentage: {
+    type: Number,
+    default: 0,
+    min: 0,
+    max: 100
   }
 }, {
   timestamps: true  // Automatically adds createdAt and updatedAt
