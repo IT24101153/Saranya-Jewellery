@@ -254,4 +254,32 @@ router.delete('/admin/:id', isAdmin, isApproved, async (req, res) => {
   }
 });
 
+// GET /api/customers - Get all customers (admin only)
+router.get('/', isApproved, isAdmin, async (req, res) => {
+  try {
+    const customers = await Customer.find().select('-password').sort({ createdAt: -1 });
+    res.json(customers);
+  } catch (error) {
+    console.error('Get customers error:', error);
+    res.status(500).json({ message: 'Failed to fetch customers' });
+  }
+});
+
+// DELETE /api/customers/:customerId - Delete customer (admin only)
+router.delete('/:customerId', isApproved, isAdmin, async (req, res) => {
+  try {
+    const { customerId } = req.params;
+
+    const customer = await Customer.findByIdAndDelete(customerId);
+    if (!customer) {
+      return res.status(404).json({ message: 'Customer not found' });
+    }
+
+    res.json({ message: 'Customer deleted successfully' });
+  } catch (error) {
+    console.error('Delete customer error:', error);
+    res.status(500).json({ message: 'Failed to delete customer' });
+  }
+});
+
 export default router;

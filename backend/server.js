@@ -9,6 +9,7 @@ import { connectionDB } from './config/db.js';
 import dns from 'node:dns';
 import authRoutes from './routes/auth.js';
 import staffRoutes from './routes/staff.js';
+import adminRoutes from './routes/admin.js';
 import customerRoutes from './routes/customer.js';
 import productRoutes from './routes/product.js';
 import uploadRoutes from './routes/upload.js';
@@ -59,8 +60,10 @@ app.use(session({
 
 // API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes);
 app.use('/api/staff', staffRoutes);
 app.use('/api/customer', customerRoutes);
+app.use('/api/customers', customerRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/messages', messageRoutes);
