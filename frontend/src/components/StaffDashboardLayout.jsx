@@ -1,42 +1,50 @@
 import React from 'react';
 
-const baseLinkStyle = {
-  textDecoration: 'none',
-  color: '#6f0022',
-  border: '1px solid #e6d6dc',
-  borderRadius: '999px',
-  padding: '0.4rem 0.8rem',
-  fontWeight: 600,
-  fontSize: '0.85rem'
-};
-
-const activeLinkStyle = {
-  ...baseLinkStyle,
-  background: '#f8eef2',
-  borderColor: '#6f0022'
-};
-
 export default function StaffDashboardLayout({ title, staff, onLogout, links = [], children }) {
-  const pathname = window.location.pathname;
+  void links;
 
   return (
-    <div style={{ maxWidth: 1200, margin: '0 auto', padding: '1rem' }}>
+    <div style={{ background: '#fafbfc', minHeight: '100vh' }}>
       <header style={{
-        border: '1px solid #eee',
-        borderRadius: 14,
-        padding: '1rem',
-        marginBottom: '1rem',
-        background: '#fff'
+        background: '#fff',
+        borderBottom: '1px solid #e9ecef',
+        padding: '1.5rem 2rem',
+        position: 'sticky',
+        top: 0,
+        zIndex: 100
       }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
+        <div style={{
+          maxWidth: 1400,
+          margin: '0 auto',
+          display: 'flex',
+          justifyContent: 'space-between',
+          gap: '1rem',
+          flexWrap: 'wrap',
+          alignItems: 'center'
+        }}>
           <div>
-            <h1 style={{ margin: 0, color: '#6f0022', fontSize: '1.4rem' }}>{title}</h1>
-            <p style={{ margin: '0.3rem 0 0', color: '#555' }}>
-              {staff ? `${staff.fullName} (${staff.role})` : 'Loading user...'}
+            <h1 style={{ margin: 0, color: '#6f0022', fontSize: '1.8rem', fontFamily: 'Cormorant Garamond, serif', fontWeight: 600 }}>
+              {title}
+            </h1>
+            <p style={{ margin: '0.3rem 0 0', color: '#666', fontSize: '0.95rem' }}>
+              {staff ? `${staff.fullName} • ${staff.role}` : 'Loading user...'}
             </p>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <a href="/home" style={baseLinkStyle}>Customer Home</a>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem' }}>
+            <a
+              href="/home"
+              style={{
+                textDecoration: 'none',
+                color: '#6f0022',
+                border: '1px solid #e6d6dc',
+                borderRadius: 999,
+                padding: '0.5rem 0.9rem',
+                fontWeight: 600,
+                fontSize: '0.9rem'
+              }}
+            >
+              Customer Home
+            </a>
             <button
               type="button"
               onClick={onLogout}
@@ -45,8 +53,9 @@ export default function StaffDashboardLayout({ title, staff, onLogout, links = [
                 background: '#6f0022',
                 color: '#fff',
                 borderRadius: 999,
-                padding: '0.5rem 0.9rem',
+                padding: '0.55rem 1rem',
                 fontWeight: 700,
+                fontSize: '0.9rem',
                 cursor: 'pointer'
               }}
             >
@@ -54,23 +63,9 @@ export default function StaffDashboardLayout({ title, staff, onLogout, links = [
             </button>
           </div>
         </div>
-
-        {links.length > 0 && (
-          <nav style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.9rem' }}>
-            {links.map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
-                style={pathname === link.href ? activeLinkStyle : baseLinkStyle}
-              >
-                {link.label}
-              </a>
-            ))}
-          </nav>
-        )}
       </header>
 
-      <main>{children}</main>
+      <main style={{ maxWidth: 1400, margin: '0 auto', padding: '2rem' }}>{children}</main>
     </div>
   );
 }
