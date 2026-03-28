@@ -16,5 +16,5 @@ export const routeMap = {
   '/order-management-dashboard': 'order-management-dashboard',
   '/product-management-dashboard': 'product-management-dashboard',
   '/staff-login': 'staff-login',
-  '/staff-register': 'staff-register'
+  '/staff-register': 'staff-register',
 };

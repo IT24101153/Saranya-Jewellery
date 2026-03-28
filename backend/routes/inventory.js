@@ -220,6 +220,20 @@ router.get('/products', isInventoryManager, async (req, res) => {
   }
 });
 
+// GET /api/inventory/suppliers - Get suppliers for inventory dashboard
+router.get('/suppliers', isInventoryManager, async (req, res) => {
+  try {
+    const suppliers = await Supplier.find().sort({ createdAt: -1 });
+    res.json({
+      success: true,
+      count: suppliers.length,
+      data: suppliers
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching suppliers', error: error.message });
+  }
+});
+
 // PATCH /api/inventory/products/:id - Update product inventory details (Inventory Manager only)
 // Inventory can update: weight, kType, karatRate, sku, stockQuantity
 router.patch('/products/:id', isInventoryManager, async (req, res) => {

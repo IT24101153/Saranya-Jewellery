@@ -20,6 +20,7 @@ import chatRoutes from './routes/chat.js';
 import inventoryRoutes from './routes/inventory.js';
 import loyaltyRoutes from './routes/loyalty.js';
 import reviewRoutes from './routes/reviews.js';
+import supplierRoutes from './routes/suppliers.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -74,6 +75,7 @@ app.use('/api/chat', chatRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/loyalty', loyaltyRoutes);
 app.use('/api/reviews', reviewRoutes);
+app.use('/api/suppliers', supplierRoutes);
 
 // Serve built React frontend
 app.use(express.static(frontendDistDir));

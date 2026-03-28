@@ -160,10 +160,20 @@ export default function CustomerCareDashboardPage() {
     }
   }
 
-  function selectChat(chat) {
-    setSelectedChat(chat);
-    setChatMessages(chat.messages || []);
-    setReplyText('');
+  async function selectChat(chat) {
+    try {
+      // Fetch full chat details with all messages
+      const response = await authManager.apiRequest(`/api/chat/${chat._id}`);
+      const fullChat = await response.json();
+      if (response.ok) {
+        setSelectedChat(fullChat);
+        setChatMessages(fullChat.messages || []);
+        setReplyText('');
+      }
+    } catch (err) {
+      console.error('Error loading chat details:', err);
+      setError('Failed to load chat details');
+    }
   }
 
   async function sendChatReply() {
