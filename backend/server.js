@@ -32,6 +32,7 @@ const app = express();
 const PORT = 3000;
 
 const frontendDistDir = path.join(__dirname, '..', 'frontend', 'dist');
+const uploadsDir = path.join(__dirname, 'uploads');
 
 await connectionDB();
 
@@ -76,6 +77,9 @@ app.use('/api/inventory', inventoryRoutes);
 app.use('/api/loyalty', loyaltyRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/suppliers', supplierRoutes);
+
+// Serve uploaded images from backend storage
+app.use('/uploads', express.static(uploadsDir));
 
 // Serve built React frontend
 app.use(express.static(frontendDistDir));

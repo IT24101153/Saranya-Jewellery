@@ -54,6 +54,11 @@ router.get('/', async (req, res) => {
     const { category, kType, karat, availabilityStatus, isAvailable, featured, productStatus } = req.query;
     
     let filter = {};
+    // Customers/guests should only see published products.
+    // Staff can request other states explicitly.
+    if (!req.session?.staffId && !productStatus) {
+      filter.productStatus = 'Active';
+    }
     if (category) filter.category = category;
     if (productStatus) filter.productStatus = productStatus;
     // Support both kType and karat parameters
@@ -190,7 +195,9 @@ router.put('/:id', isProductManager, async (req, res) => {
       description,
       image,
       category,
-      featured
+      featured,
+      availabilityStatus,
+      productStatus
     } = req.body;
 
     if (name) product.name = name;
@@ -198,6 +205,15 @@ router.put('/:id', isProductManager, async (req, res) => {
     if (image) product.image = image;
     if (category) product.category = category;
     if (featured !== undefined) product.featured = featured;
+    if (availabilityStatus && ['In Stock', 'Out of Stock', 'Pre-Order'].includes(availabilityStatus)) {
+      product.availabilityStatus = availabilityStatus;
+      if (availabilityStatus === 'Out of Stock') {
+        product.stockQuantity = 0;
+      }
+    }
+    if (productStatus && ['Draft', 'Active'].includes(productStatus)) {
+      product.productStatus = productStatus;
+    }
 
     await product.save();
     

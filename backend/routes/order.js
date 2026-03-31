@@ -72,6 +72,13 @@ const isCustomerAuthenticated = (req, res, next) => {
   next();
 };
 
+const isStaffAuthenticated = (req, res, next) => {
+  if (!req.session.staffId) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+  next();
+};
+
 // POST /api/orders - Create new order
 router.post('/', isCustomerAuthenticated, async (req, res) => {
   try {
@@ -268,6 +275,108 @@ router.get('/admin/analytics/monthly', isAdmin, isApproved, async (req, res) => 
   } catch (error) {
     console.error('Monthly analytics error:', error);
     res.status(500).json({ message: 'Error fetching monthly analytics', error: error.message });
+  }
+});
+
+// POST /api/orders/custom - Create custom order from order management dashboard (staff only)
+router.post('/custom', isStaffAuthenticated, async (req, res) => {
+  try {
+    const {
+      customerName,
+      customerEmail,
+      phoneNumber,
+      orderNotes,
+      items,
+      tax = 0
+    } = req.body;
+
+    if (!customerName || !customerEmail || !phoneNumber) {
+      return res.status(400).json({ message: 'Customer name, email and phone number are required' });
+    }
+
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ message: 'At least one product item is required' });
+    }
+
+    const normalizedItems = [];
+
+    for (const item of items) {
+      const quantity = Number(item.quantity || 0);
+      if (!quantity || quantity < 1) {
+        return res.status(400).json({ message: 'Each item must have quantity of at least 1' });
+      }
+
+      if (item.productId) {
+        const product = await Product.findById(item.productId);
+        if (!product) {
+          return res.status(400).json({ message: 'Selected product was not found' });
+        }
+        if (product.stockQuantity < quantity) {
+          return res.status(400).json({ message: `Insufficient stock for ${product.name}. Available: ${product.stockQuantity}` });
+        }
+
+        product.stockQuantity -= quantity;
+        await product.save();
+
+        normalizedItems.push({
+          productId: product._id,
+          name: product.name,
+          price: Number(product.price || 0),
+          quantity,
+          imageUrl: product.image || '',
+          category: product.category || '',
+          karat: product.kType || ''
+        });
+      } else {
+        const price = Number(item.price || 0);
+        const name = String(item.name || '').trim();
+
+        if (!name || price <= 0) {
+          return res.status(400).json({ message: 'Manual items require valid name and price' });
+        }
+
+        normalizedItems.push({
+          name,
+          price,
+          quantity,
+          imageUrl: '',
+          category: String(item.category || '').trim(),
+          karat: String(item.karat || '').trim()
+        });
+      }
+    }
+
+    const subtotal = normalizedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const taxAmount = Math.max(0, Number(tax || 0));
+    const total = subtotal + taxAmount;
+
+    const existingCustomer = await Customer.findOne({ email: String(customerEmail).trim().toLowerCase() });
+
+    const order = new Order({
+      customerId: existingCustomer?._id,
+      customerName: String(customerName).trim(),
+      customerEmail: String(customerEmail).trim().toLowerCase(),
+      phoneNumber: String(phoneNumber).trim(),
+      orderNotes: orderNotes || 'Created by order management staff',
+      items: normalizedItems,
+      subtotal,
+      tax: taxAmount,
+      total,
+      deliveryAddress: 'Shop Collection - Visit Saranya Jewellery',
+      paymentMethod: 'Bank Transfer',
+      status: 'Pending',
+      paymentStatus: 'Pending'
+    });
+
+    await order.save();
+
+    res.status(201).json({
+      message: 'Custom order created successfully',
+      order
+    });
+  } catch (error) {
+    console.error('Create custom order error:', error);
+    res.status(500).json({ message: 'Server error while creating custom order' });
   }
 });
 

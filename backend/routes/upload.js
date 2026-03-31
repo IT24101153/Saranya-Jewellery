@@ -1,5 +1,6 @@
 import express from 'express';
 import multer from 'multer';
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { isAuthenticated, isProductManager } from '../middleware/auth.js';
@@ -15,13 +16,16 @@ const isCustomerAuthenticated = (req, res, next) => {
 const router = express.Router();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const uploadsDir = path.join(__dirname, '../uploads');
+
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
 
 // Configure multer storage
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    // Save to frontend/src folder
-    const uploadPath = path.join(__dirname, '../../frontend/src');
-    cb(null, uploadPath);
+    cb(null, uploadsDir);
   },
   filename: function (req, file, cb) {
     // Generate unique filename
@@ -62,7 +66,7 @@ router.post('/', isAuthenticated, isProductManager, upload.single('image'), (req
     }
 
     // Return the relative path to be saved in the database
-    const imagePath = `/src/${req.file.filename}`;
+    const imagePath = `/uploads/${req.file.filename}`;
     
     res.json({
       message: 'Image uploaded successfully',
@@ -82,7 +86,7 @@ router.post('/receipt', isCustomerAuthenticated, upload.single('receipt'), (req,
       return res.status(400).json({ message: 'No file uploaded' });
     }
 
-    const imagePath = `/src/${req.file.filename}`;
+    const imagePath = `/uploads/${req.file.filename}`;
     
     res.json({
       message: 'Receipt uploaded successfully',
