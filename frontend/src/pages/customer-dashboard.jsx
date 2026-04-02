@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import authManager from '../auth.js';
 
+const ZAPIER_CHATBOT_SCRIPT_SRC =
+  'https://interfaces.zapier.com/assets/web-components/zapier-interfaces/zapier-interfaces.esm.js';
+
 const ACTIVE_ORDER_STATUSES = [
   'Pending',
   'Confirmed',
@@ -46,6 +49,18 @@ export default function CustomerDashboardPage() {
 
   useEffect(() => {
     document.title = 'Customer Dashboard - Saranya Jewellery';
+  }, []);
+
+  useEffect(() => {
+    if (document.querySelector(`script[src="${ZAPIER_CHATBOT_SCRIPT_SRC}"]`)) {
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = ZAPIER_CHATBOT_SCRIPT_SRC;
+    script.type = 'module';
+    script.async = true;
+    document.head.appendChild(script);
   }, []);
 
   useEffect(() => {
@@ -711,6 +726,11 @@ export default function CustomerDashboardPage() {
           </div>
         </div>
       ) : null}
+
+      <zapier-interfaces-chatbot-embed
+        is-popup="true"
+        chatbot-id="cmnd1hjex005bm8ij9enun3qb"
+      />
     </>
   );
 }
