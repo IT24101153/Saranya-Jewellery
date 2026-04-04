@@ -51,6 +51,11 @@ export default function InventoryDashboardPage() {
     [stockRows]
   );
 
+  const supplierOptions = useMemo(
+    () => [...new Set(suppliers.map((supplier) => supplier?.name).filter(Boolean))].sort((a, b) => a.localeCompare(b)),
+    [suppliers]
+  );
+
   useEffect(() => {
     document.title = 'Inventory Dashboard - Saranya Jewellery';
   }, []);
@@ -79,13 +84,27 @@ export default function InventoryDashboardPage() {
 
   async function addStock(event) {
     event.preventDefault();
-    setIsSavingStock(true);
     setError('');
+
+    const parsedWeight = Number(stockForm.weight);
+    const parsedQuantity = Number(stockForm.quantity);
+
+    if (!Number.isFinite(parsedWeight) || parsedWeight < 0) {
+      setError('Weight cannot be negative');
+      return;
+    }
+
+    if (!Number.isFinite(parsedQuantity) || parsedQuantity < 0) {
+      setError('Quantity cannot be negative');
+      return;
+    }
+
+    setIsSavingStock(true);
     try {
       const payload = {
         ...stockForm,
-        weight: Number(stockForm.weight),
-        quantity: Number(stockForm.quantity)
+        weight: parsedWeight,
+        quantity: parsedQuantity
       };
       const response = await authManager.apiRequest('/api/inventory/stock', {
         method: 'POST',
@@ -131,12 +150,28 @@ export default function InventoryDashboardPage() {
 
   async function saveRates(event) {
     event.preventDefault();
-    setIsSavingRates(true);
     setError('');
+
+    const normalizedRates = {
+      '18K': Number(goldRates['18K']),
+      '22K': Number(goldRates['22K']),
+      '24K': Number(goldRates['24K'])
+    };
+
+    const hasNegativeRate = Object.values(normalizedRates).some(
+      (rate) => !Number.isFinite(rate) || rate < 0
+    );
+
+    if (hasNegativeRate) {
+      setError('Gold rates cannot be negative');
+      return;
+    }
+
+    setIsSavingRates(true);
     try {
       const response = await authManager.apiRequest('/api/inventory/gold-rates', {
         method: 'POST',
-        body: JSON.stringify(goldRates)
+        body: JSON.stringify(normalizedRates)
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'Failed to update rates');
@@ -172,17 +207,42 @@ export default function InventoryDashboardPage() {
 
   async function saveSupplier(event) {
     event.preventDefault();
-    setIsSavingSupplier(true);
     setError('');
+
+    const normalizedName = supplierForm.name.trim();
+    const normalizedContact = String(supplierForm.contact || '').replace(/\D/g, '');
+    const duplicateSupplier = suppliers.find(
+      (supplier) =>
+        supplier.name?.trim().toLowerCase() === normalizedName.toLowerCase() &&
+        supplier._id !== editingSupplier?._id
+    );
+
+    if (!/^\d{10}$/.test(normalizedContact)) {
+      setError('Contact number must be exactly 10 digits');
+      return;
+    }
+
+    if (duplicateSupplier) {
+      setError('Supplier name already exists');
+      return;
+    }
+
+    setIsSavingSupplier(true);
     try {
       const method = editingSupplier ? 'PATCH' : 'POST';
       const endpoint = editingSupplier 
         ? `/api/suppliers/${editingSupplier._id}`
         : '/api/suppliers';
 
+      const payload = {
+        ...supplierForm,
+        name: normalizedName,
+        contact: normalizedContact
+      };
+
       const response = await authManager.apiRequest(endpoint, {
         method,
-        body: JSON.stringify(supplierForm)
+        body: JSON.stringify(payload)
       });
 
       const data = await response.json();
@@ -390,9 +450,7 @@ export default function InventoryDashboardPage() {
                   }}
                 />
               </div>
-              <input
-                type="text"
-                placeholder="Supplier Name (optional)"
+              <select
                 value={stockForm.supplier}
                 onChange={(e) => setStockForm({ ...stockForm, supplier: e.target.value })}
                 style={{
@@ -402,7 +460,14 @@ export default function InventoryDashboardPage() {
                   fontSize: '0.94rem',
                   fontFamily: 'Poppins, sans-serif'
                 }}
-              />
+              >
+                <option value="">Select Supplier (optional)</option>
+                {supplierOptions.map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+              </select>
               <button
                 type="submit"
                 disabled={isSavingStock}
@@ -434,15 +499,15 @@ export default function InventoryDashboardPage() {
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
                   <thead>
-                    <tr style={{ borderBottom: '2px solid #e0bf63' }}>
-                      <th style={{ textAlign: 'left', padding: '0.8rem', fontWeight: '600', color: '#6f0022' }}>SKU</th>
-                      <th style={{ textAlign: 'left', padding: '0.8rem', fontWeight: '600', color: '#6f0022' }}>Name</th>
-                      <th style={{ textAlign: 'left', padding: '0.8rem', fontWeight: '600', color: '#6f0022' }}>Category</th>
-                      <th style={{ textAlign: 'left', padding: '0.8rem', fontWeight: '600', color: '#6f0022' }}>Karat</th>
-                      <th style={{ textAlign: 'left', padding: '0.8rem', fontWeight: '600', color: '#6f0022' }}>Weight</th>
-                      <th style={{ textAlign: 'center', padding: '0.8rem', fontWeight: '600', color: '#6f0022' }}>Qty</th>
-                      <th style={{ textAlign: 'left', padding: '0.8rem', fontWeight: '600', color: '#6f0022' }}>Supplier</th>
-                      <th style={{ textAlign: 'center', padding: '0.8rem', fontWeight: '600', color: '#6f0022' }}>Action</th>
+                    <tr style={{ background: '#6f0022', borderBottom: '2px solid #e0bf63' }}>
+                      <th style={{ textAlign: 'left', padding: '0.8rem', fontWeight: '700', color: '#fff', fontSize: '0.78rem', letterSpacing: '0.06em' }}>SKU</th>
+                      <th style={{ textAlign: 'left', padding: '0.8rem', fontWeight: '700', color: '#fff', fontSize: '0.78rem', letterSpacing: '0.06em' }}>NAME</th>
+                      <th style={{ textAlign: 'left', padding: '0.8rem', fontWeight: '700', color: '#fff', fontSize: '0.78rem', letterSpacing: '0.06em' }}>CATEGORY</th>
+                      <th style={{ textAlign: 'left', padding: '0.8rem', fontWeight: '700', color: '#fff', fontSize: '0.78rem', letterSpacing: '0.06em' }}>KARAT</th>
+                      <th style={{ textAlign: 'left', padding: '0.8rem', fontWeight: '700', color: '#fff', fontSize: '0.78rem', letterSpacing: '0.06em' }}>WEIGHT</th>
+                      <th style={{ textAlign: 'center', padding: '0.8rem', fontWeight: '700', color: '#fff', fontSize: '0.78rem', letterSpacing: '0.06em' }}>QTY</th>
+                      <th style={{ textAlign: 'left', padding: '0.8rem', fontWeight: '700', color: '#fff', fontSize: '0.78rem', letterSpacing: '0.06em' }}>SUPPLIER</th>
+                      <th style={{ textAlign: 'center', padding: '0.8rem', fontWeight: '700', color: '#fff', fontSize: '0.78rem', letterSpacing: '0.06em' }}>ACTION</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -605,10 +670,13 @@ export default function InventoryDashboardPage() {
                 />
                 <input
                   required
-                  type="text"
+                  type="tel"
                   placeholder="Contact Number"
                   value={supplierForm.contact}
-                  onChange={(e) => setSupplierForm({ ...supplierForm, contact: e.target.value })}
+                  onChange={(e) => setSupplierForm({ ...supplierForm, contact: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                  maxLength={10}
+                  pattern="[0-9]{10}"
+                  title="Contact number must be exactly 10 digits"
                   style={{
                     padding: '0.6rem',
                     border: '1px solid #ddd',

@@ -51,22 +51,30 @@ router.post('/gold-rates', isInventoryManager, async (req, res) => {
   try {
     const { '18K': rate18K, '22K': rate22K, '24K': rate24K } = req.body;
 
-    if (!rate18K || !rate22K || !rate24K) {
+    if (rate18K === undefined || rate22K === undefined || rate24K === undefined) {
       return res.status(400).json({ message: 'Please provide all three karat rates' });
+    }
+
+    const parsed18K = Number(rate18K);
+    const parsed22K = Number(rate22K);
+    const parsed24K = Number(rate24K);
+
+    if (![parsed18K, parsed22K, parsed24K].every((value) => Number.isFinite(value) && value >= 0)) {
+      return res.status(400).json({ message: 'Gold rates cannot be negative' });
     }
 
     // Upsert the single gold rate document
     let goldRate = await GoldRate.findOne();
     if (goldRate) {
-      goldRate['18K'] = rate18K;
-      goldRate['22K'] = rate22K;
-      goldRate['24K'] = rate24K;
+      goldRate['18K'] = parsed18K;
+      goldRate['22K'] = parsed22K;
+      goldRate['24K'] = parsed24K;
       goldRate.updatedBy = req.session.staffId;
     } else {
       goldRate = new GoldRate({
-        '18K': rate18K,
-        '22K': rate22K,
-        '24K': rate24K,
+        '18K': parsed18K,
+        '22K': parsed22K,
+        '24K': parsed24K,
         updatedBy: req.session.staffId
       });
     }
@@ -117,6 +125,17 @@ router.post('/stock', isInventoryManager, async (req, res) => {
       return res.status(400).json({ message: 'name, category, weight and quantity are required' });
     }
 
+    const parsedWeight = Number(weight);
+    const parsedQuantity = Number(quantity);
+
+    if (!Number.isFinite(parsedWeight) || parsedWeight < 0) {
+      return res.status(400).json({ message: 'Weight cannot be negative' });
+    }
+
+    if (!Number.isFinite(parsedQuantity) || parsedQuantity < 0) {
+      return res.status(400).json({ message: 'Quantity cannot be negative' });
+    }
+
     const normalizedCategory = normalizeCategory(category);
     const latestRates = await GoldRate.findOne().sort({ lastUpdated: -1 });
     const karatRate = latestRates?.[karat] || 0;
@@ -128,10 +147,10 @@ router.post('/stock', isInventoryManager, async (req, res) => {
       description: `${name} inventory entry`,
       image: '/assets/placeholder-product.jpg',
       category: normalizedCategory,
-      weight: Number(weight),
+      weight: parsedWeight,
       kType: karat,
       karatRate,
-      stockQuantity: Number(quantity),
+      stockQuantity: parsedQuantity,
       supplier: supplier || '',
       sku,
       productStatus: 'Draft',
@@ -169,8 +188,20 @@ router.put('/stock/:id', isInventoryManager, async (req, res) => {
         product.karatRate = latestRates[karat];
       }
     }
-    if (weight !== undefined) product.weight = Number(weight);
-    if (quantity !== undefined) product.stockQuantity = Number(quantity);
+    if (weight !== undefined) {
+      const parsedWeight = Number(weight);
+      if (!Number.isFinite(parsedWeight) || parsedWeight < 0) {
+        return res.status(400).json({ message: 'Weight cannot be negative' });
+      }
+      product.weight = parsedWeight;
+    }
+    if (quantity !== undefined) {
+      const parsedQuantity = Number(quantity);
+      if (!Number.isFinite(parsedQuantity) || parsedQuantity < 0) {
+        return res.status(400).json({ message: 'Quantity cannot be negative' });
+      }
+      product.stockQuantity = parsedQuantity;
+    }
     if (supplier !== undefined) product.supplier = supplier;
 
     // Inventory updates should not auto-publish a product.
