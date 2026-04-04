@@ -284,88 +284,118 @@ export default function OrderManagementDashboardPage() {
         </p>
         <form onSubmit={createCustomOrder} style={{ display: 'grid', gap: '0.8rem' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.7rem' }}>
-            <input
-              required
-              placeholder="Customer Name"
-              value={customOrderForm.customerName}
-              onChange={(e) => setCustomOrderForm((prev) => ({ ...prev, customerName: e.target.value }))}
-              style={{ border: '1px solid #ddd5cc', borderRadius: 8, padding: '0.55rem 0.65rem' }}
-            />
-            <input
-              required
-              type="email"
-              placeholder="Customer Email"
-              value={customOrderForm.customerEmail}
-              onChange={(e) => setCustomOrderForm((prev) => ({ ...prev, customerEmail: e.target.value }))}
-              style={{ border: '1px solid #ddd5cc', borderRadius: 8, padding: '0.55rem 0.65rem' }}
-            />
-            <input
-              required
-              placeholder="Phone Number"
-              value={customOrderForm.phoneNumber}
-              onChange={(e) => setCustomOrderForm((prev) => ({ ...prev, phoneNumber: e.target.value }))}
-              style={{ border: '1px solid #ddd5cc', borderRadius: 8, padding: '0.55rem 0.65rem' }}
-            />
-            <input
-              type="number"
-              min="0"
-              placeholder="Tax"
-              value={customOrderForm.tax}
-              onChange={(e) => setCustomOrderForm((prev) => ({ ...prev, tax: e.target.value }))}
+            <div style={{ display: 'grid', gap: '0.3rem' }}>
+              <label style={{ color: '#6b6470', fontSize: '0.82rem', fontWeight: 600 }}>Customer Name</label>
+              <input
+                required
+                placeholder="Customer Name"
+                value={customOrderForm.customerName}
+                onChange={(e) => setCustomOrderForm((prev) => ({ ...prev, customerName: e.target.value }))}
+                style={{ border: '1px solid #ddd5cc', borderRadius: 8, padding: '0.55rem 0.65rem' }}
+              />
+            </div>
+            <div style={{ display: 'grid', gap: '0.3rem' }}>
+              <label style={{ color: '#6b6470', fontSize: '0.82rem', fontWeight: 600 }}>Customer Email</label>
+              <input
+                required
+                type="email"
+                placeholder="Customer Email"
+                value={customOrderForm.customerEmail}
+                onChange={(e) => setCustomOrderForm((prev) => ({ ...prev, customerEmail: e.target.value }))}
+                style={{ border: '1px solid #ddd5cc', borderRadius: 8, padding: '0.55rem 0.65rem' }}
+              />
+            </div>
+            <div style={{ display: 'grid', gap: '0.3rem' }}>
+              <label style={{ color: '#6b6470', fontSize: '0.82rem', fontWeight: 600 }}>Phone Number</label>
+              <input
+                required
+                placeholder="Phone Number"
+                value={customOrderForm.phoneNumber}
+                onChange={(e) => setCustomOrderForm((prev) => ({ ...prev, phoneNumber: e.target.value }))}
+                style={{ border: '1px solid #ddd5cc', borderRadius: 8, padding: '0.55rem 0.65rem' }}
+              />
+            </div>
+            <div style={{ display: 'grid', gap: '0.3rem' }}>
+              <label style={{ color: '#6b6470', fontSize: '0.82rem', fontWeight: 600 }}>Tax (Rs.)</label>
+              <input
+                type="number"
+                min="0"
+                placeholder="Tax"
+                value={customOrderForm.tax}
+                onChange={(e) => setCustomOrderForm((prev) => ({ ...prev, tax: e.target.value }))}
+                style={{ border: '1px solid #ddd5cc', borderRadius: 8, padding: '0.55rem 0.65rem' }}
+              />
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gap: '0.3rem' }}>
+            <label style={{ color: '#6b6470', fontSize: '0.82rem', fontWeight: 600 }}>Order Notes</label>
+            <textarea
+              rows={2}
+              placeholder="Order notes"
+              value={customOrderForm.orderNotes}
+              onChange={(e) => setCustomOrderForm((prev) => ({ ...prev, orderNotes: e.target.value }))}
               style={{ border: '1px solid #ddd5cc', borderRadius: 8, padding: '0.55rem 0.65rem' }}
             />
           </div>
 
-          <textarea
-            rows={2}
-            placeholder="Order notes"
-            value={customOrderForm.orderNotes}
-            onChange={(e) => setCustomOrderForm((prev) => ({ ...prev, orderNotes: e.target.value }))}
-            style={{ border: '1px solid #ddd5cc', borderRadius: 8, padding: '0.55rem 0.65rem' }}
-          />
-
           <div style={{ display: 'grid', gap: '0.6rem' }}>
             {customOrderForm.items.map((item, index) => (
               <div key={`custom-item-${index}`} style={{ border: '1px solid #eee3d6', borderRadius: 10, padding: '0.7rem', display: 'grid', gap: '0.55rem' }}>
+                <p style={{ margin: 0, color: '#6b6470', fontSize: '0.82rem', fontWeight: 600 }}>
+                  Item {index + 1}
+                </p>
                 <div style={{ display: 'grid', gridTemplateColumns: '2fr 2fr 1fr 1fr auto', gap: '0.55rem', alignItems: 'center' }}>
-                  <select
-                    value={item.productId}
-                    onChange={(e) => onSelectProduct(index, e.target.value)}
-                    style={{ border: '1px solid #ddd5cc', borderRadius: 8, padding: '0.5rem' }}
-                  >
-                    <option value="">Manual Product Entry</option>
-                    {products.map((product) => (
-                      <option key={product._id} value={product._id}>
-                        {product.name} (Rs. {Number(product.price || 0).toLocaleString()})
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    required
-                    placeholder="Product Name"
-                    value={item.name}
-                    onChange={(e) => updateCustomItem(index, 'name', e.target.value)}
-                    style={{ border: '1px solid #ddd5cc', borderRadius: 8, padding: '0.5rem' }}
-                  />
-                  <input
-                    required
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    placeholder="Price"
-                    value={item.price}
-                    onChange={(e) => updateCustomItem(index, 'price', e.target.value)}
-                    style={{ border: '1px solid #ddd5cc', borderRadius: 8, padding: '0.5rem' }}
-                  />
-                  <input
-                    required
-                    type="number"
-                    min="1"
-                    placeholder="Qty"
-                    value={item.quantity}
-                    onChange={(e) => updateCustomItem(index, 'quantity', e.target.value)}
-                    style={{ border: '1px solid #ddd5cc', borderRadius: 8, padding: '0.5rem' }}
-                  />
+                  <div style={{ display: 'grid', gap: '0.3rem' }}>
+                    <label style={{ color: '#6b6470', fontSize: '0.78rem', fontWeight: 600 }}>Select Product</label>
+                    <select
+                      value={item.productId}
+                      onChange={(e) => onSelectProduct(index, e.target.value)}
+                      style={{ border: '1px solid #ddd5cc', borderRadius: 8, padding: '0.5rem' }}
+                    >
+                      <option value="">Manual Product Entry</option>
+                      {products.map((product) => (
+                        <option key={product._id} value={product._id}>
+                          {product.name} (Rs. {Number(product.price || 0).toLocaleString()})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div style={{ display: 'grid', gap: '0.3rem' }}>
+                    <label style={{ color: '#6b6470', fontSize: '0.78rem', fontWeight: 600 }}>Product Name</label>
+                    <input
+                      required
+                      placeholder="Product Name"
+                      value={item.name}
+                      onChange={(e) => updateCustomItem(index, 'name', e.target.value)}
+                      style={{ border: '1px solid #ddd5cc', borderRadius: 8, padding: '0.5rem' }}
+                    />
+                  </div>
+                  <div style={{ display: 'grid', gap: '0.3rem' }}>
+                    <label style={{ color: '#6b6470', fontSize: '0.78rem', fontWeight: 600 }}>Unit Price</label>
+                    <input
+                      required
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="Price"
+                      value={item.price}
+                      onChange={(e) => updateCustomItem(index, 'price', e.target.value)}
+                      style={{ border: '1px solid #ddd5cc', borderRadius: 8, padding: '0.5rem' }}
+                    />
+                  </div>
+                  <div style={{ display: 'grid', gap: '0.3rem' }}>
+                    <label style={{ color: '#6b6470', fontSize: '0.78rem', fontWeight: 600 }}>Quantity</label>
+                    <input
+                      required
+                      type="number"
+                      min="1"
+                      placeholder="Qty"
+                      value={item.quantity}
+                      onChange={(e) => updateCustomItem(index, 'quantity', e.target.value)}
+                      style={{ border: '1px solid #ddd5cc', borderRadius: 8, padding: '0.5rem' }}
+                    />
+                  </div>
                   <button
                     type="button"
                     onClick={() => removeCustomItem(index)}
