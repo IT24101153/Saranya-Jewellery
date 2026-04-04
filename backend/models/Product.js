@@ -17,7 +17,7 @@ const productSchema = new mongoose.Schema({
   category: {
     type: String,
     required: true,
-    enum: ['Ring', 'Necklace', 'Bracelet', 'Earring', 'Pendant', 'Chain', 'Bangles', 'Anklet', 'Other']
+    enum: ['Ring', 'Necklace', 'Bracelet', 'Earring', 'Earrings', 'Pendant', 'Chain', 'Bangle', 'Bangles', 'Anklet', 'Other']
   },
   price: {
     type: Number,
@@ -38,6 +38,12 @@ const productSchema = new mongoose.Schema({
     type: Number,
     default: 0,
     min: 0
+  },
+  taxPercentage: {
+    type: Number,
+    default: 0,
+    min: 0,
+    max: 100
   },
   stockQuantity: {
     type: Number,

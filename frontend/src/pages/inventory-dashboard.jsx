@@ -33,6 +33,7 @@ export default function InventoryDashboardPage() {
   const [stockRows, setStockRows] = useState([]);
   const [stockForm, setStockForm] = useState(emptyStock);
   const [isSavingStock, setIsSavingStock] = useState(false);
+  const [editingStock, setEditingStock] = useState(null);
   
   // Rates state
   const [goldRates, setGoldRates] = useState({ '18K': 0, '22K': 0, '24K': 0 });
@@ -52,7 +53,7 @@ export default function InventoryDashboardPage() {
   );
 
   const supplierOptions = useMemo(
-    () => [...new Set(suppliers.map((supplier) => supplier?.name).filter(Boolean))].sort((a, b) => a.localeCompare(b)),
+    () => [...suppliers].sort((a, b) => (a.name || '').localeCompare(b.name || '')),
     [suppliers]
   );
 
@@ -82,7 +83,7 @@ export default function InventoryDashboardPage() {
     }
   }
 
-  async function addStock(event) {
+  async function saveStock(event) {
     event.preventDefault();
     setError('');
 
@@ -106,19 +107,44 @@ export default function InventoryDashboardPage() {
         weight: parsedWeight,
         quantity: parsedQuantity
       };
-      const response = await authManager.apiRequest('/api/inventory/stock', {
-        method: 'POST',
+      const endpoint = editingStock ? `/api/inventory/stock/${editingStock._id}` : '/api/inventory/stock';
+      const method = editingStock ? 'PUT' : 'POST';
+
+      const response = await authManager.apiRequest(endpoint, {
+        method,
         body: JSON.stringify(payload)
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.message || 'Failed to add stock item');
+      if (!response.ok) {
+        throw new Error(data.error || data.details || data.message || 'Failed to add stock item');
+      }
       setStockForm(emptyStock);
+      setEditingStock(null);
       await loadStock();
     } catch (saveError) {
-      setError(saveError.message || 'Failed to add stock item');
+      setError(saveError.message || (editingStock ? 'Failed to update stock item' : 'Failed to add stock item'));
     } finally {
       setIsSavingStock(false);
     }
+  }
+
+  function startEditStock(stockItem) {
+    setEditingStock(stockItem);
+    setError('');
+    setStockForm({
+      name: stockItem.name || '',
+      category: stockItem.category || 'Ring',
+      karat: stockItem.karat || '22K',
+      weight: String(stockItem.weight ?? ''),
+      quantity: String(stockItem.quantity ?? ''),
+      supplier: stockItem.supplierId || ''
+    });
+  }
+
+  function cancelEditStock() {
+    setEditingStock(null);
+    setStockForm(emptyStock);
+    setError('');
   }
 
   async function deleteStock(stockId) {
@@ -362,8 +388,10 @@ export default function InventoryDashboardPage() {
         <div>
           {/* Add Stock Form */}
           <section style={{ background: '#fafbfc', border: '1px solid #eee', borderRadius: 12, padding: '1.5rem', marginBottom: '1.5rem' }}>
-            <h3 style={{ marginTop: 0, color: '#6f0022', fontSize: '1.1rem' }}>Add Stock Item</h3>
-            <form onSubmit={addStock} style={{ display: 'grid', gap: '0.8rem' }}>
+            <h3 style={{ marginTop: 0, color: '#6f0022', fontSize: '1.1rem' }}>
+              {editingStock ? 'Edit Stock Item' : 'Add Stock Item'}
+            </h3>
+            <form onSubmit={saveStock} style={{ display: 'grid', gap: '0.8rem' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
                 <input
                   required
@@ -462,9 +490,9 @@ export default function InventoryDashboardPage() {
                 }}
               >
                 <option value="">Select Supplier (optional)</option>
-                {supplierOptions.map((name) => (
-                  <option key={name} value={name}>
-                    {name}
+                {supplierOptions.map((supplier) => (
+                  <option key={supplier._id} value={supplier._id}>
+                    {supplier.name}
                   </option>
                 ))}
               </select>
@@ -485,8 +513,26 @@ export default function InventoryDashboardPage() {
                   transition: 'all 0.2s ease'
                 }}
               >
-                {isSavingStock ? 'Adding Item...' : 'Add Stock Item'}
+                {isSavingStock ? (editingStock ? 'Updating Item...' : 'Adding Item...') : (editingStock ? 'Update Stock Item' : 'Add Stock Item')}
               </button>
+              {editingStock && (
+                <button
+                  type="button"
+                  onClick={cancelEditStock}
+                  style={{
+                    padding: '0.7rem 1.2rem',
+                    background: '#fff',
+                    color: '#666',
+                    border: '1px solid #ddd',
+                    borderRadius: 8,
+                    fontSize: '0.95rem',
+                    cursor: 'pointer',
+                    fontFamily: 'Poppins, sans-serif'
+                  }}
+                >
+                  Cancel Edit
+                </button>
+              )}
             </form>
           </section>
 
@@ -521,21 +567,39 @@ export default function InventoryDashboardPage() {
                         <td style={{ padding: '0.8rem', textAlign: 'center', fontWeight: '600', color: '#6f0022' }}>{row.quantity}</td>
                         <td style={{ padding: '0.8rem', fontSize: '0.9rem', color: '#666' }}>{row.supplier || '-'}</td>
                         <td style={{ padding: '0.8rem', textAlign: 'center' }}>
-                          <button
-                            onClick={() => deleteStock(row._id)}
-                            style={{
-                              padding: '0.4rem 0.8rem',
-                              background: '#fff',
-                              color: '#c33',
-                              border: '1px solid #ddd',
-                              borderRadius: 6,
-                              fontSize: '0.8rem',
-                              cursor: 'pointer',
-                              fontFamily: 'Poppins, sans-serif'
-                            }}
-                          >
-                            Delete
-                          </button>
+                          <div style={{ display: 'inline-flex', gap: '0.5rem' }}>
+                            <button
+                              onClick={() => startEditStock(row)}
+                              style={{
+                                padding: '0.4rem 0.8rem',
+                                background: '#e0bf63',
+                                color: '#6f0022',
+                                border: 'none',
+                                borderRadius: 6,
+                                fontSize: '0.8rem',
+                                fontWeight: '600',
+                                cursor: 'pointer',
+                                fontFamily: 'Poppins, sans-serif'
+                              }}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => deleteStock(row._id)}
+                              style={{
+                                padding: '0.4rem 0.8rem',
+                                background: '#fff',
+                                color: '#c33',
+                                border: '1px solid #ddd',
+                                borderRadius: 6,
+                                fontSize: '0.8rem',
+                                cursor: 'pointer',
+                                fontFamily: 'Poppins, sans-serif'
+                              }}
+                            >
+                              Delete
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}

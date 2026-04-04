@@ -14,6 +14,7 @@ const emptyForm = {
   description: '',
   image: '/assets/placeholder-product.jpg',
   category: 'Ring',
+  taxPercentage: 0,
   featured: false
 };
 
@@ -90,12 +91,20 @@ export default function ProductManagementDashboardPage() {
 
   async function saveProduct(event) {
     event.preventDefault();
-    setIsSaving(true);
     setError('');
+
+    const parsedTaxPercentage = Number(form.taxPercentage);
+    if (!Number.isFinite(parsedTaxPercentage) || parsedTaxPercentage < 0 || parsedTaxPercentage > 100) {
+      setError('Tax percentage must be between 0 and 100');
+      return;
+    }
+
+    setIsSaving(true);
     try {
       const payload = {
         ...form,
         stockProductId: form.stockProductId || undefined,
+        taxPercentage: parsedTaxPercentage,
         featured: Boolean(form.featured)
       };
       const response = await authManager.apiRequest(
@@ -159,6 +168,7 @@ export default function ProductManagementDashboardPage() {
           description: product.description,
           image: product.image,
           category: product.category,
+          taxPercentage: Number(product.taxPercentage || 0),
           featured: Boolean(product.featured),
           ...updates
         })
@@ -179,6 +189,7 @@ export default function ProductManagementDashboardPage() {
       description: product.description || '',
       image: product.image || '/assets/placeholder-product.jpg',
       category: product.category || 'Ring',
+      taxPercentage: Number(product.taxPercentage || 0),
       featured: Boolean(product.featured)
     });
     setError('');
@@ -214,6 +225,8 @@ export default function ProductManagementDashboardPage() {
 
   if (!staffUser) return <p style={{ padding: '1rem' }}>Checking product management access...</p>;
 
+  const selectedStockItem = stockOptions.find((item) => item._id === form.stockProductId);
+
   return (
     <StaffDashboardLayout
       title="Product Management Dashboard"
@@ -244,7 +257,7 @@ export default function ProductManagementDashboardPage() {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.8rem', flexWrap: 'wrap' }}>
           <div>
             <h3 style={{ marginTop: 0, marginBottom: '0.35rem', color: '#6f0022' }}>Create / Edit Product</h3>
-            <p style={{ margin: 0, color: '#666', fontSize: '0.9rem' }}>Open the popup window to create a new product or edit an existing one.</p>
+            <p style={{ margin: 0, color: '#666', fontSize: '0.9rem' }}>Open the popup window to create a new product or publish one from inventory stock.</p>
           </div>
           <button
             type="button"
@@ -398,64 +411,103 @@ export default function ProductManagementDashboardPage() {
 
             <form onSubmit={saveProduct} style={{ display: 'grid', gap: '0.75rem' }}>
               <div style={{ display: 'grid', gap: '0.75rem', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))' }}>
-                <select
-                  value={form.stockProductId}
-                  disabled={Boolean(editingProductId)}
-                  onChange={(e) => setForm((prev) => ({ ...prev, stockProductId: e.target.value }))}
-                  style={{ padding: '0.6rem', border: '1px solid #ddd', borderRadius: 8 }}
-                >
-                  <option value="">Create brand new product</option>
-                  {stockOptions.map((item) => (
-                    <option key={item._id} value={item._id}>{item.name} ({item.category}) - Qty {item.stockQuantity}</option>
-                  ))}
-                </select>
-                <input
-                  required
-                  value={form.name}
-                  onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
-                  placeholder="Product name"
-                  style={{ padding: '0.6rem', border: '1px solid #ddd', borderRadius: 8 }}
-                />
-                <select
-                  value={form.category}
-                  onChange={(e) => setForm((prev) => ({ ...prev, category: e.target.value }))}
-                  style={{ padding: '0.6rem', border: '1px solid #ddd', borderRadius: 8 }}
-                >
-                  <option>Ring</option>
-                  <option>Necklace</option>
-                  <option>Earrings</option>
-                  <option>Bangles</option>
-                  <option>Bracelet</option>
-                  <option>Pendant</option>
-                </select>
-                <input
-                  required
-                  value={form.image}
-                  onChange={(e) => setForm((prev) => ({ ...prev, image: e.target.value }))}
-                  placeholder="Image URL"
-                  style={{ padding: '0.6rem', border: '1px solid #ddd', borderRadius: 8 }}
-                />
-                <label style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  padding: '0.55rem 0.6rem',
-                  border: '1px solid #ddd',
-                  borderRadius: 8,
-                  background: '#fff',
-                  cursor: isUploadingImage ? 'not-allowed' : 'pointer'
-                }}>
-                  <span style={{ color: '#6f0022', fontSize: '0.9rem', fontWeight: 600 }}>
-                    {isUploadingImage ? 'Uploading image...' : 'Upload from device'}
-                  </span>
+                <div style={{ display: 'grid', gap: '0.35rem' }}>
+                  <label style={{ color: '#6f0022', fontSize: '0.84rem', fontWeight: 600 }}>Select Stock (optional)</label>
+                  <select
+                    value={form.stockProductId}
+                    disabled={Boolean(editingProductId)}
+                    onChange={(e) => {
+                      const stockProductId = e.target.value;
+                      const item = stockOptions.find((stockItem) => stockItem._id === stockProductId);
+                      setForm((prev) => ({
+                        ...prev,
+                        stockProductId,
+                        category: item?.category === 'Bangle' ? 'Bangles' : item?.category === 'Earring' ? 'Earrings' : item?.category || prev.category
+                      }));
+                    }}
+                    style={{ padding: '0.6rem', border: '1px solid #ddd', borderRadius: 8 }}
+                  >
+                    <option value="">Create brand new product</option>
+                    {stockOptions.map((item) => (
+                      <option key={item._id} value={item._id}>
+                        {item.name} ({item.category}) - Qty {item.quantity ?? item.stockQuantity ?? 0}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div style={{ display: 'grid', gap: '0.35rem' }}>
+                  <label style={{ color: '#6f0022', fontSize: '0.84rem', fontWeight: 600 }}>Jewellery Name</label>
                   <input
-                    type="file"
-                    accept="image/*"
-                    onChange={uploadImageFromDevice}
-                    disabled={isUploadingImage}
-                    style={{ display: 'none' }}
+                    required
+                    value={form.name}
+                    onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+                    placeholder="Enter jewellery name"
+                    style={{ padding: '0.6rem', border: '1px solid #ddd', borderRadius: 8 }}
                   />
-                </label>
+                </div>
+                <div style={{ display: 'grid', gap: '0.35rem' }}>
+                  <label style={{ color: '#6f0022', fontSize: '0.84rem', fontWeight: 600 }}>Tax Percentage (%)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    required
+                    value={form.taxPercentage}
+                    onChange={(e) => setForm((prev) => ({ ...prev, taxPercentage: e.target.value }))}
+                    placeholder="0 to 100"
+                    style={{ padding: '0.6rem', border: '1px solid #ddd', borderRadius: 8 }}
+                  />
+                </div>
+                <div style={{ display: 'grid', gap: '0.35rem' }}>
+                  <label style={{ color: '#6f0022', fontSize: '0.84rem', fontWeight: 600 }}>Jewellery Type</label>
+                  <select
+                    value={form.category}
+                    onChange={(e) => setForm((prev) => ({ ...prev, category: e.target.value }))}
+                    style={{ padding: '0.6rem', border: '1px solid #ddd', borderRadius: 8 }}
+                  >
+                    <option>Ring</option>
+                    <option>Necklace</option>
+                    <option>Earrings</option>
+                    <option>Bangles</option>
+                    <option>Bracelet</option>
+                    <option>Pendant</option>
+                  </select>
+                </div>
+                <div style={{ display: 'grid', gap: '0.35rem' }}>
+                  <label style={{ color: '#6f0022', fontSize: '0.84rem', fontWeight: 600 }}>Image URL</label>
+                  <input
+                    required
+                    value={form.image}
+                    onChange={(e) => setForm((prev) => ({ ...prev, image: e.target.value }))}
+                    placeholder="https://..."
+                    style={{ padding: '0.6rem', border: '1px solid #ddd', borderRadius: 8 }}
+                  />
+                </div>
+                <div style={{ display: 'grid', gap: '0.35rem' }}>
+                  <label style={{ color: '#6f0022', fontSize: '0.84rem', fontWeight: 600 }}>Upload Image</label>
+                  <label style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    padding: '0.55rem 0.6rem',
+                    border: '1px solid #ddd',
+                    borderRadius: 8,
+                    background: '#fff',
+                    cursor: isUploadingImage ? 'not-allowed' : 'pointer'
+                  }}>
+                    <span style={{ color: '#6f0022', fontSize: '0.9rem', fontWeight: 600 }}>
+                      {isUploadingImage ? 'Uploading image...' : 'Upload from device'}
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={uploadImageFromDevice}
+                      disabled={isUploadingImage}
+                      style={{ display: 'none' }}
+                    />
+                  </label>
+                </div>
               </div>
 
               {form.image && (
@@ -469,16 +521,25 @@ export default function ProductManagementDashboardPage() {
                 </div>
               )}
 
-              <textarea
-                required
-                rows={3}
-                value={form.description}
-                onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
-                placeholder="Description"
-                style={{ padding: '0.6rem', border: '1px solid #ddd', borderRadius: 8, resize: 'vertical' }}
-              />
+              <div style={{ display: 'grid', gap: '0.35rem' }}>
+                <label style={{ color: '#6f0022', fontSize: '0.84rem', fontWeight: 600 }}>Description</label>
+                <textarea
+                  required
+                  rows={3}
+                  value={form.description}
+                  onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
+                  placeholder="Write product details"
+                  style={{ padding: '0.6rem', border: '1px solid #ddd', borderRadius: 8, resize: 'vertical' }}
+                />
+              </div>
 
               {error && <p style={{ margin: 0, color: '#b42318' }}>{error}</p>}
+
+              {selectedStockItem && (
+                <div style={{ padding: '0.75rem', border: '1px solid #eee', borderRadius: 8, background: '#fffaf1', color: '#6f0022' }}>
+                  Selected stock item: {selectedStockItem.name} • {selectedStockItem.category} • Qty {selectedStockItem.quantity ?? selectedStockItem.stockQuantity ?? 0}. Enter jewellery name and tax percentage manually.
+                </div>
+              )}
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>

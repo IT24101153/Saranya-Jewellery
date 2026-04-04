@@ -1,5 +1,6 @@
 import express from 'express';
 import Product from '../models/Product.js';
+import StockItem from '../models/StockItem.js';
 import GoldRate from '../models/GoldRate.js';
 import Order from '../models/Order.js';
 import Supplier from '../models/Supplier.js';
@@ -8,27 +9,34 @@ import emailService from '../utils/emailService.js';
 
 const router = express.Router();
 
-const CATEGORY_MAP = {
-  Bangle: 'Bangles'
-};
-
-function normalizeCategory(category) {
-  if (!category) return category;
-  return CATEGORY_MAP[category] || category;
+function buildStockRow(stockItem) {
+  return {
+    _id: stockItem._id,
+    serial: stockItem.serial,
+    name: stockItem.name,
+    category: stockItem.category,
+    karat: stockItem.karat,
+    weight: stockItem.weight,
+    quantity: stockItem.quantity,
+    supplierId: stockItem.supplier?._id || '',
+    supplier: stockItem.supplier?.name || stockItem.supplier || '-',
+    status: stockItem.status
+  };
 }
 
-function buildStockRow(product) {
-  return {
-    _id: product._id,
-    serial: product.sku || `SKU-${String(product._id).slice(-6).toUpperCase()}`,
-    name: product.name,
-    category: product.category,
-    karat: product.kType,
-    weight: product.weight,
-    quantity: product.stockQuantity,
-    supplier: product.supplier || '-',
-    status: product.availabilityStatus
-  };
+function extractSerialNumber(serial) {
+  const match = String(serial || '').match(/(\d+)$/);
+  return match ? Number(match[1]) : 0;
+}
+
+async function generateStockSerial() {
+  const serials = await StockItem.find().select('serial').lean();
+  const maxSerialNumber = serials.reduce((highest, item) => {
+    const currentSerial = extractSerialNumber(item.serial);
+    return currentSerial > highest ? currentSerial : highest;
+  }, 0);
+
+  return `STK-${String(maxSerialNumber + 1).padStart(4, '0')}`;
 }
 
 // ===== GOLD RATE MANAGEMENT =====
@@ -103,13 +111,14 @@ router.post('/gold-rates', isInventoryManager, async (req, res) => {
 // GET /api/inventory/stock - Get stock rows for inventory dashboard
 router.get('/stock', isInventoryManager, async (req, res) => {
   try {
-    const products = await Product.find()
+    const stockItems = await StockItem.find()
+      .populate('supplier', 'name')
       .sort({ createdAt: -1 })
-      .select('name category kType weight stockQuantity sku supplier availabilityStatus');
+      .select('serial name category karat weight quantity supplier status');
 
     res.json({
       success: true,
-      data: products.map(buildStockRow)
+      data: stockItems.map(buildStockRow)
     });
   } catch (error) {
     res.status(500).json({ message: 'Error fetching stock', error: error.message });
@@ -136,83 +145,74 @@ router.post('/stock', isInventoryManager, async (req, res) => {
       return res.status(400).json({ message: 'Quantity cannot be negative' });
     }
 
-    const normalizedCategory = normalizeCategory(category);
-    const latestRates = await GoldRate.findOne().sort({ lastUpdated: -1 });
-    const karatRate = latestRates?.[karat] || 0;
-    const count = await Product.countDocuments();
-    const sku = `INV-${String(count + 1).padStart(4, '0')}`;
+    const serial = await generateStockSerial();
 
-    const product = new Product({
+    const stockItem = new StockItem({
+      serial,
       name,
-      description: `${name} inventory entry`,
-      image: '/assets/placeholder-product.jpg',
-      category: normalizedCategory,
+      category,
+      karat,
       weight: parsedWeight,
-      kType: karat,
-      karatRate,
-      stockQuantity: parsedQuantity,
-      supplier: supplier || '',
-      sku,
-      productStatus: 'Draft',
-      createdBy: req.session.staffId
+      quantity: parsedQuantity,
+      supplier: supplier || undefined
     });
 
-    await product.save();
+    await stockItem.save();
 
     res.status(201).json({
       success: true,
       message: 'Stock added successfully',
-      data: buildStockRow(product)
+      data: buildStockRow(await StockItem.findById(stockItem._id).populate('supplier', 'name'))
     });
   } catch (error) {
-    res.status(500).json({ message: 'Error adding stock', error: error.message });
+    if (error.code === 11000) {
+      return res.status(400).json({ message: 'Stock item already exists' });
+    }
+    console.error('Error adding stock:', error);
+    res.status(500).json({
+      message: 'Error adding stock',
+      error: error.message,
+      details: error.errors ? Object.values(error.errors).map((item) => item.message).join(', ') : undefined
+    });
   }
 });
 
 // PUT /api/inventory/stock/:id - Update a stock item
 router.put('/stock/:id', isInventoryManager, async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id);
-    if (!product) {
+    const stockItem = await StockItem.findById(req.params.id);
+    if (!stockItem) {
       return res.status(404).json({ message: 'Stock item not found' });
     }
 
     const { name, category, karat, weight, quantity, supplier } = req.body;
 
-    if (name !== undefined) product.name = name;
-    if (category !== undefined) product.category = normalizeCategory(category);
-    if (karat !== undefined) {
-      product.kType = karat;
-      const latestRates = await GoldRate.findOne().sort({ lastUpdated: -1 });
-      if (latestRates?.[karat]) {
-        product.karatRate = latestRates[karat];
-      }
-    }
+    if (name !== undefined) stockItem.name = name;
+    if (category !== undefined) stockItem.category = category;
+    if (karat !== undefined) stockItem.karat = karat;
     if (weight !== undefined) {
       const parsedWeight = Number(weight);
       if (!Number.isFinite(parsedWeight) || parsedWeight < 0) {
         return res.status(400).json({ message: 'Weight cannot be negative' });
       }
-      product.weight = parsedWeight;
+      stockItem.weight = parsedWeight;
     }
     if (quantity !== undefined) {
       const parsedQuantity = Number(quantity);
       if (!Number.isFinite(parsedQuantity) || parsedQuantity < 0) {
         return res.status(400).json({ message: 'Quantity cannot be negative' });
       }
-      product.stockQuantity = parsedQuantity;
+      stockItem.quantity = parsedQuantity;
     }
-    if (supplier !== undefined) product.supplier = supplier;
+    if (supplier !== undefined) stockItem.supplier = supplier || undefined;
 
-    // Inventory updates should not auto-publish a product.
-    // Product goes live only when Product Manager publishes it.
-
-    await product.save();
+    await stockItem.save();
+    const populatedStockItem = await StockItem.findById(stockItem._id).populate('supplier', 'name');
 
     res.json({
       success: true,
       message: 'Stock updated successfully',
-      data: buildStockRow(product)
+      data: buildStockRow(populatedStockItem)
     });
   } catch (error) {
     res.status(500).json({ message: 'Error updating stock', error: error.message });
@@ -222,8 +222,8 @@ router.put('/stock/:id', isInventoryManager, async (req, res) => {
 // DELETE /api/inventory/stock/:id - Delete a stock item
 router.delete('/stock/:id', isInventoryManager, async (req, res) => {
   try {
-    const product = await Product.findByIdAndDelete(req.params.id);
-    if (!product) {
+    const stockItem = await StockItem.findByIdAndDelete(req.params.id);
+    if (!stockItem) {
       return res.status(404).json({ message: 'Stock item not found' });
     }
 
