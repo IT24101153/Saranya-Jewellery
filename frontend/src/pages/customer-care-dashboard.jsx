@@ -24,6 +24,7 @@ export default function CustomerCareDashboardPage() {
     validUntil: ''
   });
   const [isCreatingOffer, setIsCreatingOffer] = useState(false);
+  const [editingOfferId, setEditingOfferId] = useState(null);
 
   // Messages state
   const [chats, setChats] = useState([]);
@@ -39,6 +40,8 @@ export default function CustomerCareDashboardPage() {
   const [staffReply, setStaffReply] = useState('');
 
   const [error, setError] = useState('');
+
+  const todayDate = new Date().toISOString().split('T')[0];
 
   useEffect(() => {
     document.title = 'Customer Care Dashboard - Saranya Jewellery';
@@ -75,11 +78,25 @@ export default function CustomerCareDashboardPage() {
       return;
     }
 
+    const parsedDiscount = Number(offerForm.discountPercentage || 0);
+    if (!Number.isFinite(parsedDiscount) || parsedDiscount < 0 || parsedDiscount > 100) {
+      setError('Discount percentage must be between 0 and 100');
+      return;
+    }
+
+    if (offerForm.validUntil < todayDate) {
+      setError('Offer valid until date cannot be in the past');
+      return;
+    }
+
     setIsCreatingOffer(true);
     setError('');
     try {
-      const response = await authManager.apiRequest('/api/messages', {
-        method: 'POST',
+      const endpoint = editingOfferId ? `/api/messages/${editingOfferId}` : '/api/messages';
+      const method = editingOfferId ? 'PUT' : 'POST';
+
+      const response = await authManager.apiRequest(endpoint, {
+        method,
         body: JSON.stringify({
           title: offerForm.title,
           message: offerForm.description,
@@ -88,7 +105,7 @@ export default function CustomerCareDashboardPage() {
           targetAudience: 'all',
           sendOnLogin: true,
           validUntil: offerForm.validUntil,
-          discountPercentage: offerForm.discountPercentage || 0
+          discountPercentage: parsedDiscount
         })
       });
 
@@ -97,6 +114,7 @@ export default function CustomerCareDashboardPage() {
         setError(data.message || 'Failed to create offer');
       } else {
         setOfferForm({ title: '', description: '', offerType: 'Seasonal Offer', discountPercentage: '', validUntil: '' });
+        setEditingOfferId(null);
         await loadOffers();
       }
     } catch (err) {
@@ -104,6 +122,24 @@ export default function CustomerCareDashboardPage() {
     } finally {
       setIsCreatingOffer(false);
     }
+  }
+
+  function startEditOffer(offer) {
+    setEditingOfferId(offer._id);
+    setError('');
+    setOfferForm({
+      title: offer.title || '',
+      description: offer.message || '',
+      offerType: 'Seasonal Offer',
+      discountPercentage: offer.discountPercentage ?? '',
+      validUntil: offer.validUntil ? new Date(offer.validUntil).toISOString().split('T')[0] : ''
+    });
+  }
+
+  function cancelEditOffer() {
+    setEditingOfferId(null);
+    setOfferForm({ title: '', description: '', offerType: 'Seasonal Offer', discountPercentage: '', validUntil: '' });
+    setError('');
   }
 
   async function sendOfferEmails(offerId) {
@@ -357,7 +393,9 @@ export default function CustomerCareDashboardPage() {
 
           {/* Create Offer Form */}
           <section style={{ background: '#fafbfc', border: '1px solid #eee', borderRadius: 12, padding: '1.5rem', marginBottom: '1.5rem' }}>
-            <h3 style={{ marginTop: 0, color: '#6f0022', fontSize: '1.1rem' }}>Create New Offer</h3>
+            <h3 style={{ marginTop: 0, color: '#6f0022', fontSize: '1.1rem' }}>
+              {editingOfferId ? 'Edit Offer' : 'Create New Offer'}
+            </h3>
             <form onSubmit={createOffer} style={{ display: 'grid', gap: '0.8rem' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
                 <input
@@ -411,6 +449,7 @@ export default function CustomerCareDashboardPage() {
                   onChange={(e) => setOfferForm({ ...offerForm, discountPercentage: e.target.value })}
                   min="0"
                   max="100"
+                  step="0.01"
                   style={{
                     padding: '0.6rem',
                     border: '1px solid #ddd',
@@ -423,6 +462,7 @@ export default function CustomerCareDashboardPage() {
                   type="date"
                   value={offerForm.validUntil}
                   onChange={(e) => setOfferForm({ ...offerForm, validUntil: e.target.value })}
+                  min={todayDate}
                   style={{
                     padding: '0.6rem',
                     border: '1px solid #ddd',
@@ -449,8 +489,26 @@ export default function CustomerCareDashboardPage() {
                   transition: 'all 0.2s ease'
                 }}
               >
-                {isCreatingOffer ? 'Creating...' : 'Create Offer'}
+                {isCreatingOffer ? (editingOfferId ? 'Updating...' : 'Creating...') : (editingOfferId ? 'Update Offer' : 'Create Offer')}
               </button>
+              {editingOfferId && (
+                <button
+                  type="button"
+                  onClick={cancelEditOffer}
+                  style={{
+                    padding: '0.7rem 1.2rem',
+                    background: '#fff',
+                    color: '#666',
+                    border: '1px solid #ddd',
+                    borderRadius: 8,
+                    fontSize: '0.95rem',
+                    cursor: 'pointer',
+                    fontFamily: 'Poppins, sans-serif'
+                  }}
+                >
+                  Cancel Edit
+                </button>
+              )}
             </form>
           </section>
 
@@ -483,6 +541,23 @@ export default function CustomerCareDashboardPage() {
                     </p>
                   </div>
                   <div style={{ display: 'flex', gap: '0.5rem', flexDirection: 'column' }}>
+                    <button
+                      onClick={() => startEditOffer(offer)}
+                      style={{
+                        padding: '0.5rem 1rem',
+                        background: '#fff',
+                        color: '#6f0022',
+                        border: '1px solid #e0bf63',
+                        borderRadius: 6,
+                        fontSize: '0.85rem',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        fontFamily: 'Poppins, sans-serif',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      Edit
+                    </button>
                     <button
                       onClick={() => sendOfferEmails(offer._id)}
                       style={{
