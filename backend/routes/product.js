@@ -1,6 +1,7 @@
 import express from 'express';
 import Product from '../models/Product.js';
 import StockItem from '../models/StockItem.js';
+import GoldRate from '../models/GoldRate.js';
 import { isAuthenticated, isProductManager } from '../middleware/auth.js';
 import Staff from '../models/Staff.js';
 
@@ -150,6 +151,9 @@ router.post('/', isProductManager, async (req, res) => {
         return res.status(404).json({ message: 'Selected stock item not found' });
       }
 
+      const latestRates = await GoldRate.findOne().sort({ lastUpdated: -1 });
+      const karatRate = latestRates?.[stockProduct.karat] || 0;
+
       const product = new Product({
         name: name.trim(),
         description: description || `${stockProduct.name} created from inventory stock ${stockProduct.serial}`,
@@ -159,6 +163,7 @@ router.post('/', isProductManager, async (req, res) => {
         featured: featured || false,
         weight: stockProduct.weight || 0,
         kType: stockProduct.karat || null,
+        karatRate,
         stockQuantity: stockProduct.quantity || 0,
         supplier: stockProduct.supplier?.name || '',
         sku: stockProduct.serial,

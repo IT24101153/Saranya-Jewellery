@@ -114,9 +114,12 @@ productSchema.set('toObject', { virtuals: true });
 
 // Auto-calculate price and update timestamp before saving
 productSchema.pre('save', function() {
-  // Auto-calculate price = weight × karatRate
+  // Auto-calculate price = (weight × karatRate) + tax
   if (this.weight > 0 && this.karatRate > 0) {
-    this.price = this.weight * this.karatRate;
+    const basePrice = this.weight * this.karatRate;
+    const taxPercent = Number(this.taxPercentage || 0);
+    const taxAmount = basePrice * (taxPercent / 100);
+    this.price = Math.round((basePrice + taxAmount) * 100) / 100;
   }
   // Auto-set availability based on stock
   if (this.stockQuantity > 0 && this.productStatus === 'Active') {
