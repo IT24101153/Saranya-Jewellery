@@ -82,6 +82,12 @@ export default function AdminDashboardPage() {
 
   async function createStaff(event) {
     event.preventDefault();
+
+    if (String(form.password || '').length < 8) {
+      setError('Password must be at least 8 characters long');
+      return;
+    }
+
     setIsSaving(true);
     setError('');
     try {
@@ -397,11 +403,11 @@ export default function AdminDashboardPage() {
             />
             <input
               required
-              minLength={6}
+              minLength={8}
               type="password"
               value={form.password}
               onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))}
-              placeholder="Password (min. 6 characters)"
+              placeholder="Password (min. 8 characters)"
               style={{
                 padding: '0.75rem 1rem',
                 border: '1px solid #dee2e6',

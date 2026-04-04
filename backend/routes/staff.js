@@ -43,6 +43,14 @@ router.post('/', async (req, res) => {
   try {
     const { email, password, fullName, role, status } = req.body;
 
+    if (!email || !password || !fullName || !role) {
+      return res.status(400).json({ message: 'Email, password, full name, and role are required' });
+    }
+
+    if (String(password).length < 8) {
+      return res.status(400).json({ message: 'Password must be at least 8 characters long' });
+    }
+
     const existingStaff = await Staff.findOne({ email });
     if (existingStaff) {
       return res.status(400).json({ message: 'Email already exists' });
