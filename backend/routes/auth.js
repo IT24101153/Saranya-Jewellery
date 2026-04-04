@@ -9,6 +9,14 @@ router.post('/register', async (req, res) => {
   try {
     const { email, password, fullName, role } = req.body;
 
+    if (!email || !password || !fullName) {
+      return res.status(400).json({ message: 'Email, password, and full name are required' });
+    }
+
+    if (String(password).length < 8) {
+      return res.status(400).json({ message: 'Password must be at least 8 characters long' });
+    }
+
     // Check if staff already exists
     const existingStaff = await Staff.findOne({ email });
     if (existingStaff) {

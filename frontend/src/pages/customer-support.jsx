@@ -1,9 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import authManager from '../auth.js';
 
+const ZAPIER_CHATBOT_SCRIPT_SRC =
+  'https://interfaces.zapier.com/assets/web-components/zapier-interfaces/zapier-interfaces.esm.js';
+
 export default function CustomerSupportPage() {
   const [customer, setCustomer] = useState(null);
   const [messages, setMessages] = useState([]);
+  const [chatStatus, setChatStatus] = useState('active');
+  const [lastMessageAt, setLastMessageAt] = useState(null);
   const [messageInput, setMessageInput] = useState('');
   const [sending, setSending] = useState(false);
   const [cart] = useState(() => JSON.parse(localStorage.getItem('saranyaCart') || '[]'));
@@ -15,6 +20,18 @@ export default function CustomerSupportPage() {
 
   useEffect(() => {
     document.title = 'Customer Support - Saranya Jewellery';
+  }, []);
+
+  useEffect(() => {
+    if (document.querySelector(`script[src="${ZAPIER_CHATBOT_SCRIPT_SRC}"]`)) {
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = ZAPIER_CHATBOT_SCRIPT_SRC;
+    script.type = 'module';
+    script.async = true;
+    document.head.appendChild(script);
   }, []);
 
   useEffect(() => {
@@ -43,6 +60,8 @@ export default function CustomerSupportPage() {
       if (!response.ok) return;
       const data = await response.json();
       setMessages(data.messages || []);
+      setChatStatus(data.status || 'active');
+      setLastMessageAt(data.lastMessageAt || null);
     } catch (error) {
       console.error('Error loading messages:', error);
     }
@@ -78,6 +97,28 @@ export default function CustomerSupportPage() {
 
   function logout() {
     authManager.logout();
+  }
+
+  function formatMessageTime(timestamp) {
+    return new Date(timestamp).toLocaleString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+      month: 'short',
+      day: 'numeric'
+    });
+  }
+
+  function formatStatusLabel(status) {
+    if (status === 'resolved') return 'Resolved';
+    if (status === 'pending') return 'Pending';
+    return 'Active';
+  }
+
+  function getStatusClass(status) {
+    if (status === 'resolved') return 'support-status-resolved';
+    if (status === 'pending') return 'support-status-pending';
+    return 'support-status-active';
   }
 
   return (
@@ -138,59 +179,86 @@ export default function CustomerSupportPage() {
       </header>
 
       <main>
-        <div className="dashboard-container">
-          <div className="chat-container">
-            <div className="chat-header">
-              <h2>Customer Support Chat</h2>
-              <p style={{ margin: '0.5rem 0 0', opacity: 0.9, fontSize: '0.9rem' }}>Our customer care team is here to help you</p>
+        <div className="dashboard-container support-shell">
+          <section className="support-hero">
+            <div>
+              <p className="support-eyebrow">Need Assistance?</p>
+              <h2>Customer Care Messaging</h2>
+              <p>Connect directly with our customer care manager for order updates, product help, or any issue.</p>
             </div>
+            <div className={`support-status-chip ${getStatusClass(chatStatus)}`}>
+              <i className="fas fa-circle" />
+              <span>{formatStatusLabel(chatStatus)}</span>
+            </div>
+          </section>
 
-            <div className="chat-messages">
-              {messages.length === 0 ? (
-                <div className="empty-chat">
-                  <i className="fas fa-comments" />
-                  <p>Start a conversation with our customer care team</p>
-                </div>
-              ) : (
-                messages.map((msg) => {
-                  const time = new Date(msg.timestamp).toLocaleString('en-US', {
-                    hour: 'numeric',
-                    minute: '2-digit',
-                    hour12: true,
-                    month: 'short',
-                    day: 'numeric'
-                  });
+          <section className="support-layout">
+            <aside className="support-info-card">
+              <h3>Conversation Details</h3>
+              <p>
+                You are messaging with <strong>Customer Care Manager</strong>.
+              </p>
+              <ul>
+                <li>Average response time: within business hours</li>
+                <li>Share order number for faster support</li>
+                <li>Be specific so we can resolve quickly</li>
+              </ul>
+              <div className="support-last-updated">
+                Last update: {lastMessageAt ? formatMessageTime(lastMessageAt) : 'No messages yet'}
+              </div>
+            </aside>
 
-                  return (
-                    <div key={msg._id || `${msg.timestamp}-${msg.message}`} className={`message ${msg.sender}`}>
-                      <div className="message-bubble">
-                        <div className="message-sender">{msg.senderName}</div>
-                        <div className="message-text">{msg.message}</div>
-                        <div className="message-time">{time}</div>
+            <div className="support-chat-panel">
+              <div className="support-chat-header">
+                <h3>Secure Chat</h3>
+                <p>Customer and customer care manager can exchange messages here.</p>
+              </div>
+
+              <div className="support-chat-messages">
+                {messages.length === 0 ? (
+                  <div className="support-empty-chat">
+                    <i className="fas fa-comments" />
+                    <p>Start a conversation with customer care manager.</p>
+                  </div>
+                ) : (
+                  messages.map((msg) => {
+                    const isCustomer = msg.sender === 'customer';
+                    return (
+                      <div
+                        key={msg._id || `${msg.timestamp}-${msg.message}`}
+                        className={`support-message-row ${isCustomer ? 'support-message-customer' : 'support-message-manager'}`}
+                      >
+                        <div className="support-message-bubble">
+                          <div className="support-message-sender">
+                            {isCustomer ? 'You' : msg.senderName || 'Customer Care Manager'}
+                          </div>
+                          <div className="support-message-text">{msg.message}</div>
+                          <div className="support-message-time">{formatMessageTime(msg.timestamp)}</div>
+                        </div>
                       </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
+                    );
+                  })
+                )}
+              </div>
 
-            <div className="chat-input-area">
-              <form className="chat-input-form" onSubmit={handleSendMessage}>
-                <input
-                  type="text"
-                  className="chat-input"
-                  placeholder="Type your message..."
-                  required
-                  autoComplete="off"
-                  value={messageInput}
-                  onChange={(event) => setMessageInput(event.target.value)}
-                />
-                <button type="submit" className="chat-send-btn" disabled={sending}>
-                  <i className={`fas ${sending ? 'fa-spinner fa-spin' : 'fa-paper-plane'}`} /> {sending ? 'Sending...' : 'Send'}
-                </button>
-              </form>
+              <div className="support-chat-input-wrap">
+                <form className="support-chat-input-form" onSubmit={handleSendMessage}>
+                  <input
+                    type="text"
+                    className="support-chat-input"
+                    placeholder="Type your message to customer care manager..."
+                    required
+                    autoComplete="off"
+                    value={messageInput}
+                    onChange={(event) => setMessageInput(event.target.value)}
+                  />
+                  <button type="submit" className="support-chat-send-btn" disabled={sending}>
+                    <i className={`fas ${sending ? 'fa-spinner fa-spin' : 'fa-paper-plane'}`} /> {sending ? 'Sending...' : 'Send'}
+                  </button>
+                </form>
+              </div>
             </div>
-          </div>
+          </section>
         </div>
       </main>
 
@@ -199,6 +267,11 @@ export default function CustomerSupportPage() {
           <p>&copy; 2026 Saranya Jewellery. All rights reserved.</p>
         </div>
       </footer>
+
+      <zapier-interfaces-chatbot-embed
+        is-popup="true"
+        chatbot-id="cmnd1hjex005bm8ij9enun3qb"
+      />
     </>
   );
 }

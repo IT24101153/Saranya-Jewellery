@@ -161,7 +161,13 @@ export default function CustomerCareDashboardPage() {
   }
 
   async function selectChat(chat) {
+    if (!chat?._id) {
+      setError('Invalid chat selected');
+      return;
+    }
+
     try {
+      setError('');
       // Fetch full chat details with all messages
       const response = await authManager.apiRequest(`/api/chat/${chat._id}`);
       const fullChat = await response.json();
@@ -169,6 +175,8 @@ export default function CustomerCareDashboardPage() {
         setSelectedChat(fullChat);
         setChatMessages(fullChat.messages || []);
         setReplyText('');
+      } else {
+        setError(fullChat.message || 'Failed to load chat details');
       }
     } catch (err) {
       console.error('Error loading chat details:', err);
@@ -189,7 +197,7 @@ export default function CustomerCareDashboardPage() {
       const data = await response.json();
       if (response.ok) {
         setReplyText('');
-        selectChat(data.chat);
+        await selectChat(selectedChat);
         await loadChats();
       } else {
         setError(data.message || 'Failed to send reply');

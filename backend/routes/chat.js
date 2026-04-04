@@ -204,7 +204,8 @@ router.post('/:chatId/reply', isAuthenticated, hasRole('Customer Care', 'Admin')
 
     res.json({ 
       success: true, 
-      message: 'Reply sent successfully'
+      message: 'Reply sent successfully',
+      chat
     });
   } catch (error) {
     console.error('Error sending reply:', error);
