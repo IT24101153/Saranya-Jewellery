@@ -430,6 +430,7 @@ a:hover {
     transform: translateY(-2px);
     box-shadow: var(--shadow-md);
     background: var(--brand-burgundy-dark);
+    color: var(--bg-white);
 }
 
 .btn:active {
@@ -1418,7 +1419,7 @@ tbody td {
     width: 100%;
     border: 1px solid var(--brand-burgundy);
     background: var(--brand-burgundy);
-    color: var(--text-white);
+    color: #ffffff;
     padding: 0.7rem 1rem;
     font-size: 0.9rem;
     font-weight: 600;
@@ -1427,8 +1428,9 @@ tbody td {
 }
 
 .home-add-cart-btn:hover:not(:disabled) {
-    background: var(--brand-burgundy-light);
-    border-color: var(--brand-burgundy-light);
+    background: var(--brand-burgundy-dark);
+    border-color: var(--brand-burgundy-dark);
+    color: #ffffff;
 }
 
 .home-add-cart-btn:disabled {

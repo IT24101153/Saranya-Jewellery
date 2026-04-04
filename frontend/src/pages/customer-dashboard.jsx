@@ -94,15 +94,6 @@ export default function CustomerDashboardPage() {
     loadData();
   }, [customer]);
 
-  useEffect(() => {
-    if (!customer) return;
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('openProfile') === 'true') {
-      setIsProfileOpen(true);
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
-  }, [customer]);
-
   async function loadOrderStats() {
     try {
       const response = await authManager.apiRequest('/api/orders/my-orders');

@@ -158,7 +158,7 @@ export default function CustomerProductPage() {
 
         <div className="header-icons">
           <i className="fas fa-search header-icon" />
-          <a href={customer ? '/customer-dashboard?openProfile=true' : guestLinks.userProfileHref}><i className="fas fa-user header-icon" /></a>
+          <a href={customer ? '/customer-dashboard' : guestLinks.userProfileHref}><i className="fas fa-user header-icon" /></a>
           <a href="/customer-cart" style={{ position: 'relative' }} onClick={(event) => handleProtectedNavigate(event, getCurrentReturnPath())}>
             <i className="fas fa-shopping-cart header-icon" />
             {cartCount > 0 ? (
