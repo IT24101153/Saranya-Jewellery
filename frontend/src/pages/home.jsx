@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 
+const ZAPIER_CHATBOT_SCRIPT_SRC =
+  'https://interfaces.zapier.com/assets/web-components/zapier-interfaces/zapier-interfaces.esm.js';
+
 const CATEGORIES = ['Ring', 'Necklace', 'Bracelet', 'Earring', 'Pendant', 'Chain', 'Bangles', 'Anklet', 'Other'];
 const KARATS = ['18K', '22K', '24K'];
 const AVAILABILITY = ['In Stock', 'Out of Stock', 'Pre-Order'];
@@ -18,6 +21,18 @@ export default function HomePage() {
 
   useEffect(() => {
     document.title = 'Saranya Jewellery - Elegance Redefined';
+  }, []);
+
+  useEffect(() => {
+    if (document.querySelector(`script[src="${ZAPIER_CHATBOT_SCRIPT_SRC}"]`)) {
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = ZAPIER_CHATBOT_SCRIPT_SRC;
+    script.type = 'module';
+    script.async = true;
+    document.head.appendChild(script);
   }, []);
 
   useEffect(() => {
@@ -366,6 +381,11 @@ export default function HomePage() {
           <p>&copy; 2026 Saranya Jewellery. All Rights Reserved.</p>
         </div>
       </footer>
+
+      <zapier-interfaces-chatbot-embed
+        is-popup="true"
+        chatbot-id="cmnd1hjex005bm8ij9enun3qb"
+      />
     </>
   );
 }
