@@ -65,6 +65,14 @@ router.post('/login', async (req, res) => {
       return res.status(403).json({ message: 'Account has been deactivated' });
     }
 
+    // Block login until account is approved by an admin
+    if (staff.status !== 'Approved') {
+      const message = staff.status === 'Pending'
+        ? 'Your account is pending admin approval'
+        : 'Your account has been rejected by admin';
+      return res.status(403).json({ message });
+    }
+
     // Verify password
     const isMatch = await staff.comparePassword(password);
     if (!isMatch) {
