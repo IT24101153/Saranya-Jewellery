@@ -3,10 +3,13 @@ import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
 import dns from "node:dns";
+import multer from "multer";
+import cors from "cors";
 
 import { connectionDB } from "./config/db.js";
 import offerRoutes from "./routes/offerRoutes.js";
 import messageRoutes from "./routes/messageRoutes.js";
+import qnaRoutes from "./routes/qnaRoutes.js";
 
 dotenv.config();
 console.log("MONGO_URI:", process.env.MONGO_URI);
@@ -17,6 +20,19 @@ const PORT = 5000;
 
 // middleware
 app.use(express.json());
+app.use(cors());
+
+// Configure multer for image uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/');
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  }
+});
+const upload = multer({ storage });
 
 // debug middleware
 app.use((req, res, next) => {
@@ -31,12 +47,15 @@ const __dirname = path.dirname(__filename);
 // frontend folder
 const frontendDir = path.join(__dirname, "..", "frontend");
 
+// Serve static files (images and other uploads)
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use(express.static(frontendDir));
 
 // routes
 console.log("Registering routes...");
 app.use("/api", offerRoutes);
 app.use("/api", messageRoutes);
+app.use("/api", qnaRoutes);
 console.log("Routes registered");
 
 // frontend page
