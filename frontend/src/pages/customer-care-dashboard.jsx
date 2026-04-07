@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import authManager from '../auth.js';
-import StaffDashboardLayout from '../components/StaffDashboardLayout.jsx';
+import { FiGift, FiMessageCircle, FiStar, FiLogOut } from 'react-icons/fi';
 
 const DASHBOARD_LINKS = [
   { href: '/customer-care-dashboard', label: 'Messages' },
@@ -320,58 +320,170 @@ export default function CustomerCareDashboardPage() {
   if (!staffUser) return <p style={{ padding: '1rem' }}>Checking customer care access...</p>;
 
   return (
-    <StaffDashboardLayout
-      title="Customer Care Center"
-      staff={staffUser}
-      onLogout={() => authManager.logout()}
-      links={DASHBOARD_LINKS}
-    >
-      {/* Tab Navigation */}
-      <div style={{
+    <div style={{ display: 'flex', minHeight: '100vh', background: '#fafbfc' }}>
+      {/* Sidebar */}
+      <aside style={{
+        width: '320px',
+        background: '#6f0022',
+        color: '#fff',
         display: 'flex',
-        gap: '1rem',
-        borderBottom: '2px solid #e0e0e0',
-        marginBottom: '1.5rem',
-        paddingBottom: '0.5rem'
+        flexDirection: 'column',
+        position: 'fixed',
+        height: '100vh',
+        left: 0,
+        top: 0,
+        zIndex: 100
       }}>
-        {[
-          { id: 'offers', label: 'Seasonal Offers' },
-          { id: 'messages', label: 'Customer Messages' },
-          { id: 'reviews', label: 'Product Reviews' }
-        ].map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            style={{
-              padding: '0.6rem 1.2rem',
-              border: 'none',
-              background: 'none',
-              fontSize: '0.95rem',
-              fontWeight: activeTab === tab.id ? '600' : '400',
-              color: activeTab === tab.id ? '#6f0022' : '#666',
-              borderBottom: activeTab === tab.id ? '3px solid #e0bf63' : 'none',
-              cursor: 'pointer',
-              fontFamily: 'Poppins, sans-serif',
-              transition: 'all 0.3s ease'
-            }}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {error && (
+        {/* Sidebar Header */}
         <div style={{
-          background: '#fee',
-          border: '1px solid #fcc',
-          color: '#c33',
-          padding: '0.75rem 1rem',
-          borderRadius: 8,
-          marginBottom: '1rem'
+          padding: '2rem 1.5rem 1.5rem',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
         }}>
-          {error}
+          <h1 style={{
+            margin: 0,
+            fontSize: '1.2rem',
+            fontFamily: 'Cormorant Garamond, serif',
+            fontWeight: 600,
+            letterSpacing: '0.5px',
+            color: '#e0bf63',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.6rem',
+            textTransform: 'uppercase'
+          }}>
+            <FiGift size={28} />
+            Customer Care
+          </h1>
         </div>
-      )}
+
+        {/* Navigation Items */}
+        <nav style={{
+          flex: 1,
+          padding: '1.5rem 1rem',
+          overflowY: 'auto'
+        }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            {[
+              { id: 'offers', icon: FiGift, label: 'Offers' },
+              { id: 'messages', icon: FiMessageCircle, label: 'Customer Messages' },
+              { id: 'reviews', icon: FiStar, label: 'Product Reviews' }
+            ].map(item => {
+              const isActive = activeTab === item.id;
+              const IconComponent = item.icon;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setActiveTab(item.id)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '1rem',
+                    width: '100%',
+                    padding: '1rem 1rem',
+                    background: isActive ? '#e0bf63' : 'transparent',
+                    color: isActive ? '#3d2b00' : '#fff',
+                    border: 'none',
+                    borderRadius: '10px',
+                    fontSize: '1.1rem',
+                    fontFamily: 'Poppins, sans-serif',
+                    fontWeight: isActive ? 600 : 500,
+                    cursor: 'pointer',
+                    transition: 'all 0.3s',
+                    textAlign: 'left'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.background = 'rgba(224, 191, 99, 0.1)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.background = 'transparent';
+                    }
+                  }}
+                >
+                  <IconComponent size={24} style={{ minWidth: '24px' }} />
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </nav>
+
+        {/* User Profile Section */}
+        <div style={{
+          padding: '1.5rem',
+          borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '1rem'
+        }}>
+          <div style={{
+            width: '48px',
+            height: '48px',
+            borderRadius: '50%',
+            background: '#e0bf63',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '1.5rem',
+            fontWeight: 700,
+            color: '#3d2b00',
+            flexShrink: 0
+          }}>
+            {staffUser?.fullName?.charAt(0).toUpperCase()}
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{
+              fontWeight: 600,
+              fontSize: '0.95rem',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis'
+            }}>
+              Hello, {staffUser?.fullName?.split(' ')[0]}
+            </div>
+          </div>
+          <button
+            onClick={() => authManager.logout()}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#e0bf63',
+              cursor: 'pointer',
+              padding: '0.5rem',
+              fontSize: '1.3rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+            title="Logout"
+          >
+            <FiLogOut />
+          </button>
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <div style={{
+        marginLeft: '320px',
+        flex: 1,
+        overflow: 'auto',
+        padding: '2rem'
+      }}>
+        {error && (
+          <div style={{
+            background: '#fee',
+            border: '1px solid #fcc',
+            color: '#c33',
+            padding: '0.75rem 1rem',
+            borderRadius: 8,
+            marginBottom: '1rem'
+          }}>
+            {error}
+          </div>
+        )}
 
       {/* OFFERS TAB */}
       {activeTab === 'offers' && (
@@ -1015,6 +1127,8 @@ export default function CustomerCareDashboardPage() {
           </div>
         </div>
       )}
-    </StaffDashboardLayout>
+
+      </div>
+    </div>
   );
 }
