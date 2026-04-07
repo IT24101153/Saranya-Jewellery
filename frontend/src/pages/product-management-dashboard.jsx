@@ -8,7 +8,6 @@ const emptyForm = {
   description: '',
   image: '/assets/placeholder-product.jpg',
   category: 'Ring',
-  price: 0,
   taxPercentage: 0,
   featured: false
 };
@@ -89,12 +88,6 @@ export default function ProductManagementDashboardPage() {
     event.preventDefault();
     setError('');
 
-    const parsedPrice = Number(form.price);
-    if (!Number.isFinite(parsedPrice) || parsedPrice < 0) {
-      setError('Price must be a valid number');
-      return;
-    }
-
     const parsedTaxPercentage = Number(form.taxPercentage);
     if (!Number.isFinite(parsedTaxPercentage) || parsedTaxPercentage < 0 || parsedTaxPercentage > 100) {
       setError('Tax percentage must be between 0 and 100');
@@ -106,10 +99,12 @@ export default function ProductManagementDashboardPage() {
       const payload = {
         ...form,
         stockProductId: form.stockProductId || undefined,
-        price: parsedPrice,
         taxPercentage: parsedTaxPercentage,
         featured: Boolean(form.featured)
       };
+      // Remove price from payload - it's calculated by backend based on stock weight, karat, and gold rate
+      delete payload.price;
+      
       const response = await authManager.apiRequest(
         editingProductId ? `/api/products/${editingProductId}` : '/api/products',
         {
@@ -584,19 +579,6 @@ export default function ProductManagementDashboardPage() {
                   />
                 </div>
                 <div style={{ display: 'grid', gap: '0.35rem' }}>
-                  <label style={{ color: '#6f0022', fontSize: '0.9rem', fontWeight: 600 }}>Price (LKR)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    required
-                    value={form.price}
-                    onChange={(e) => setForm((prev) => ({ ...prev, price: Number(e.target.value) }))}
-                    placeholder="Enter product price"
-                    style={{ padding: '0.75rem', border: '1px solid #ddd', borderRadius: 8, fontSize: '1rem' }}
-                  />
-                </div>
-                <div style={{ display: 'grid', gap: '0.35rem' }}>
                   <label style={{ color: '#6f0022', fontSize: '0.9rem', fontWeight: 600 }}>Tax Percentage (%)</label>
                   <input
                     type="number"
@@ -605,7 +587,11 @@ export default function ProductManagementDashboardPage() {
                     step="0.01"
                     required
                     value={form.taxPercentage}
-                    onChange={(e) => setForm((prev) => ({ ...prev, taxPercentage: e.target.value }))}
+                    onChange={(e) => {
+                      let value = parseFloat(e.target.value) || 0;
+                      value = Math.max(0, Math.min(100, value));
+                      setForm((prev) => ({ ...prev, taxPercentage: value }));
+                    }}
                     placeholder="0 to 100"
                     style={{ padding: '0.75rem', border: '1px solid #ddd', borderRadius: 8, fontSize: '1rem' }}
                   />
@@ -690,31 +676,37 @@ export default function ProductManagementDashboardPage() {
 
               {error && <p style={{ margin: 0, color: '#b42318', fontWeight: 500 }}>{error}</p>}
 
-              {/* Real-time Price Calculation */}
-              {form.price > 0 && (
-                <div style={{ padding: '1.2rem', border: '1px solid #e0bf63', borderRadius: 8, background: '#fffbf0', marginBottom: '1rem' }}>
-                  <div style={{ display: 'grid', gap: '0.8rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ color: '#555', fontSize: '0.95rem' }}>Base Price:</span>
-                      <span style={{ color: '#1f2937', fontWeight: 600 }}>LKR {Number(form.price || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ color: '#555', fontSize: '0.95rem' }}>Tax ({form.taxPercentage}%):</span>
-                      <span style={{ color: '#666', fontWeight: 500 }}>+ LKR {(Number(form.price || 0) * Number(form.taxPercentage || 0) / 100).toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
-                    </div>
-                    <div style={{ borderTop: '1px solid #dcc5a8', paddingTop: '0.8rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ color: '#6f0022', fontSize: '1rem', fontWeight: 700 }}>Final Price:</span>
-                      <span style={{ color: '#6f0022', fontSize: '1.3rem', fontWeight: 700 }}>LKR {(Number(form.price || 0) + (Number(form.price || 0) * Number(form.taxPercentage || 0) / 100)).toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
               {selectedStockItem && (
                 <div style={{ padding: '1rem', border: '1px solid #ddd', borderRadius: 8, background: '#fffaf1', color: '#6f0022' }}>
                   <strong>Selected Stock:</strong> {selectedStockItem.name} • {selectedStockItem.category} • Quantity {selectedStockItem.quantity ?? selectedStockItem.stockQuantity ?? 0}
                 </div>
               )}
+
+              {/* Price Display Section */}
+              {selectedStockItem && (() => {
+                const basePrice = (selectedStockItem.weight || 0) * (selectedStockItem.karatRate || 0);
+                const taxAmount = basePrice * Number(form.taxPercentage || 0) / 100;
+                const finalPrice = basePrice + taxAmount;
+                return (
+                  <div style={{ padding: '1.5rem', border: '2px solid #e0bf63', borderRadius: 10, background: '#fffbf0', marginBottom: '1rem' }}>
+                    <h4 style={{ margin: '0 0 1rem', color: '#6f0022', fontSize: '1rem', fontWeight: 700 }}>Calculated Product Price</h4>
+                    <div style={{ display: 'grid', gap: '0.8rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ color: '#555', fontSize: '0.95rem' }}>Base Price (from stock):</span>
+                        <span style={{ color: '#1f2937', fontWeight: 600, fontSize: '1.1rem' }}>LKR {basePrice.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ color: '#555', fontSize: '0.95rem' }}>Tax ({form.taxPercentage}%):</span>
+                        <span style={{ color: '#666', fontWeight: 500 }}>+ LKR {taxAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+                      </div>
+                      <div style={{ borderTop: '2px solid #dcc5a8', paddingTop: '0.8rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ color: '#6f0022', fontSize: '1.1rem', fontWeight: 700 }}>Final Price:</span>
+                        <span style={{ color: '#6f0022', fontSize: '1.4rem', fontWeight: 700 }}>LKR {finalPrice.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', paddingTop: '1rem', borderTop: '1px solid #e9ecef' }}>
                 <div>

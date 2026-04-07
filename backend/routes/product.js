@@ -21,7 +21,17 @@ router.get('/stock-options', isProductManager, async (req, res) => {
       .select('serial name category karat weight quantity supplier status')
       .sort({ updatedAt: -1 });
 
-    res.json(stockItems);
+    // Fetch latest gold rates
+    const latestRates = await GoldRate.findOne().sort({ lastUpdated: -1 });
+    
+    // Add calculated karatRate to each stock item
+    const itemsWithRates = stockItems.map(item => {
+      const itemObj = item.toObject();
+      itemObj.karatRate = latestRates?.[item.karat] || 0;
+      return itemObj;
+    });
+
+    res.json(itemsWithRates);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching stock options', error: error.message });
   }
