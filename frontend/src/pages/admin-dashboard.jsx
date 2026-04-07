@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { FiHome, FiUsers, FiTrendingUp, FiLogOut, FiActivity, FiEye, FiDollarSign, FiShield } from 'react-icons/fi';
 import authManager from '../auth.js';
 
 const dashboardNav = [
@@ -400,132 +401,170 @@ export default function AdminDashboardPage() {
 
   if (!staffUser) return <p style={{ padding: '2rem', textAlign: 'center', color: '#666' }}>Checking admin access...</p>;
 
+  const navItems = [
+    { key: 'analytics', icon: FiHome, label: 'Dashboard' },
+    { key: 'staff', icon: FiUsers, label: 'Staff' },
+    { key: 'customers', icon: FiTrendingUp, label: 'Customers' },
+    { key: 'staffAudit', icon: FiActivity, label: 'Staff Audit' },
+    { key: 'customerInsights', icon: FiEye, label: 'Insights' },
+    { key: 'revenueFilters', icon: FiDollarSign, label: 'Revenue' }
+  ];
+
   return (
-    <div style={{ background: '#fafbfc', minHeight: '100vh' }}>
-      {/* Header */}
-      <header style={{
-        background: '#fff',
-        borderBottom: '1px solid #e9ecef',
-        padding: '1.5rem 2rem',
-        position: 'sticky',
+    <div style={{ display: 'flex', minHeight: '100vh', background: '#fafbfc' }}>
+      {/* Sidebar */}
+      <aside style={{
+        width: '320px',
+        background: '#6f0022',
+        color: '#fff',
+        display: 'flex',
+        flexDirection: 'column',
+        position: 'fixed',
+        height: '100vh',
+        left: 0,
         top: 0,
         zIndex: 100
       }}>
+        {/* Sidebar Header */}
         <div style={{
-          maxWidth: '1400px',
-          margin: '0 auto',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          gap: '2rem'
+          padding: '2rem 1.5rem 1.5rem',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
         }}>
-          <div>
-            <h1 style={{
-              margin: 0,
-              color: '#6f0022',
-              fontSize: '1.8rem',
-              fontFamily: 'Cormorant Garamond, serif',
-              fontWeight: 600
-            }}>
-              Admin Dashboard
-            </h1>
-            <p style={{
-              margin: '0.3rem 0 0',
-              color: '#666',
-              fontSize: '0.95rem'
-            }}>
-              {staffUser.fullName} • {staffUser.role}
-            </p>
-          </div>
-          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-            <a
-              href="/home"
-              style={{
-                padding: '0.5rem 1rem',
-                color: '#6f0022',
-                textDecoration: 'none',
-                fontSize: '0.95rem',
-                fontWeight: 500,
-                transition: 'color 0.2s'
-              }}
-              onMouseEnter={(e) => e.target.style.color = '#e0bf63'}
-              onMouseLeave={(e) => e.target.style.color = '#6f0022'}
-            >
-              Back to Home
-            </a>
-            <button
-              onClick={() => authManager.logout()}
-              style={{
-                background: '#6f0022',
-                color: '#fff',
-                border: 'none',
-                padding: '0.6rem 1.2rem',
-                borderRadius: '6px',
-                fontWeight: 600,
-                fontSize: '0.95rem',
-                cursor: 'pointer',
-                transition: 'background 0.2s'
-              }}
-              onMouseEnter={(e) => e.target.style.background = '#4f0018'}
-              onMouseLeave={(e) => e.target.style.background = '#6f0022'}
-            >
-              Logout
-            </button>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main style={{
-        maxWidth: '1400px',
-        margin: '0 auto',
-        padding: '2rem'
-      }}>
-        <section style={{
-          background: '#fff',
-          borderRadius: '12px',
-          padding: '1rem',
-          border: '1px solid #e9ecef',
-          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
-          marginBottom: '1.5rem'
-        }}>
-          <div style={{
+          <h1 style={{
+            margin: 0,
+            fontSize: '1.2rem',
+            fontFamily: 'Cormorant Garamond, serif',
+            fontWeight: 600,
+            letterSpacing: '0.5px',
+            color: '#e0bf63',
             display: 'flex',
-            gap: '0.75rem',
-            flexWrap: 'wrap'
+            alignItems: 'center',
+            gap: '0.6rem',
+            textTransform: 'uppercase'
           }}>
-            {[
-              { key: 'analytics', label: 'Analytics' },
-              { key: 'staff', label: 'Staff Management' },
-              { key: 'customers', label: 'Customer Management' },
-              { key: 'staffAudit', label: 'Staff Audit Log' },
-              { key: 'revenueFilters', label: 'Revenue & Order Filters' },
-              { key: 'customerInsights', label: 'Customer Insights' }
-            ].map((item) => {
+            <FiShield size={28} />
+            Admin Dashboard
+          </h1>
+        </div>
+
+        {/* Navigation Items */}
+        <nav style={{
+          flex: 1,
+          padding: '1.5rem 1rem',
+          overflowY: 'auto'
+        }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            {navItems.map((item) => {
               const isActive = activeSection === item.key;
+              const IconComponent = item.icon;
               return (
                 <button
                   key={item.key}
                   type="button"
                   onClick={() => setActiveSection(item.key)}
                   style={{
-                    border: isActive ? '1px solid #e0bf63' : '1px solid #dee2e6',
-                    background: isActive ? '#e0bf63' : '#fff',
-                    color: isActive ? '#3d2b00' : '#6f0022',
-                    padding: '0.65rem 1.15rem',
-                    borderRadius: '999px',
-                    fontWeight: 700,
-                    fontSize: '0.92rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '1rem',
+                    width: '100%',
+                    padding: '1rem 1rem',
+                    background: isActive ? '#e0bf63' : 'transparent',
+                    color: isActive ? '#3d2b00' : '#fff',
+                    border: 'none',
+                    borderRadius: '10px',
+                    fontSize: '1.1rem',
+                    fontFamily: 'Poppins, sans-serif',
+                    fontWeight: isActive ? 600 : 500,
                     cursor: 'pointer',
-                    transition: 'all 0.2s'
+                    transition: 'all 0.3s',
+                    textAlign: 'left'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.background = 'rgba(224, 191, 99, 0.1)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.background = 'transparent';
+                    }
                   }}
                 >
-                  {item.label}
+                  <IconComponent size={24} style={{ minWidth: '24px' }} />
+                  <span>{item.label}</span>
                 </button>
               );
             })}
           </div>
-        </section>
+        </nav>
+
+        {/* User Profile Section */}
+        <div style={{
+          padding: '1.5rem',
+          borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '1rem'
+        }}>
+          <div style={{
+            width: '48px',
+            height: '48px',
+            borderRadius: '50%',
+            background: '#e0bf63',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '1.5rem',
+            fontWeight: 700,
+            color: '#3d2b00',
+            flexShrink: 0
+          }}>
+            {staffUser.fullName?.charAt(0).toUpperCase()}
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{
+              fontWeight: 600,
+              fontSize: '0.95rem',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis'
+            }}>
+              Hello, {staffUser.fullName?.split(' ')[0]}
+            </div>
+          </div>
+          <button
+            onClick={() => authManager.logout()}
+            style={{
+              background: 'rgba(255, 255, 255, 0.2)',
+              color: '#fff',
+              border: 'none',
+              width: '32px',
+              height: '32px',
+              borderRadius: '50%',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '1.2rem',
+              transition: 'background 0.2s',
+              flexShrink: 0
+            }}
+            title="Logout"
+            onMouseEnter={(e) => e.target.style.background = 'rgba(255, 255, 255, 0.3)'}
+            onMouseLeave={(e) => e.target.style.background = 'rgba(255, 255, 255, 0.2)'}
+          >
+            <FiLogOut size={20} />
+          </button>
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <main style={{
+        flex: 1,
+        marginLeft: '320px',
+        padding: '2rem',
+        overflowY: 'auto'
+      }}>
 
         {activeSection === 'analytics' && (
         <div style={{
