@@ -295,6 +295,34 @@ router.post('/members/award-points', isLoyaltyManager, isApproved, async (req, r
   }
 });
 
+// Update loyalty member points (set to specific value)
+router.post('/members/points/:customerId', isLoyaltyManager, isApproved, async (req, res) => {
+  try {
+    const { customerId } = req.params;
+    const { points } = req.body;
+    
+    // Validate points
+    if (typeof points !== 'number' || points < 0) {
+      return res.status(400).json({ message: 'Points must be a non-negative number' });
+    }
+    
+    const customer = await Customer.findById(customerId);
+    if (!customer) return res.status(404).json({ message: 'Customer not found' });
+    if (!customer.isLoyalty) return res.status(400).json({ message: 'Customer is not a loyalty member' });
+    
+    const previousPoints = customer.loyaltyPoints || 0;
+    customer.loyaltyPoints = points;
+    await customer.save();
+    
+    res.json({ 
+      message: `Loyalty points updated from ${previousPoints} to ${points} for ${customer.fullName}`,
+      customer 
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error updating loyalty points', error: error.message });
+  }
+});
+
 // ============ LOYALTY OFFERS MANAGEMENT ============
 
 // Get all offers
