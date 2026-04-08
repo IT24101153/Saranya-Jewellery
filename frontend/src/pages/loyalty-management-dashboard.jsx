@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import authManager from '../auth.js';
-import { FiUsers, FiSettings, FiGift, FiLogOut } from 'react-icons/fi';
+import { FiUsers, FiSettings, FiGift, FiLogOut, FiStar } from 'react-icons/fi';
 
 const TIER_OPTIONS = ['Silver', 'Gold', 'Platinum'];
 const OFFER_TIER_OPTIONS = ['All', 'Silver', 'Gold', 'Platinum'];
@@ -27,6 +27,13 @@ export default function LoyaltyManagementDashboardPage() {
   const [error, setError] = useState('');
   const [editingPointsId, setEditingPointsId] = useState(null);
   const [editingPointsValue, setEditingPointsValue] = useState('');
+  const [isLogoutHovered, setIsLogoutHovered] = useState(false);
+
+  const navItems = [
+    { key: 'memberAnalysis', icon: FiUsers, label: 'Member Analysis' },
+    { key: 'tierConfiguration', icon: FiSettings, label: 'Tier Configuration' },
+    { key: 'loyaltyOffers', icon: FiGift, label: 'Loyalty Offers' }
+  ];
 
   const loyaltyMembers = useMemo(
     () => members.filter((item) => item.isLoyalty),
@@ -251,124 +258,160 @@ export default function LoyaltyManagementDashboardPage() {
   const enrollmentPct = members.length > 0 ? Math.round((loyaltyMembers.length / members.length) * 100) : 0;
 
   return (
-    <div style={{ display: 'flex', height: '100vh', background: '#f5f3f4' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', background: '#fafbfc' }}>
       {/* Sidebar */}
-      <aside style={{ width: '300px', background: '#6f0022', display: 'flex', flexDirection: 'column', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)' }}>
-        {/* Header */}
-        <div style={{ padding: '1.5rem', borderBottom: '1px solid rgba(224, 191, 99, 0.2)' }}>
-          <h1 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700, color: '#e0bf63', textTransform: 'uppercase', letterSpacing: '1px', display: 'flex', alignItems: 'center', gap: '0.7rem' }}>
-            <span style={{ fontSize: '1.4rem' }}>♦</span> Loyalty Manager
+      <aside style={{
+        width: '320px',
+        background: '#6f0022',
+        color: '#fff',
+        display: 'flex',
+        flexDirection: 'column',
+        position: 'fixed',
+        height: '100vh',
+        left: 0,
+        top: 0,
+        zIndex: 100
+      }}>
+        {/* Sidebar Header */}
+        <div style={{
+          padding: '2rem 1.5rem 1.5rem',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
+        }}>
+          <h1 style={{
+            margin: 0,
+            fontSize: '1.2rem',
+            fontFamily: 'Cormorant Garamond, serif',
+            fontWeight: 600,
+            letterSpacing: '0.5px',
+            color: '#e0bf63',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.6rem',
+            textTransform: 'uppercase'
+          }}>
+            <FiStar size={28} />
+            Loyalty Management
           </h1>
         </div>
 
-        {/* Navigation */}
-        <nav style={{ flex: 1, padding: '1.2rem 0.8rem', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-          <button
-            type="button"
-            onClick={() => setActiveSection('memberAnalysis')}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '1rem',
-              width: '100%',
-              background: activeSection === 'memberAnalysis' ? '#e0bf63' : 'transparent',
-              color: activeSection === 'memberAnalysis' ? '#6f0022' : '#e8d8de',
-              border: 'none',
-              borderRadius: activeSection === 'memberAnalysis' ? '12px' : '0',
-              padding: '0.85rem 1rem',
-              fontSize: '1rem',
-              fontWeight: activeSection === 'memberAnalysis' ? 700 : 500,
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              textAlign: 'left'
-            }}
-          >
-            <FiUsers size={22} style={{ flexShrink: 0 }} /> Member Analysis
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveSection('tierConfiguration')}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '1rem',
-              width: '100%',
-              background: activeSection === 'tierConfiguration' ? '#e0bf63' : 'transparent',
-              color: activeSection === 'tierConfiguration' ? '#6f0022' : '#e8d8de',
-              border: 'none',
-              borderRadius: activeSection === 'tierConfiguration' ? '12px' : '0',
-              padding: '0.85rem 1rem',
-              fontSize: '1rem',
-              fontWeight: activeSection === 'tierConfiguration' ? 700 : 500,
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              textAlign: 'left'
-            }}
-          >
-            <FiSettings size={22} style={{ flexShrink: 0 }} /> Tier Configuration
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveSection('loyaltyOffers')}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '1rem',
-              width: '100%',
-              background: activeSection === 'loyaltyOffers' ? '#e0bf63' : 'transparent',
-              color: activeSection === 'loyaltyOffers' ? '#6f0022' : '#e8d8de',
-              border: 'none',
-              borderRadius: activeSection === 'loyaltyOffers' ? '12px' : '0',
-              padding: '0.85rem 1rem',
-              fontSize: '1rem',
-              fontWeight: activeSection === 'loyaltyOffers' ? 700 : 500,
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              textAlign: 'left'
-            }}
-          >
-            <FiGift size={22} style={{ flexShrink: 0 }} /> Loyalty Offers
-          </button>
+        {/* Navigation Items */}
+        <nav style={{
+          flex: 1,
+          padding: '1.5rem 1rem',
+          overflowY: 'auto'
+        }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            {navItems.map((item) => {
+              const isActive = activeSection === item.key;
+              const IconComponent = item.icon;
+              return (
+                <button
+                  key={item.key}
+                  type="button"
+                  onClick={() => setActiveSection(item.key)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '1rem',
+                    width: '100%',
+                    padding: '1rem 1rem',
+                    background: isActive ? '#e0bf63' : 'transparent',
+                    color: isActive ? '#3d2b00' : '#fff',
+                    border: 'none',
+                    borderRadius: '10px',
+                    fontSize: '1.1rem',
+                    fontFamily: 'Poppins, sans-serif',
+                    fontWeight: isActive ? 600 : 500,
+                    cursor: 'pointer',
+                    transition: 'all 0.3s',
+                    textAlign: 'left'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.background = 'rgba(224, 191, 99, 0.1)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.background = 'transparent';
+                    }
+                  }}
+                >
+                  <IconComponent size={24} style={{ minWidth: '24px' }} />
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
+          </div>
         </nav>
 
         {/* User Profile Section */}
-        <div style={{ borderTop: '1px solid rgba(224, 191, 99, 0.2)', padding: '1.2rem 0.8rem' }}>
+        <div style={{
+          padding: '1.5rem',
+          borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '1rem'
+        }}>
+          <div style={{
+            width: '48px',
+            height: '48px',
+            borderRadius: '50%',
+            background: '#e0bf63',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '1.5rem',
+            fontWeight: 700,
+            color: '#3d2b00',
+            flexShrink: 0
+          }}>
+            {staffUser.fullName?.charAt(0).toUpperCase()}
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{
+              fontWeight: 600,
+              fontSize: '0.95rem',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis'
+            }}>
+              Hello, {staffUser.fullName?.split(' ')[0]}
+            </div>
+          </div>
           <button
-            type="button"
             onClick={() => authManager.logout()}
             style={{
+              background: isLogoutHovered ? 'rgba(255, 255, 255, 0.3)' : 'rgba(255, 255, 255, 0.2)',
+              color: '#fff',
+              border: 'none',
+              width: '32px',
+              height: '32px',
+              borderRadius: '50%',
+              cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              gap: '0.9rem',
-              width: '100%',
-              background: 'transparent',
-              color: '#e8d8de',
-              border: 'none',
-              padding: '0.75rem 1rem',
-              fontSize: '0.95rem',
-              fontWeight: 500,
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              textAlign: 'left'
+              justifyContent: 'center',
+              fontSize: '1.2rem',
+              transition: 'background 0.2s',
+              flexShrink: 0
             }}
+            title="Logout"
+            onMouseEnter={() => setIsLogoutHovered(true)}
+            onMouseLeave={() => setIsLogoutHovered(false)}
           >
-            <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#e0bf63', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '0.9rem', fontWeight: 700, color: '#6f0022' }}>
-              {staffUser?.fullName?.charAt(0) || 'L'}
-            </div>
-            <div style={{ flex: 1, overflow: 'hidden' }}>
-              <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                Hello, {staffUser?.fullName?.split(' ')[0] || 'User'}
-              </div>
-            </div>
-            <FiLogOut size={18} style={{ flexShrink: 0, opacity: 0.7 }} />
+            <FiLogOut size={20} />
           </button>
         </div>
       </aside>
 
       {/* Main Content */}
-      <main style={{ flex: 1, overflowY: 'auto', padding: '2rem' }}>
+      <main style={{
+        flex: 1,
+        marginLeft: '320px',
+        padding: '2rem',
+        overflowY: 'auto'
+      }}>
         {activeSection === 'memberAnalysis' && (
         <>
       <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '0.9rem', marginBottom: '1rem' }}>

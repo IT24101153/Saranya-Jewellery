@@ -40,6 +40,7 @@ export default function InventoryDashboardPage() {
   const [editingSupplier, setEditingSupplier] = useState(null);
 
   const [error, setError] = useState('');
+  const [isLogoutHovered, setIsLogoutHovered] = useState(false);
 
   const totalUnits = useMemo(
     () => stockRows.reduce((sum, row) => sum + Number(row.quantity || 0), 0),
@@ -438,24 +439,31 @@ export default function InventoryDashboardPage() {
           <button
             onClick={() => authManager.logout()}
             style={{
-              background: 'none',
+              background: isLogoutHovered ? 'rgba(255, 255, 255, 0.3)' : 'rgba(255, 255, 255, 0.2)',
+              color: '#fff',
               border: 'none',
-              color: '#e0bf63',
+              width: '32px',
+              height: '32px',
+              borderRadius: '50%',
               cursor: 'pointer',
-              padding: '0.5rem',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center'
+              justifyContent: 'center',
+              fontSize: '1.2rem',
+              transition: 'background 0.2s',
+              flexShrink: 0
             }}
             title="Logout"
+            onMouseEnter={() => setIsLogoutHovered(true)}
+            onMouseLeave={() => setIsLogoutHovered(false)}
           >
-            <FiLogOut size={24} />
+            <FiLogOut size={20} />
           </button>
         </div>
       </aside>
 
       {/* Main Content */}
-      <div style={{
+      <main style={{
         marginLeft: '320px',
         flex: 1,
         overflow: 'auto',
@@ -1027,7 +1035,7 @@ export default function InventoryDashboardPage() {
           </section>
         </div>
       )}
-      </div>
+      </main>
     </div>
   );
 }

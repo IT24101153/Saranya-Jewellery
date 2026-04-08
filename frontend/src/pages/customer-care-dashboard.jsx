@@ -13,6 +13,7 @@ const SEASON_TYPES = ['Seasonal Offer', 'Clearance Sale', 'Flash Sale', 'New Col
 export default function CustomerCareDashboardPage() {
   const [staffUser, setStaffUser] = useState(null);
   const [activeTab, setActiveTab] = useState('offers'); // 'offers', 'messages', 'reviews'
+  const [isLogoutHovered, setIsLogoutHovered] = useState(false);
   
   // Offers state
   const [offers, setOffers] = useState([]);
@@ -448,27 +449,33 @@ export default function CustomerCareDashboardPage() {
           <button
             onClick={() => authManager.logout()}
             style={{
-              background: 'none',
+              background: isLogoutHovered ? 'rgba(255, 255, 255, 0.3)' : 'rgba(255, 255, 255, 0.2)',
+              color: '#fff',
               border: 'none',
-              color: '#e0bf63',
+              width: '32px',
+              height: '32px',
+              borderRadius: '50%',
               cursor: 'pointer',
-              padding: '0.5rem',
-              fontSize: '1.3rem',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center'
+              justifyContent: 'center',
+              fontSize: '1.2rem',
+              transition: 'background 0.2s',
+              flexShrink: 0
             }}
             title="Logout"
+            onMouseEnter={() => setIsLogoutHovered(true)}
+            onMouseLeave={() => setIsLogoutHovered(false)}
           >
-            <FiLogOut />
+            <FiLogOut size={20} />
           </button>
         </div>
       </aside>
 
       {/* Main Content */}
-      <div style={{
-        marginLeft: '320px',
+      <main style={{
         flex: 1,
+        marginLeft: '320px',
         overflow: 'auto',
         padding: '2rem'
       }}>
@@ -1128,7 +1135,7 @@ export default function CustomerCareDashboardPage() {
         </div>
       )}
 
-      </div>
+      </main>
     </div>
   );
 }

@@ -40,6 +40,7 @@ export default function AdminDashboardPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isUpdatingStaff, setIsUpdatingStaff] = useState(false);
   const [error, setError] = useState('');
+  const [isLogoutHovered, setIsLogoutHovered] = useState(false);
   
   // Statistics
   const [stats, setStats] = useState({
@@ -535,7 +536,7 @@ export default function AdminDashboardPage() {
           <button
             onClick={() => authManager.logout()}
             style={{
-              background: 'rgba(255, 255, 255, 0.2)',
+              background: isLogoutHovered ? 'rgba(255, 255, 255, 0.3)' : 'rgba(255, 255, 255, 0.2)',
               color: '#fff',
               border: 'none',
               width: '32px',
@@ -550,8 +551,8 @@ export default function AdminDashboardPage() {
               flexShrink: 0
             }}
             title="Logout"
-            onMouseEnter={(e) => e.target.style.background = 'rgba(255, 255, 255, 0.3)'}
-            onMouseLeave={(e) => e.target.style.background = 'rgba(255, 255, 255, 0.2)'}
+            onMouseEnter={() => setIsLogoutHovered(true)}
+            onMouseLeave={() => setIsLogoutHovered(false)}
           >
             <FiLogOut size={20} />
           </button>
