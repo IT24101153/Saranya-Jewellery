@@ -132,7 +132,7 @@
     /* MODAL */
     .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(92,15,35,0.5); z-index: 200; align-items: center; justify-content: center; }
     .modal-overlay.open { display: flex; }
-    .modal { background: var(--bg2); border: 1px solid var(--border); border-radius: 14px; width: 480px; max-width: 95vw; padding: 28px; box-shadow: 0 20px 60px rgba(92,15,35,0.25); animation: modalIn 0.2s ease; }
+    .modal { background: var(--bg2); border: 1px solid var(--border); border-radius: 14px; width: 480px; max-width: 95vw; max-height: 85vh; padding: 28px; box-shadow: 0 20px 60px rgba(92,15,35,0.25); animation: modalIn 0.2s ease; overflow-y: auto; }
     @keyframes modalIn { from { transform: translateY(16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     .modal-title { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 700; margin-bottom: 20px; color: var(--maroon); }
     .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
@@ -143,6 +143,11 @@
     input:focus, select:focus, textarea:focus { border-color: var(--maroon); background: #fff; }
     textarea { resize: vertical; min-height: 70px; }
     .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--border); }
+    
+    /* ERROR MESSAGE */
+    .error-message { font-size: 11px; color: var(--red); margin-top: 4px; display: none; }
+    .error-message.show { display: block; }
+    input.error, select.error { border-color: var(--red) !important; background: rgba(201,76,76,0.05) !important; }
 
     /* GOLD RATE */
     .two-col { display: grid; grid-template-columns: 1fr 320px; gap: 20px; }
@@ -164,6 +169,13 @@
     .toast { position: fixed; bottom: 28px; right: 28px; background: var(--maroon-dark); border: 1px solid rgba(201,168,76,0.5); border-radius: 10px; padding: 13px 20px; font-size: 13.5px; color: #fff; display: flex; align-items: center; gap: 10px; z-index: 999; transform: translateY(60px); opacity: 0; transition: all 0.25s; pointer-events: none; }
     .toast.show { transform: translateY(0); opacity: 1; }
 
+    /* ITEMS TABLE FOR SUPPLIER */
+    .items-table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+    .items-table thead th { padding: 8px; font-size: 10px; background: rgba(122,21,48,0.05); }
+    .items-table tbody td { padding: 8px; border-bottom: 1px solid var(--border); font-size: 12px; }
+    .items-table .remove-item-btn { background: none; border: none; color: var(--red); cursor: pointer; font-size: 16px; padding: 0; }
+    .items-table .remove-item-btn:hover { opacity: 0.7; }
+
     @media (max-width: 1100px) { .stats-grid { grid-template-columns: repeat(2,1fr); } .two-col { grid-template-columns: 1fr; } }
   </style>
 </head>
@@ -172,6 +184,7 @@
 <!-- SIDEBAR -->
 <aside class="sidebar">
   <div class="sidebar-logo">
+      <svg class="logo-gem" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
       <polygon points="20,2 36,14 20,40 4,14" fill="rgba(232,201,106,0.15)" stroke="#E8C96A" stroke-width="1.6"/>
       <polygon points="20,2 36,14 20,17 4,14"  fill="rgba(232,201,106,0.2)"  stroke="#E8C96A" stroke-width="1"/>
       <line x1="4" y1="14" x2="36" y2="14" stroke="#E8C96A" stroke-width="1"/>
@@ -179,7 +192,7 @@
       <line x1="20" y1="2"  x2="36" y2="14" stroke="#E8C96A" stroke-width="0.8" opacity="0.6"/>
       <line x1="12" y1="14" x2="20" y2="2"  stroke="#E8C96A" stroke-width="0.8" opacity="0.5"/>
       <line x1="28" y1="14" x2="20" y2="2"  stroke="#E8C96A" stroke-width="0.8" opacity="0.5"/>
-    </svg>
+      </svg>
     <div>
       <div class="brand">SARANYA</div>
       <div class="sub-brand">The Symbol of Love</div>
@@ -328,7 +341,7 @@
               <span>24K: <strong id="rate24k">LKR 7,440</strong></span>
             </div>
             <div style="display:flex;gap:12px;">
-              <div style="flex:1;"><label>Update Today's Rate (22K, LKR/g)</label><input type="number" id="newGoldRate" placeholder="e.g. 6820"/></div>
+              <div style="flex:1;"><label>Update Today's Rate (22K, LKR/g)</label><input type="number" id="newGoldRate" placeholder="e.g. 6820"/><span class="error-message" id="goldRateError">Please enter a valid rate (minimum 1000).</span></div>
               <div style="display:flex;align-items:flex-end;"><button class="btn btn-gold" onclick="updateGoldRate()">Update Rate</button></div>
             </div>
           </div>
@@ -388,12 +401,12 @@
   <div class="modal">
     <div class="modal-title">Add New Stock Entry</div>
     <div class="form-row">
-      <div class="form-group"><label>Item Name *</label><input type="text" id="si_name" placeholder="e.g. Gold Ring Floral"/></div>
-      <div class="form-group"><label>Category *</label><select id="si_cat"><option value="">Select...</option><option>Ring</option><option>Necklace</option><option>Bangle</option><option>Earring</option><option>Pendant</option><option>Chain</option></select></div>
+      <div class="form-group"><label>Item Name *</label><input type="text" id="si_name" placeholder="e.g. Gold Ring Floral"/><span class="error-message" id="siNameError">Item name is required.</span></div>
+      <div class="form-group"><label>Category *</label><select id="si_cat"><option value="">Select...</option><option>Ring</option><option>Necklace</option><option>Bangle</option><option>Earring</option><option>Pendant</option><option>Chain</option></select><span class="error-message" id="siCatError">Please select a category.</span></div>
       <div class="form-group"><label>Karat</label><select id="si_karat"><option>22K</option><option>18K</option><option>24K</option></select></div>
-      <div class="form-group"><label>Weight (g) *</label><input type="number" id="si_weight" placeholder="e.g. 5.4"/></div>
-      <div class="form-group"><label>Quantity *</label><input type="number" id="si_qty" placeholder="e.g. 10"/></div>
-      <div class="form-group"><label>Supplier</label><select id="si_supplier"><option value="">Select...</option><option>Raja Jewellers/option><option>Swarnamahal Jewellers Ltd</option><option>Vogue Jewellers Ltd</option></select></div>
+      <div class="form-group"><label>Weight (g) *</label><input type="number" id="si_weight" placeholder="e.g. 5.4"/><span class="error-message" id="siWeightError">Weight must be a valid number greater than 0.</span></div>
+      <div class="form-group"><label>Quantity *</label><input type="number" id="si_qty" placeholder="e.g. 10"/><span class="error-message" id="siQtyError">Quantity must be a valid number greater than 0.</span></div>
+      <div class="form-group"><label>Supplier</label><select id="si_supplier"><option value="">Select...</option><option>Raja Jewellers</option><option>Swarnamahal Jewellers Ltd</option><option>Vogue Jewellers Ltd</option></select></div>
       <div class="form-group full"><label>Notes</label><textarea id="si_notes" placeholder="Any additional notes..."></textarea></div>
     </div>
     <div class="modal-footer">
@@ -409,11 +422,11 @@
     <div class="modal-title">Edit Stock Entry</div>
     <input type="hidden" id="edit_idx"/>
     <div class="form-row">
-      <div class="form-group"><label>Item Name</label><input type="text" id="edit_name"/></div>
+      <div class="form-group"><label>Item Name</label><input type="text" id="edit_name"/><span class="error-message" id="editNameError">Item name is required.</span></div>
       <div class="form-group"><label>Category</label><select id="edit_cat"><option>Ring</option><option>Necklace</option><option>Bangle</option><option>Earring</option><option>Pendant</option><option>Chain</option></select></div>
       <div class="form-group"><label>Karat</label><select id="edit_karat"><option>22K</option><option>18K</option><option>24K</option></select></div>
-      <div class="form-group"><label>Weight (g)</label><input type="number" id="edit_weight"/></div>
-      <div class="form-group"><label>Quantity</label><input type="number" id="edit_qty"/></div>
+      <div class="form-group"><label>Weight (g)</label><input type="number" id="edit_weight"/><span class="error-message" id="editWeightError">Weight must be a valid number greater than 0.</span></div>
+      <div class="form-group"><label>Quantity</label><input type="number" id="edit_qty"/><span class="error-message" id="editQtyError">Quantity must be a valid number greater than 0.</span></div>
       <div class="form-group"><label>Supplier</label><input type="text" id="edit_supplier"/></div>
     </div>
     <div class="modal-footer">
@@ -428,15 +441,82 @@
   <div class="modal">
     <div class="modal-title">Add New Supplier</div>
     <div class="form-row">
-      <div class="form-group"><label>Supplier Name *</label><input type="text" id="sup_name" placeholder="Company name"/></div>
-      <div class="form-group"><label>Contact No. *</label><input type="text" id="sup_contact" placeholder="+91 XXXXX XXXXX"/></div>
-      <div class="form-group"><label>Email</label><input type="email" id="sup_email" placeholder="email@example.com"/></div>
+      <div class="form-group"><label>Supplier Name *</label><input type="text" id="sup_name" placeholder="Company name"/><span class="error-message" id="supNameError">Supplier name is required.</span></div>
+      <div class="form-group"><label>Contact No. *</label><input type="tel" id="sup_contact" placeholder="+94 XXXXXXXXX"/><span class="error-message" id="supContactError">Please enter a valid phone number (10-15 digits).</span></div>
+      <div class="form-group"><label>Email</label><input type="email" id="sup_email" placeholder="email@example.com"/><span class="error-message" id="supEmailError">Please enter a valid email address.</span></div>
       <div class="form-group"><label>Location</label><input type="text" id="sup_location" placeholder="City, State"/></div>
-      <div class="form-group full"><label>Items Supplied</label><input type="text" id="sup_items" placeholder="e.g. Rings, Necklaces"/></div>
+      
+      <!-- Items Table -->
+      <div class="form-group full">
+        <label>Items Supplied *</label>
+        <table class="items-table" id="itemsTable">
+          <thead>
+            <tr>
+              <th>Item Type</th>
+              <th>Quantity</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="itemsTableBody">
+          </tbody>
+        </table>
+        <button type="button" class="btn btn-outline" style="margin-top:10px;width:100%;" onclick="addItemRow()">+ Add Item</button>
+        <span class="error-message" id="supItemsError">Please add at least one item.</span>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('addSupplierModal')">Cancel</button>
       <button class="btn btn-gold" onclick="addSupplier()">Add Supplier</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: View Supplier Items Chart -->
+<div class="modal-overlay" id="viewItemsModal">
+  <div class="modal" style="width:650px;">
+    <div class="modal-title" id="chartModalTitle">Supplier Items Chart</div>
+    <div style="overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;margin-top:16px;">
+        <thead>
+          <tr style="background:#FBF8F5;">
+            <th style="padding:12px;text-align:left;font-size:12px;font-weight:700;color:var(--maroon);border:1px solid var(--border);text-transform:uppercase;letter-spacing:0.08em;">Item Type</th>
+            <th style="padding:12px;text-align:center;font-size:12px;font-weight:700;color:var(--maroon);border:1px solid var(--border);text-transform:uppercase;letter-spacing:0.08em;">Quantity</th>
+            <th style="padding:12px;text-align:center;font-size:12px;font-weight:700;color:var(--maroon);border:1px solid var(--border);text-transform:uppercase;letter-spacing:0.08em;">Status</th>
+            <th style="padding:12px;text-align:center;font-size:12px;font-weight:700;color:var(--maroon);border:1px solid var(--border);text-transform:uppercase;letter-spacing:0.08em;">Action</th>
+          </tr>
+        </thead>
+        <tbody id="chartTableBody">
+        </tbody>
+      </table>
+    </div>
+    
+    <!-- Add New Item Section -->
+    <div style="margin-top:24px;padding:18px;background:var(--bg3);border-radius:10px;">
+      <div style="font-size:12px;font-weight:700;color:var(--maroon);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:12px;">Add New Item</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 80px;gap:10px;align-items:flex-end;">
+        <div>
+          <label style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:6px;">Item Type</label>
+          <select id="newItemType" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;font-size:13px;">
+            <option value="">Select Item</option>
+            <option value="Rings">Rings</option>
+            <option value="Necklaces">Necklaces</option>
+            <option value="Bangles">Bangles</option>
+            <option value="Earrings">Earrings</option>
+            <option value="Pendants">Pendants</option>
+            <option value="Chains">Chains</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:6px;">Quantity</label>
+          <input type="number" id="newItemQty" placeholder="0" min="1" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;font-size:13px;"/>
+        </div>
+        <button class="btn btn-gold" onclick="addItemToSupplier()" style="width:100%;">Add</button>
+      </div>
+      <span class="error-message" id="addItemError" style="margin-top:8px;">Please fill all fields.</span>
+    </div>
+    
+    <div class="modal-footer" style="justify-content:flex-end;margin-top:24px;">
+      <button class="btn btn-outline" onclick="closeModal('viewItemsModal')">Close</button>
     </div>
   </div>
 </div>
@@ -455,9 +535,9 @@ let stockData = [
   {serial:'SJI-008',name:'Antique Necklace',   cat:'Necklace',karat:'22K',weight:35.0,qty:1, supplier:'Swarnamahal Jewellers'},
 ];
 let supplierData = [
-  {id:'SUP-001',name:'Raja Jewellers', contact:'+94 112 3458456',email:'raja@jew.in', location:'Colombo, TN',    items:'Rings, Earrings'},
-  {id:'SUP-002',name:'Vouge Jewellers', contact:'+94 813 847839',email:'vouge@abc.in',  location:'Colombo, TN',    items:'Necklaces, Pendants'},
-  {id:'SUP-003',name:'Swarnamahal Jewellers',contact:'+94 777 4767856',email:'Swarnamahal@bbc.in',location:'Negegoda, TN', items:'Bangles, Chains'},
+  {id:'SUP-001',name:'Raja Jewellers', contact:'+94 112 3458456',email:'raja@jew.in', location:'Colombo, TN',    items: [{name:'Rings',qty:50},{name:'Earrings',qty:30}]},
+  {id:'SUP-002',name:'Vouge Jewellers', contact:'+94 813 847839',email:'vouge@abc.in',  location:'Colombo, TN',    items: [{name:'Necklaces',qty:25},{name:'Pendants',qty:15}]},
+  {id:'SUP-003',name:'Swarnamahal Jewellers',contact:'+94 777 4767856',email:'Swarnamahal@bbc.in',location:'Negegoda, TN', items: [{name:'Bangles',qty:40},{name:'Chains',qty:20}]},
 ];
 let goldRates = [
   {date:'14 Mar 2026',r22:6820,r18:5578,r24:7440,change:+80},
@@ -467,7 +547,76 @@ let goldRates = [
   {date:'10 Mar 2026',r22:6740,r18:5516,r24:7352,change:+10},
 ];
 let serialCounter = 9;
+let itemRowCounter = 0;
 
+/* ===== VALIDATIONS ===== */
+function validateEmail(email) {
+  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return re.test(String(email).toLowerCase());
+}
+
+function validatePhone(phone) {
+  const re = /^[\+]?[(]?[0-9]{1,4}[)]?[-\s\.]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,9}$/;
+  return re.test(String(phone).replace(/\s/g, ''));
+}
+
+function clearErrors() {
+  document.querySelectorAll('.error-message').forEach(el => el.classList.remove('show'));
+  document.querySelectorAll('input, select').forEach(el => el.classList.remove('error'));
+}
+
+function showError(elementId, message = '') {
+  const errorEl = document.getElementById(elementId);
+  if(errorEl) errorEl.classList.add('show');
+  const inputEl = document.querySelector(`#${elementId.replace('Error', '')}`);
+  if(inputEl) inputEl.classList.add('error');
+}
+
+/* ===== ITEM ROWS FOR SUPPLIER ===== */
+function addItemRow() {
+  itemRowCounter++;
+  const tbody = document.getElementById('itemsTableBody');
+  const row = document.createElement('tr');
+  row.id = `itemRow${itemRowCounter}`;
+  row.innerHTML = `
+    <td>
+      <select class="itemTypeSelect" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;">
+        <option value="">Select Item</option>
+        <option value="Rings">Rings</option>
+        <option value="Necklaces">Necklaces</option>
+        <option value="Bangles">Bangles</option>
+        <option value="Earrings">Earrings</option>
+        <option value="Pendants">Pendants</option>
+        <option value="Chains">Chains</option>
+      </select>
+    </td>
+    <td>
+      <input type="number" class="itemQtyInput" placeholder="Qty" style="width:80px;padding:8px;border:1px solid var(--border);border-radius:6px;" min="1"/>
+    </td>
+    <td>
+      <button type="button" class="remove-item-btn" onclick="removeItemRow('itemRow${itemRowCounter}')">×</button>
+    </td>
+  `;
+  tbody.appendChild(row);
+}
+
+function removeItemRow(rowId) {
+  document.getElementById(rowId).remove();
+}
+
+function getSupplierItems() {
+  const items = [];
+  document.querySelectorAll('#itemsTableBody tr').forEach(row => {
+    const itemType = row.querySelector('.itemTypeSelect').value;
+    const itemQty = row.querySelector('.itemQtyInput').value;
+    if(itemType && itemQty) {
+      items.push({name: itemType, qty: parseInt(itemQty)});
+    }
+  });
+  return items;
+}
+
+/* ===== STOCK FUNCTIONS ===== */
 function getStatus(qty){ if(qty===0)return{label:'Out of Stock',cls:'out'}; if(qty<=3)return{label:'Low Stock',cls:'low'}; return{label:'In Stock',cls:'in-stock'}; }
 
 function renderStock(data){
@@ -494,13 +643,22 @@ function filterTable(){
 }
 
 function addStock(){
+  clearErrors();
   const name=document.getElementById('si_name').value.trim();
   const cat=document.getElementById('si_cat').value;
-  const karat=document.getElementById('si_karat').value;
   const weight=parseFloat(document.getElementById('si_weight').value);
   const qty=parseInt(document.getElementById('si_qty').value);
+  
+  let isValid = true;
+  if(!name) { showError('siNameError'); isValid = false; }
+  if(!cat) { showError('siCatError'); isValid = false; }
+  if(isNaN(weight) || weight <= 0) { showError('siWeightError'); isValid = false; }
+  if(isNaN(qty) || qty <= 0) { showError('siQtyError'); isValid = false; }
+  
+  if(!isValid) return;
+  
+  const karat=document.getElementById('si_karat').value;
   const supplier=document.getElementById('si_supplier').value;
-  if(!name||!cat||isNaN(weight)||isNaN(qty)){showToast('Please fill required fields.','error');return;}
   const serial=`SJI-${String(serialCounter).padStart(3,'0')}`;
   serialCounter++;
   stockData.push({serial,name,cat,karat,weight,qty,supplier});
@@ -522,8 +680,20 @@ function editStock(i){
 }
 
 function saveEdit(){
+  clearErrors();
   const i=parseInt(document.getElementById('edit_idx').value);
-  stockData[i]={...stockData[i],name:document.getElementById('edit_name').value,cat:document.getElementById('edit_cat').value,karat:document.getElementById('edit_karat').value,weight:parseFloat(document.getElementById('edit_weight').value),qty:parseInt(document.getElementById('edit_qty').value),supplier:document.getElementById('edit_supplier').value};
+  const name=document.getElementById('edit_name').value.trim();
+  const weight=parseFloat(document.getElementById('edit_weight').value);
+  const qty=parseInt(document.getElementById('edit_qty').value);
+  
+  let isValid = true;
+  if(!name) { showError('editNameError'); isValid = false; }
+  if(isNaN(weight) || weight <= 0) { showError('editWeightError'); isValid = false; }
+  if(isNaN(qty) || qty <= 0) { showError('editQtyError'); isValid = false; }
+  
+  if(!isValid) return;
+  
+  stockData[i]={...stockData[i],name,cat:document.getElementById('edit_cat').value,karat:document.getElementById('edit_karat').value,weight,qty,supplier:document.getElementById('edit_supplier').value};
   renderStock(stockData); closeModal('editStockModal'); showToast('✓ Updated.','success'); updateAlerts();
 }
 
@@ -532,6 +702,7 @@ function deleteStock(i){
   stockData.splice(i,1); renderStock(stockData); showToast('✓ Removed.','success'); updateAlerts();
 }
 
+/* ===== GOLD RATE FUNCTIONS ===== */
 function renderGoldRates(){
   document.getElementById('rateHistoryBody').innerHTML=goldRates.map(r=>{
     const chg=r.change>=0?`<span style="color:var(--green);font-weight:600">↑ +${r.change}</span>`:`<span style="color:var(--red);font-weight:600">↓ ${r.change}</span>`;
@@ -540,8 +711,9 @@ function renderGoldRates(){
 }
 
 function updateGoldRate(){
+  clearErrors();
   const val=parseFloat(document.getElementById('newGoldRate').value);
-  if(!val||val<1000){showToast('Enter a valid rate.','error');return;}
+  if(!val||val<1000){ showError('goldRateError'); return; }
   const prev=goldRates[0].r22; const r18=Math.round(val*0.818); const r24=Math.round(val*1.091);
   goldRates.unshift({date:new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}),r22:val,r18,r24,change:val-prev});
   document.getElementById('currentRateDisplay').textContent=val.toLocaleString();
@@ -561,34 +733,130 @@ function calculate(){
   document.getElementById('calcResult').textContent=`LKR ${Math.round(total).toLocaleString()}`;
 }
 
+/* ===== SUPPLIER FUNCTIONS ===== */
 function renderSuppliers(){
-  document.getElementById('supplierBody').innerHTML=supplierData.map((s,i)=>`<tr>
-    <td><span class="serial-badge">${s.id}</span></td><td><strong>${s.name}</strong></td>
-    <td>${s.contact}</td><td>${s.email}</td><td>${s.location}</td><td>${s.items}</td>
-    <td><div class="row-actions">
-      <button class="icon-btn" onclick="editSupplier(${i})"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-      <button class="icon-btn danger" onclick="deleteSupplier(${i})"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
-    </div></td>
-  </tr>`).join('');
+  document.getElementById('supplierBody').innerHTML=supplierData.map((s,i)=>{
+    const itemsDisplay = s.items.map(it => `${it.name} (${it.qty})`).join(', ');
+    return `<tr>
+      <td><span class="serial-badge">${s.id}</span></td>
+      <td><strong style="cursor:pointer;color:var(--maroon);text-decoration:underline;" onclick="viewSupplierItems(${i})">${s.name}</strong></td>
+      <td>${s.contact}</td><td>${s.email}</td><td>${s.location}</td><td>${itemsDisplay}</td>
+      <td><div class="row-actions">
+        <button class="icon-btn" onclick="editSupplier(${i})"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+        <button class="icon-btn danger" onclick="deleteSupplier(${i})"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+
+let currentViewingSupplierIndex = -1;
+
+function viewSupplierItems(i) {
+  currentViewingSupplierIndex = i;
+  const supplier = supplierData[i];
+  document.getElementById('chartModalTitle').textContent = `${supplier.name} - Items Supplied Chart`;
+  
+  renderSupplierItemsChart();
+  document.getElementById('newItemType').value = '';
+  document.getElementById('newItemQty').value = '';
+  document.getElementById('addItemError').classList.remove('show');
+  openModal('viewItemsModal');
+}
+
+function renderSupplierItemsChart() {
+  const supplier = supplierData[currentViewingSupplierIndex];
+  const chartHtml = supplier.items.map((item, idx) => {
+    return `<tr style="border-bottom:1px solid var(--border);transition:background 0.15s;">
+      <td style="padding:14px 12px;font-size:13.5px;border:1px solid var(--border);">
+        <strong>${item.name}</strong>
+      </td>
+      <td style="padding:14px 12px;text-align:center;font-size:13.5px;border:1px solid var(--border);">
+        <span style="background:rgba(122,21,48,0.1);color:var(--maroon);font-weight:700;padding:4px 10px;border-radius:6px;">${item.qty}</span>
+      </td>
+      <td style="padding:14px 12px;text-align:center;font-size:13.5px;border:1px solid var(--border);">
+        <span class="status-badge in-stock" style="justify-content:center;"><span class="status-dot"></span>Available</span>
+      </td>
+      <td style="padding:14px 12px;text-align:center;border:1px solid var(--border);">
+        <button class="icon-btn danger" onclick="removeItemFromChart(${idx})" title="Remove"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
+      </td>
+    </tr>`;
+  }).join('');
+  
+  document.getElementById('chartTableBody').innerHTML = chartHtml;
+}
+
+function addItemToSupplier() {
+  const itemType = document.getElementById('newItemType').value.trim();
+  const itemQty = parseInt(document.getElementById('newItemQty').value);
+  const errorEl = document.getElementById('addItemError');
+  
+  if(!itemType || isNaN(itemQty) || itemQty <= 0) {
+    errorEl.classList.add('show');
+    return;
+  }
+  
+  errorEl.classList.remove('show');
+  
+  const supplier = supplierData[currentViewingSupplierIndex];
+  const existingItemIndex = supplier.items.findIndex(it => it.name === itemType);
+  
+  if(existingItemIndex >= 0) {
+    supplier.items[existingItemIndex].qty += itemQty;
+  } else {
+    supplier.items.push({name: itemType, qty: itemQty});
+  }
+  
+  renderSupplierItemsChart();
+  document.getElementById('newItemType').value = '';
+  document.getElementById('newItemQty').value = '';
+  showToast(`✓ ${itemType} added to ${supplier.name}.`, 'success');
+  renderSuppliers();
+}
+
+function removeItemFromChart(idx) {
+  const supplier = supplierData[currentViewingSupplierIndex];
+  if(confirm(`Remove "${supplier.items[idx].name}"?`)) {
+    supplier.items.splice(idx, 1);
+    renderSupplierItemsChart();
+    renderSuppliers();
+    showToast('✓ Item removed.', 'success');
+  }
 }
 
 function addSupplier(){
+  clearErrors();
   const name=document.getElementById('sup_name').value.trim();
   const contact=document.getElementById('sup_contact').value.trim();
-  if(!name||!contact){showToast('Name and contact are required.','error');return;}
+  const email=document.getElementById('sup_email').value.trim();
+  const location=document.getElementById('sup_location').value.trim();
+  const items = getSupplierItems();
+  
+  let isValid = true;
+  if(!name) { showError('supNameError'); isValid = false; }
+  if(!contact || !validatePhone(contact)) { showError('supContactError'); isValid = false; }
+  if(email && !validateEmail(email)) { showError('supEmailError'); isValid = false; }
+  if(items.length === 0) { showError('supItemsError'); isValid = false; }
+  
+  if(!isValid) return;
+  
   const id=`SUP-${String(supplierData.length+1).padStart(3,'0')}`;
-  supplierData.push({id,name,contact,email:document.getElementById('sup_email').value||'-',location:document.getElementById('sup_location').value||'-',items:document.getElementById('sup_items').value||'-'});
+  supplierData.push({id,name,contact,email:email||'-',location:location||'-', items});
   renderSuppliers(); closeModal('addSupplierModal');
-  ['sup_name','sup_contact','sup_email','sup_location','sup_items'].forEach(id=>document.getElementById(id).value='');
+  ['sup_name','sup_contact','sup_email','sup_location'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('itemsTableBody').innerHTML = '';
+  itemRowCounter = 0;
   showToast('✓ Supplier added.','success');
 }
 
 function editSupplier(i){
   const s=supplierData[i];
   const name=prompt('Supplier Name:',s.name); if(!name)return;
-  const contact=prompt('Contact:',s.contact); const email=prompt('Email:',s.email);
-  const location=prompt('Location:',s.location); const items=prompt('Items Supplied:',s.items);
-  supplierData[i]={...s,name,contact:contact||s.contact,email:email||s.email,location:location||s.location,items:items||s.items};
+  const contact=prompt('Contact:',s.contact); 
+  if(!validatePhone(contact)) { showToast('Invalid phone number.','error'); return; }
+  const email=prompt('Email:',s.email);
+  if(email && !validateEmail(email)) { showToast('Invalid email address.','error'); return; }
+  const location=prompt('Location:',s.location);
+  supplierData[i]={...s,name,contact,email:email||s.email,location:location||s.location};
   renderSuppliers(); showToast('✓ Updated.','success');
 }
 
@@ -597,6 +865,7 @@ function deleteSupplier(i){
   supplierData.splice(i,1); renderSuppliers(); showToast('✓ Removed.','success');
 }
 
+/* ===== ALERT FUNCTIONS ===== */
 function updateAlerts(){
   const low=stockData.filter(s=>s.qty>0&&s.qty<=3);
   const out=stockData.filter(s=>s.qty===0);
@@ -617,13 +886,20 @@ function exportCSV(){
   showToast('✓ CSV exported.','success');
 }
 
+/* ===== MODAL & UI FUNCTIONS ===== */
 function switchTab(name,el){
   document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('tab-'+name).classList.add('active'); el.classList.add('active');
 }
 
-function openModal(id){document.getElementById(id).classList.add('open');}
+function openModal(id){
+  if(id === 'addSupplierModal') {
+    itemRowCounter = 0;
+    document.getElementById('itemsTableBody').innerHTML = '';
+  }
+  document.getElementById(id).classList.add('open');
+}
 function closeModal(id){document.getElementById(id).classList.remove('open');}
 document.querySelectorAll('.modal-overlay').forEach(o=>{o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');});});
 
@@ -636,415 +912,3 @@ renderStock(stockData); renderGoldRates(); renderSuppliers(); updateAlerts();
 </script>
 </body>
 </html>
-
-<script>
-const API = '/api/inventory';
-
-// ─── FETCH GOLD RATE FROM BACKEND ───
-async function loadGoldRate() {
-  try {
-    const res = await fetch(`${API}/gold-rates`);
-    const data = await res.json();
-    if (data && data['22K']) {
-      const r22 = data['22K'];
-      const r18 = data['18K'];
-      const r24 = data['24K'];
-      document.getElementById('currentRateDisplay').textContent = r22.toLocaleString();
-      document.getElementById('rate18k').textContent = `₹ ${r18.toLocaleString()}`;
-      document.getElementById('rate24k').textContent = `₹ ${r24.toLocaleString()}`;
-      document.getElementById('topbarRate').textContent = `₹ ${r22.toLocaleString()} /g`;
-      // Seed into goldRates array for calculator
-      goldRates[0] = { date: new Date(data.lastUpdated).toLocaleDateString('en-IN'), r22, r18, r24, change: 0 };
-    }
-  } catch (err) {
-    console.error('Failed to load gold rate:', err);
-  }
-}
-
-// ─── UPDATE GOLD RATE TO BACKEND ───
-async function updateGoldRate() {
-  const val = parseFloat(document.getElementById('newGoldRate').value);
-  if (!val || val < 1000) { showToast('Enter a valid gold rate.', 'error'); return; }
-  const r18 = Math.round(val * 0.818);
-  const r24 = Math.round(val * 1.091);
-  try {
-    const res = await fetch(`${API}/gold-rates`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ '18K': r18, '22K': val, '24K': r24 })
-    });
-    const data = await res.json();
-    if (res.ok) {
-      document.getElementById('currentRateDisplay').textContent = val.toLocaleString();
-      document.getElementById('rate18k').textContent = `₹ ${r18.toLocaleString()}`;
-      document.getElementById('rate24k').textContent = `₹ ${r24.toLocaleString()}`;
-      document.getElementById('topbarRate').textContent = `₹ ${val.toLocaleString()} /g`;
-      goldRates.unshift({ date: new Date().toLocaleDateString('en-IN'), r22: val, r18, r24, change: 0 });
-      renderGoldRates();
-      document.getElementById('newGoldRate').value = '';
-      showToast('✓ Gold rate updated.', 'success');
-    } else {
-      showToast(data.message || 'Failed to update rate.', 'error');
-    }
-  } catch (err) {
-    showToast('Server error. Try again.', 'error');
-  }
-}
-
-// ─── FETCH STOCK FROM BACKEND ───
-async function loadStock() {
-  try {
-    const res = await fetch(`${API}/stock`);
-    const data = await res.json();
-    if (data.success) {
-      stockData = data.data.map(item => ({
-        _id: item._id,
-        serial: item.serial,
-        name: item.name,
-        cat: item.category,
-        karat: item.karat,
-        weight: item.weight,
-        qty: item.quantity,
-        supplier: item.supplier?.name || item.supplier || '',
-        status: item.status
-      }));
-      renderStock(stockData);
-      updateAlerts();
-      updateStats();
-    }
-  } catch (err) {
-    console.error('Failed to load stock:', err);
-  }
-}
-
-// ─── ADD STOCK TO BACKEND ───
-async function addStock() {
-  const name     = document.getElementById('si_name').value.trim();
-  const category = document.getElementById('si_cat').value;
-  const karat    = document.getElementById('si_karat').value;
-  const weight   = parseFloat(document.getElementById('si_weight').value);
-  const quantity = parseInt(document.getElementById('si_qty').value);
-  const notes    = document.getElementById('si_notes').value;
-
-  if (!name || !category || isNaN(weight) || isNaN(quantity)) {
-    showToast('Please fill required fields.', 'error'); return;
-  }
-
-  try {
-    const res = await fetch(`${API}/stock`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, category, karat, weight, quantity, notes })
-    });
-    const data = await res.json();
-    if (res.ok) {
-      closeModal('addStockModal');
-      ['si_name','si_weight','si_qty','si_notes'].forEach(id => document.getElementById(id).value = '');
-      showToast(`✓ Stock entry ${data.data.serial} added.`, 'success');
-      loadStock();
-    } else {
-      showToast(data.message || 'Failed to add stock.', 'error');
-    }
-  } catch (err) {
-    showToast('Server error. Try again.', 'error');
-  }
-}
-
-// ─── SAVE EDIT TO BACKEND ───
-async function saveEdit() {
-  const i   = parseInt(document.getElementById('edit_idx').value);
-  const _id = stockData[i]._id;
-  const body = {
-    name:     document.getElementById('edit_name').value,
-    category: document.getElementById('edit_cat').value,
-    karat:    document.getElementById('edit_karat').value,
-    weight:   parseFloat(document.getElementById('edit_weight').value),
-    quantity: parseInt(document.getElementById('edit_qty').value),
-  };
-  try {
-    const res = await fetch(`${API}/stock/${_id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
-    const data = await res.json();
-    if (res.ok) {
-      closeModal('editStockModal');
-      showToast('✓ Stock entry updated.', 'success');
-      loadStock();
-    } else {
-      showToast(data.message || 'Failed to update.', 'error');
-    }
-  } catch (err) {
-    showToast('Server error. Try again.', 'error');
-  }
-}
-
-// ─── DELETE STOCK FROM BACKEND ───
-async function deleteStock(i) {
-  if (!confirm(`Remove "${stockData[i].name}" from inventory?`)) return;
-  const _id = stockData[i]._id;
-  try {
-    const res = await fetch(`${API}/stock/${_id}`, { method: 'DELETE' });
-    const data = await res.json();
-    if (res.ok) {
-      showToast('✓ Stock entry removed.', 'success');
-      loadStock();
-    } else {
-      showToast(data.message || 'Failed to delete.', 'error');
-    }
-  } catch (err) {
-    showToast('Server error. Try again.', 'error');
-  }
-}
-
-// ─── FETCH SUPPLIERS FROM BACKEND ───
-async function loadSuppliers() {
-  try {
-    const res = await fetch(`${API}/suppliers`);
-    const data = await res.json();
-    if (data.success) {
-      supplierData = data.data.map(s => ({
-        _id: s._id,
-        id: s.supplierId,
-        name: s.name,
-        contact: s.contact,
-        email: s.email || '-',
-        location: s.location || '-',
-        items: s.itemsSupplied || '-'
-      }));
-      renderSuppliers();
-    }
-  } catch (err) {
-    console.error('Failed to load suppliers:', err);
-  }
-}
-
-// ─── ADD SUPPLIER TO BACKEND ───
-async function addSupplier() {
-  const name    = document.getElementById('sup_name').value.trim();
-  const contact = document.getElementById('sup_contact').value.trim();
-  if (!name || !contact) { showToast('Name and contact are required.', 'error'); return; }
-  try {
-    const res = await fetch(`${API}/suppliers`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name, contact,
-        email:         document.getElementById('sup_email').value,
-        location:      document.getElementById('sup_location').value,
-        itemsSupplied: document.getElementById('sup_items').value
-      })
-    });
-    const data = await res.json();
-    if (res.ok) {
-      closeModal('addSupplierModal');
-      ['sup_name','sup_contact','sup_email','sup_location','sup_items']
-        .forEach(id => document.getElementById(id).value = '');
-      showToast('✓ Supplier added.', 'success');
-      loadSuppliers();
-    } else {
-      showToast(data.message || 'Failed to add supplier.', 'error');
-    }
-  } catch (err) {
-    showToast('Server error. Try again.', 'error');
-  }
-}
-
-// ─── DELETE SUPPLIER ───
-async function deleteSupplier(i) {
-  if (!confirm(`Remove "${supplierData[i].name}"?`)) return;
-  try {
-    const res = await fetch(`${API}/suppliers/${supplierData[i]._id}`, { method: 'DELETE' });
-    const data = await res.json();
-    if (res.ok) {
-      showToast('✓ Supplier removed.', 'success');
-      loadSuppliers();
-    } else {
-      showToast(data.message || 'Failed to delete.', 'error');
-    }
-  } catch (err) {
-    showToast('Server error. Try again.', 'error');
-  }
-}
-
-// ─── KEEP THESE EXACTLY AS BEFORE ───
-let stockData = [];
-let supplierData = [];
-let goldRates = [{ date: 'Today', r22: 6820, r18: 5578, r24: 7440, change: 0 }];
-
-function getStatus(qty) {
-  if (qty === 0) return { label: 'Out of Stock', cls: 'out' };
-  if (qty <= 3)  return { label: 'Low Stock',    cls: 'low' };
-  return { label: 'In Stock', cls: 'in-stock' };
-}
-
-function updateStats() {
-  const total = stockData.length;
-  const inStock = stockData.filter(s => s.qty > 3).length;
-  const low     = stockData.filter(s => s.qty > 0 && s.qty <= 3).length;
-  const out     = stockData.filter(s => s.qty === 0).length;
-  document.querySelector('.stat-card.c1 .stat-value').textContent = total;
-  document.querySelector('.stat-card.c2 .stat-value').textContent = inStock;
-  document.querySelector('.stat-card.c3 .stat-value').textContent = low;
-  document.querySelector('.stat-card.c4 .stat-value').textContent = out;
-}
-
-function renderStock(data) {
-  document.getElementById('stockBody').innerHTML = data.map((item, i) => {
-    const st = getStatus(item.qty);
-    return `<tr>
-      <td><span class="serial-badge">${item.serial}</span></td>
-      <td><strong>${item.name}</strong></td>
-      <td>${item.cat}</td><td>${item.karat}</td>
-      <td>${item.weight}g</td><td><strong>${item.qty}</strong></td>
-      <td><span class="status-badge ${st.cls}"><span class="status-dot"></span>${st.label}</span></td>
-      <td>${item.supplier}</td>
-      <td><div class="row-actions">
-        <button class="icon-btn" onclick="editStock(${i})">
-          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-        </button>
-        <button class="icon-btn danger" onclick="deleteStock(${i})">
-          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/></svg>
-        </button>
-      </div></td>
-    </tr>`;
-  }).join('');
-}
-
-function filterTable() {
-  const q   = document.getElementById('stockSearch').value.toLowerCase();
-  const cat = document.getElementById('categoryFilter').value;
-  renderStock(stockData.filter(item =>
-    (item.name.toLowerCase().includes(q) || item.serial.toLowerCase().includes(q)) &&
-    (cat === '' || item.cat === cat)
-  ));
-}
-
-function editStock(i) {
-  const item = stockData[i];
-  document.getElementById('edit_idx').value    = i;
-  document.getElementById('edit_name').value   = item.name;
-  document.getElementById('edit_cat').value    = item.cat;
-  document.getElementById('edit_karat').value  = item.karat;
-  document.getElementById('edit_weight').value = item.weight;
-  document.getElementById('edit_qty').value    = item.qty;
-  document.getElementById('edit_supplier').value = item.supplier;
-  openModal('editStockModal');
-}
-
-function renderGoldRates() {
-  document.getElementById('rateHistoryBody').innerHTML = goldRates.map(r => {
-    const chg = r.change >= 0
-      ? `<span style="color:var(--green);font-weight:600;">↑ +${r.change}</span>`
-      : `<span style="color:var(--red);font-weight:600;">↓ ${r.change}</span>`;
-    return `<tr><td>${r.date}</td><td>₹ ${r.r22.toLocaleString()}</td><td>₹ ${r.r18.toLocaleString()}</td><td>₹ ${r.r24.toLocaleString()}</td><td>${chg}</td></tr>`;
-  }).join('');
-}
-
-function calculate() {
-  const w      = parseFloat(document.getElementById('calcWeight').value) || 0;
-  const k      = document.getElementById('calcKarat').value;
-  const making = parseFloat(document.getElementById('calcMaking').value) || 0;
-  const base22 = goldRates[0].r22;
-  const rate   = k==='22' ? base22 : k==='18' ? Math.round(base22*0.818) : Math.round(base22*1.091);
-  const base   = w * rate;
-  document.getElementById('calcResult').textContent = `₹ ${Math.round(base + base*making/100).toLocaleString()}`;
-}
-
-function renderSuppliers() {
-  document.getElementById('supplierBody').innerHTML = supplierData.map((s, i) => `<tr>
-    <td><span class="serial-badge">${s.id || 'N/A'}</span></td>
-    <td><strong>${s.name}</strong></td>
-    <td>${s.contact}</td><td>${s.email}</td><td>${s.location}</td><td>${s.items}</td>
-    <td><div class="row-actions">
-      <button class="icon-btn" onclick="editSupplierPrompt(${i})">
-        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-      </button>
-      <button class="icon-btn danger" onclick="deleteSupplier(${i})">
-        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/></svg>
-      </button>
-    </div></td>
-  </tr>`).join('');
-}
-
-async function editSupplierPrompt(i) {
-  const s = supplierData[i];
-  const name     = prompt('Supplier Name:', s.name);     if (!name) return;
-  const contact  = prompt('Contact:',       s.contact);
-  const email    = prompt('Email:',         s.email);
-  const location = prompt('Location:',      s.location);
-  const items    = prompt('Items Supplied:', s.items);
-  try {
-    const res = await fetch(`${API}/suppliers/${s._id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, contact, email, location, itemsSupplied: items })
-    });
-    if (res.ok) { showToast('✓ Supplier updated.', 'success'); loadSuppliers(); }
-    else showToast('Failed to update supplier.', 'error');
-  } catch (err) {
-    showToast('Server error.', 'error');
-  }
-}
-
-function updateAlerts() {
-  const low = stockData.filter(s => s.qty > 0 && s.qty <= 3);
-  const out = stockData.filter(s => s.qty === 0);
-  let html = '';
-  out.forEach(item => {
-    html += `<div class="alert-item danger">
-      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-      <span class="alert-msg"><strong>${item.name}</strong> (${item.serial}) — OUT OF STOCK. Please reorder immediately.</span>
-      <span class="alert-time">Today</span>
-    </div>`;
-  });
-  low.forEach(item => {
-    html += `<div class="alert-item warning">
-      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-      <span class="alert-msg"><strong>${item.name}</strong> (${item.serial}) — Only <strong>${item.qty}</strong> unit(s) left.</span>
-      <span class="alert-time">Today</span>
-    </div>`;
-  });
-  if (!html) html = `<div style="padding:40px;text-align:center;color:var(--green);font-size:14px;font-weight:600;">✓ All stock levels are healthy.</div>`;
-  document.getElementById('alertsContainer').innerHTML = html;
-  document.getElementById('alertCount').textContent = out.length + low.length;
-}
-
-function exportCSV() {
-  const headers = ['Serial','Name','Category','Karat','Weight(g)','Qty','Status','Supplier'];
-  const rows = stockData.map(s => [s.serial, s.name, s.cat, s.karat, s.weight, s.qty, getStatus(s.qty).label, s.supplier]);
-  const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
-  const a = document.createElement('a');
-  a.href = 'data:text/csv,' + encodeURIComponent(csv);
-  a.download = 'inventory_' + new Date().toISOString().slice(0,10) + '.csv';
-  a.click();
-  showToast('✓ CSV exported.', 'success');
-}
-
-function switchTab(name, btn) {
-  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.getElementById('tab-' + name).classList.add('active');
-  btn.classList.add('active');
-}
-
-function openModal(id)  { document.getElementById(id).classList.add('open'); }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-document.querySelectorAll('.modal-overlay').forEach(o => {
-  o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); });
-});
-
-function showToast(msg, type='success') {
-  const t = document.getElementById('toast');
-  document.getElementById('toastMsg').textContent = msg;
-  t.className = `toast ${type} show`;
-  setTimeout(() => t.classList.remove('show'), 3000);
-}
-
-// ─── INIT: Load everything from backend on page load ───
-loadGoldRate();
-loadStock();
-loadSuppliers();
-renderGoldRates();
-</script>

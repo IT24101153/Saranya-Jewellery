@@ -22,7 +22,7 @@ router.get('/gold-rates', async (req, res) => {
   }
 });
 
-// POST /api/inventory/gold-rates - Update gold rates (Inventory Manager only)
+// POST /api/inventory/gold-rates - Update gold rates (Inventory Manager only) Have used try and catch function
 router.post('/gold-rates', isInventoryManager, async (req, res) => {
   try {
     const { '18K': rate18K, '22K': rate22K, '24K': rate24K } = req.body;
@@ -31,7 +31,7 @@ router.post('/gold-rates', isInventoryManager, async (req, res) => {
       return res.status(400).json({ message: 'Please provide all three karat rates' });
     }
 
-    // Upsert the single gold rate document
+  // Check if a gold rate record already exists in the database
     let goldRate = await GoldRate.findOne();
     if (goldRate) {
       goldRate['18K'] = rate18K;
@@ -48,7 +48,7 @@ router.post('/gold-rates', isInventoryManager, async (req, res) => {
     }
     await goldRate.save();
 
-    // Update karatRate for ALL products that have a kType assigned
+    // Update karatRate for ALL product prices must be updated
     const products = await Product.find({ kType: { $in: ['18K', '22K', '24K'] } });
     for (const product of products) {
       product.karatRate = goldRate[product.kType];
