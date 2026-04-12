@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import authManager from '../auth.js';
-import { FiBox, FiTrendingUp, FiTruck, FiLogOut } from 'react-icons/fi';
+import { FiBox, FiTrendingUp, FiTruck, FiLogOut, FiAlertTriangle } from 'react-icons/fi';
 
 const emptyStock = {
   name: '',
@@ -21,7 +21,7 @@ const emptySupplier = {
 
 export default function InventoryDashboardPage() {
   const [staffUser, setStaffUser] = useState(null);
-  const [activeTab, setActiveTab] = useState('stock'); // 'stock', 'rates', 'suppliers'
+  const [activeTab, setActiveTab] = useState('alerts'); // 'alerts', 'stock', 'rates', 'suppliers'
   
   // Stock state
   const [stockRows, setStockRows] = useState([]);
@@ -50,6 +50,13 @@ export default function InventoryDashboardPage() {
   const supplierOptions = useMemo(
     () => [...suppliers].sort((a, b) => (a.name || '').localeCompare(b.name || '')),
     [suppliers]
+  );
+
+  const lowStockAlerts = useMemo(
+    () => stockRows
+      .filter(item => Number(item.quantity) < 5)
+      .sort((a, b) => Number(a.quantity) - Number(b.quantity)),
+    [stockRows]
   );
 
   useEffect(() => {
@@ -357,10 +364,12 @@ export default function InventoryDashboardPage() {
             {[
               { id: 'stock', icon: FiBox, label: 'Stock Management' },
               { id: 'rates', icon: FiTrendingUp, label: 'Gold Rates' },
-              { id: 'suppliers', icon: FiTruck, label: 'Suppliers' }
+              { id: 'suppliers', icon: FiTruck, label: 'Suppliers' },
+              { id: 'alerts', icon: FiAlertTriangle, label: 'Stock Alerts' }
             ].map(item => {
               const isActive = activeTab === item.id;
               const IconComponent = item.icon;
+              const alertCount = item.id === 'alerts' ? lowStockAlerts.length : 0;
               return (
                 <button
                   key={item.id}
@@ -381,7 +390,8 @@ export default function InventoryDashboardPage() {
                     fontWeight: isActive ? 600 : 500,
                     cursor: 'pointer',
                     transition: 'all 0.3s',
-                    textAlign: 'left'
+                    textAlign: 'left',
+                    position: 'relative'
                   }}
                   onMouseEnter={(e) => {
                     if (!isActive) {
@@ -395,7 +405,24 @@ export default function InventoryDashboardPage() {
                   }}
                 >
                   <IconComponent size={24} style={{ minWidth: '24px' }} />
-                  <span>{item.label}</span>
+                  <span style={{ flex: 1 }}>{item.label}</span>
+                  {alertCount > 0 && (
+                    <div style={{
+                      background: '#d32f2f',
+                      color: '#fff',
+                      borderRadius: '50%',
+                      width: '24px',
+                      height: '24px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '0.75rem',
+                      fontWeight: '700',
+                      flexShrink: 0
+                    }}>
+                      {alertCount}
+                    </div>
+                  )}
                 </button>
               );
             })}
@@ -495,6 +522,212 @@ export default function InventoryDashboardPage() {
           marginBottom: '1rem'
         }}>
           {error}
+        </div>
+      )}
+
+      {/* ALERTS TAB */}
+      {activeTab === 'alerts' && (
+        <div>
+          <section style={{ background: '#fafbfc', border: '1px solid #eee', borderRadius: 12, padding: '1.5rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', marginBottom: '1.5rem' }}>
+              <FiAlertTriangle size={28} style={{ color: '#d32f2f' }} />
+              <div>
+                <h3 style={{ margin: 0, color: '#6f0022', fontSize: '1.2rem' }}>Stock Alerts</h3>
+                <p style={{ margin: '0.3rem 0 0', color: '#666', fontSize: '0.9rem' }}>Items with less than 5 units in stock</p>
+              </div>
+            </div>
+
+            {lowStockAlerts.length === 0 ? (
+              <div style={{
+                background: '#e8f5e9',
+                border: '1px solid #4caf50',
+                borderRadius: 8,
+                padding: '2rem',
+                textAlign: 'center'
+              }}>
+                <p style={{ color: '#2e7d32', fontSize: '1rem', fontWeight: '500' }}>
+                  All stock levels are healthy!
+                </p>
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gap: '0.8rem' }}>
+                {lowStockAlerts.map((item) => (
+                  <div key={item._id} style={{
+                    background: Number(item.quantity) === 0 ? '#ffebee' : '#fff3e0',
+                    border: `2px solid ${Number(item.quantity) === 0 ? '#d32f2f' : '#ff9800'}`,
+                    borderRadius: 8,
+                    padding: '1rem',
+                    display: 'grid',
+                    gridTemplateColumns: '1fr auto',
+                    alignItems: 'center',
+                    gap: '1rem'
+                  }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                      <div>
+                        <h4 style={{ margin: '0 0 0.3rem', color: '#6f0022', fontSize: '1rem', fontWeight: '600' }}>
+                          {item.name}
+                        </h4>
+                        <p style={{ margin: '0.2rem 0', color: '#666', fontSize: '0.9rem' }}>
+                          Category: <strong>{item.category}</strong>
+                        </p>
+                        <p style={{ margin: '0.2rem 0', color: '#666', fontSize: '0.9rem' }}>
+                          Karat: <strong>{item.karat}</strong>
+                        </p>
+                        <p style={{ margin: '0.2rem 0', color: '#666', fontSize: '0.9rem' }}>
+                          Weight: <strong>{item.weight}g</strong>
+                        </p>
+                      </div>
+                      <div style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'flex-start',
+                        gap: '0.5rem'
+                      }}>
+                        <div style={{
+                          padding: '0.5rem 0.8rem',
+                          background: Number(item.quantity) === 0 ? '#d32f2f' : '#ff9800',
+                          color: '#fff',
+                          borderRadius: 6,
+                          fontSize: '0.9rem',
+                          fontWeight: '700'
+                        }}>
+                          {Number(item.quantity) === 0 ? 'OUT OF STOCK' : `${item.quantity} units left`}
+                        </div>
+                        {item.supplier && (
+                          <p style={{ margin: 0, color: '#666', fontSize: '0.85rem' }}>
+                            Supplier: <strong>{item.supplier}</strong>
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => startEditStock(item)}
+                      style={{
+                        padding: '0.6rem 1.2rem',
+                        background: '#6f0022',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: 6,
+                        fontSize: '0.9rem',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        fontFamily: 'Poppins, sans-serif',
+                        whiteSpace: 'nowrap',
+                        transition: 'all 0.2s',
+                        minHeight: '40px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = '#5a001a'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = '#6f0022'}
+                    >
+                      Update Stock
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* Quick Update Form */}
+          {editingStock && (
+            <section style={{ background: '#e3f2fd', border: '2px solid #2196f3', borderRadius: 12, padding: '1.5rem', marginTop: '1.5rem' }}>
+              <h3 style={{ marginTop: 0, color: '#1565c0', fontSize: '1.1rem' }}>
+                Update Stock: {editingStock.name}
+              </h3>
+              <form onSubmit={saveStock} style={{ display: 'grid', gap: '0.8rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '0.3rem', color: '#333', fontSize: '0.85rem', fontWeight: '600' }}>
+                      Current Quantity
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      required
+                      placeholder="Quantity"
+                      value={stockForm.quantity}
+                      onChange={(e) => setStockForm({ ...stockForm, quantity: e.target.value })}
+                      style={{
+                        padding: '0.6rem',
+                        border: '1px solid #ddd',
+                        borderRadius: 8,
+                        fontSize: '0.94rem',
+                        fontFamily: 'Poppins, sans-serif',
+                        width: '100%',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '0.3rem', color: '#333', fontSize: '0.85rem', fontWeight: '600' }}>
+                      New Arrival Quantity (add to current)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      placeholder="Add quantity"
+                      defaultValue="0"
+                      onChange={(e) => {
+                        const newQty = Number(stockForm.quantity) + Number(e.target.value);
+                        if (e.target.value) {
+                          setStockForm({ ...stockForm, quantity: String(newQty) });
+                        }
+                      }}
+                      style={{
+                        padding: '0.6rem',
+                        border: '1px solid #ddd',
+                        borderRadius: 8,
+                        fontSize: '0.94rem',
+                        fontFamily: 'Poppins, sans-serif',
+                        width: '100%',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button
+                    type="submit"
+                    disabled={isSavingStock}
+                    style={{
+                      flex: 1,
+                      padding: '0.7rem 1.2rem',
+                      background: '#6f0022',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: 8,
+                      fontSize: '0.95rem',
+                      fontWeight: '600',
+                      cursor: isSavingStock ? 'not-allowed' : 'pointer',
+                      fontFamily: 'Poppins, sans-serif',
+                      opacity: isSavingStock ? 0.6 : 1,
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    {isSavingStock ? 'Updating...' : 'Confirm Update'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={cancelEditStock}
+                    style={{
+                      padding: '0.7rem 1.2rem',
+                      background: '#fff',
+                      color: '#666',
+                      border: '1px solid #ddd',
+                      borderRadius: 8,
+                      fontSize: '0.95rem',
+                      cursor: 'pointer',
+                      fontFamily: 'Poppins, sans-serif'
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </section>
+          )}
         </div>
       )}
 
