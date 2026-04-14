@@ -1,17 +1,12 @@
 import mongoose from 'mongoose';
 
-const loyaltyOfferSchema = new mongoose.Schema({
+const standardOfferSchema = new mongoose.Schema({
   title: {
     type: String,
     required: true
   },
   description: {
     type: String,
-    required: true
-  },
-  tierType: {
-    type: String,
-    enum: ['Silver', 'Gold', 'Platinum', 'All'],
     required: true
   },
   discountPercentage: {
@@ -48,38 +43,12 @@ const loyaltyOfferSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
-  // Coupon code field
+  // Coupon code - single code for all standard customers
   couponCode: {
     type: String,
+    required: true,
     unique: true,
-    sparse: true,
-    uppercase: true,
-    trim: true
-  },
-  // Legacy coupon system fields
-  usesCouponSystem: {
-    type: Boolean,
-    default: true
-  },
-  couponPrefix: {
-    type: String,
-    default: ''
-  },
-  generatedCouponsCount: {
-    type: Number,
-    default: 0
-  },
-  redeemedCount: {
-    type: Number,
-    default: 0
-  },
-  couponsGenerated: {
-    type: Boolean,
-    default: false
-  },
-  generatedAt: {
-    type: Date,
-    default: null
+    index: true
   },
   createdAt: {
     type: Date,
@@ -91,6 +60,6 @@ const loyaltyOfferSchema = new mongoose.Schema({
   }
 });
 
-const LoyaltyOffer = mongoose.model('LoyaltyOffer', loyaltyOfferSchema);
+const StandardOffer = mongoose.model('StandardOffer', standardOfferSchema);
 
-export default LoyaltyOffer;
+export default StandardOffer;

@@ -17,15 +17,18 @@ export default function CustomerCareDashboardPage() {
   
   // Offers state
   const [offers, setOffers] = useState([]);
+  const [editingOfferId, setEditingOfferId] = useState(null);
   const [offerForm, setOfferForm] = useState({
     title: '',
     description: '',
-    offerType: 'Seasonal Offer',
     discountPercentage: '',
-    validUntil: ''
+    discountAmount: '',
+    validFrom: '',
+    validUntil: '',
+    couponCode: ''
   });
   const [isCreatingOffer, setIsCreatingOffer] = useState(false);
-  const [editingOfferId, setEditingOfferId] = useState(null);
+  const [busyCouponOfferId, setBusyCouponOfferId] = useState('');
 
   // Messages state
   const [chats, setChats] = useState([]);
@@ -61,11 +64,11 @@ export default function CustomerCareDashboardPage() {
   // ============ OFFERS FUNCTIONS ============
   async function loadOffers() {
     try {
-      const response = await authManager.apiRequest('/api/messages');
+      const response = await authManager.apiRequest('/api/loyalty/offers/standard');
       const data = await response.json();
       if (response.ok) {
-        const seasonalOffers = Array.isArray(data) ? data.filter(m => m.type === 'promotion') : [];
-        setOffers(seasonalOffers);
+        // All offers from this endpoint are standard customer offers
+        setOffers(Array.isArray(data) ? data : []);
       }
     } catch (err) {
       console.error('Error loading offers:', err);
@@ -74,8 +77,8 @@ export default function CustomerCareDashboardPage() {
 
   async function createOffer(event) {
     event.preventDefault();
-    if (!offerForm.title || !offerForm.description || !offerForm.validUntil) {
-      setError('All fields required');
+    if (!offerForm.title || !offerForm.description || !offerForm.validFrom || !offerForm.validUntil || !offerForm.couponCode) {
+      setError('All fields including valid dates and coupon code are required');
       return;
     }
 
@@ -85,102 +88,113 @@ export default function CustomerCareDashboardPage() {
       return;
     }
 
+    if (offerForm.validFrom < todayDate) {
+      setError('Offer valid from date cannot be in the past');
+      return;
+    }
+
     if (offerForm.validUntil < todayDate) {
       setError('Offer valid until date cannot be in the past');
+      return;
+    }
+
+    if (new Date(offerForm.validFrom) > new Date(offerForm.validUntil)) {
+      setError('Start date must be before end date');
       return;
     }
 
     setIsCreatingOffer(true);
     setError('');
     try {
-      const endpoint = editingOfferId ? `/api/messages/${editingOfferId}` : '/api/messages';
-      const method = editingOfferId ? 'PUT' : 'POST';
+      if (editingOfferId) {
+        // Update existing offer
+        const response = await authManager.apiRequest(`/api/loyalty/offers/standard/${editingOfferId}`, {
+          method: 'PUT',
+          body: JSON.stringify({
+            title: offerForm.title,
+            description: offerForm.description,
+            discountPercentage: parsedDiscount,
+            discountAmount: Number(offerForm.discountAmount || 0),
+            validFrom: offerForm.validFrom,
+            validUntil: offerForm.validUntil,
+            couponCode: offerForm.couponCode
+          })
+        });
 
-      const response = await authManager.apiRequest(endpoint, {
-        method,
-        body: JSON.stringify({
-          title: offerForm.title,
-          message: offerForm.description,
-          type: 'promotion',
-          status: 'active',
-          targetAudience: 'all',
-          sendOnLogin: true,
-          validUntil: offerForm.validUntil,
-          discountPercentage: parsedDiscount
-        })
-      });
-
-      const data = await response.json();
-      if (!response.ok) {
-        setError(data.message || 'Failed to create offer');
+        const data = await response.json();
+        if (!response.ok) {
+          setError(data.message || 'Failed to update offer');
+        } else {
+          setOfferForm({ title: '', description: '', discountPercentage: '', discountAmount: '', validFrom: '', validUntil: '', couponCode: '' });
+          setEditingOfferId(null);
+          await loadOffers();
+        }
       } else {
-        setOfferForm({ title: '', description: '', offerType: 'Seasonal Offer', discountPercentage: '', validUntil: '' });
-        setEditingOfferId(null);
-        await loadOffers();
+        // Create new offer
+        const response = await authManager.apiRequest('/api/loyalty/offers/standard/create', {
+          method: 'POST',
+          body: JSON.stringify({
+            title: offerForm.title,
+            description: offerForm.description,
+            discountPercentage: parsedDiscount,
+            discountAmount: Number(offerForm.discountAmount || 0),
+            validFrom: offerForm.validFrom,
+            validUntil: offerForm.validUntil,
+            couponCode: offerForm.couponCode
+          })
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+          setError(data.message || 'Failed to create offer');
+        } else {
+          setOfferForm({ title: '', description: '', discountPercentage: '', discountAmount: '', validFrom: '', validUntil: '', couponCode: '' });
+          await loadOffers();
+        }
       }
     } catch (err) {
-      setError(err.message || 'Error creating offer');
+      setError(err.message || 'Error saving offer');
     } finally {
       setIsCreatingOffer(false);
     }
   }
 
-  function startEditOffer(offer) {
-    setEditingOfferId(offer._id);
-    setError('');
-    setOfferForm({
-      title: offer.title || '',
-      description: offer.message || '',
-      offerType: 'Seasonal Offer',
-      discountPercentage: offer.discountPercentage ?? '',
-      validUntil: offer.validUntil ? new Date(offer.validUntil).toISOString().split('T')[0] : ''
-    });
-  }
-
-  function cancelEditOffer() {
+  function cancelEdit() {
     setEditingOfferId(null);
-    setOfferForm({ title: '', description: '', offerType: 'Seasonal Offer', discountPercentage: '', validUntil: '' });
+    setOfferForm({ title: '', description: '', discountPercentage: '', discountAmount: '', validFrom: '', validUntil: '', couponCode: '' });
     setError('');
   }
 
-  async function sendOfferEmails(offerId) {
-    if (!window.confirm('Send this offer to all customers?')) return;
-
+  async function sendCoupons(offerId) {
+    setBusyCouponOfferId(offerId);
+    setError('');
     try {
-      setError('');
-      const response = await authManager.apiRequest(`/api/messages/${offerId}/send-email`, {
+      const response = await authManager.apiRequest(`/api/loyalty/offers/standard/${offerId}/send-coupons`, {
         method: 'POST'
       });
-
       const data = await response.json();
-      if (response.ok) {
-        alert(`Offer sent to ${data.recipientsCount || 0} customers`);
-        await loadOffers();
-      } else {
-        setError(data.message || 'Failed to send offer');
-      }
+      if (!response.ok) throw new Error(data.message || 'Failed to send coupons');
+      await loadOffers();
     } catch (err) {
-      setError(err.message || 'Error sending offer');
+      setError(err.message || 'Failed to send coupons');
+    } finally {
+      setBusyCouponOfferId('');
     }
   }
 
   async function deleteOffer(offerId) {
     if (!window.confirm('Delete this offer?')) return;
-
+    
+    setError('');
     try {
-      setError('');
-      const response = await authManager.apiRequest(`/api/messages/${offerId}`, {
+      const response = await authManager.apiRequest(`/api/loyalty/offers/standard/${offerId}`, {
         method: 'DELETE'
       });
-
       const data = await response.json();
-      if (response.ok) {
-        await loadOffers();
-      } else {
-        setError(data.message || 'Failed to delete offer');
-      }
+      if (!response.ok) throw new Error(data.message || 'Failed to delete offer');
+      await loadOffers();
     } catch (err) {
-      setError(err.message || 'Error deleting offer');
+      setError(err.message || 'Failed to delete offer');
     }
   }
 
@@ -497,23 +511,23 @@ export default function CustomerCareDashboardPage() {
         <div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem', marginBottom: '1.5rem' }}>
             <div style={{ background: '#fafbfc', border: '1px solid #eee', borderRadius: 12, padding: '1rem', textAlign: 'center' }}>
-              <p style={{ margin: 0, color: '#666', fontSize: '0.9rem' }}>Active Offers</p>
+              <p style={{ margin: 0, color: '#666', fontSize: '0.9rem' }}>Total Offers</p>
               <h2 style={{ margin: '0.5rem 0 0', color: '#6f0022', fontSize: '1.8rem' }}>
-                {offers.filter(o => o.status === 'active').length}
+                {offers.length}
               </h2>
             </div>
             <div style={{ background: '#fafbfc', border: '1px solid #eee', borderRadius: 12, padding: '1rem', textAlign: 'center' }}>
               <p style={{ margin: 0, color: '#666', fontSize: '0.9rem' }}>Total Sent</p>
               <h2 style={{ margin: '0.5rem 0 0', color: '#6f0022', fontSize: '1.8rem' }}>
-                {offers.reduce((sum, o) => sum + (o.sentCount || 0), 0)}
+                {offers.reduce((sum, o) => sum + (o.recipientsCount || 0), 0)}
               </h2>
             </div>
           </div>
 
-          {/* Create Offer Form */}
+          {/* Create/Edit Offer Form */}
           <section style={{ background: '#fafbfc', border: '1px solid #eee', borderRadius: 12, padding: '1.5rem', marginBottom: '1.5rem' }}>
             <h3 style={{ marginTop: 0, color: '#6f0022', fontSize: '1.1rem' }}>
-              {editingOfferId ? 'Edit Offer' : 'Create New Offer'}
+              {editingOfferId ? 'Edit Offer' : 'Create Special Offer for Standard Customers'}
             </h3>
             <form onSubmit={createOffer} style={{ display: 'grid', gap: '0.8rem' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
@@ -530,9 +544,12 @@ export default function CustomerCareDashboardPage() {
                     fontFamily: 'Poppins, sans-serif'
                   }}
                 />
-                <select
-                  value={offerForm.offerType}
-                  onChange={(e) => setOfferForm({ ...offerForm, offerType: e.target.value })}
+                <input
+                  type="text"
+                  placeholder="Coupon Code (e.g., SAVE20, WELCOME50)"
+                  value={offerForm.couponCode}
+                  onChange={(e) => setOfferForm({ ...offerForm, couponCode: e.target.value.toUpperCase() })}
+                  maxLength="20"
                   style={{
                     padding: '0.6rem',
                     border: '1px solid #ddd',
@@ -540,11 +557,7 @@ export default function CustomerCareDashboardPage() {
                     fontSize: '0.94rem',
                     fontFamily: 'Poppins, sans-serif'
                   }}
-                >
-                  {SEASON_TYPES.map(type => (
-                    <option key={type} value={type}>{type}</option>
-                  ))}
-                </select>
+                />
               </div>
               <textarea
                 placeholder="Offer Description"
@@ -563,7 +576,7 @@ export default function CustomerCareDashboardPage() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
                 <input
                   type="number"
-                  placeholder="Discount % (optional)"
+                  placeholder="Discount %"
                   value={offerForm.discountPercentage}
                   onChange={(e) => setOfferForm({ ...offerForm, discountPercentage: e.target.value })}
                   min="0"
@@ -578,10 +591,12 @@ export default function CustomerCareDashboardPage() {
                   }}
                 />
                 <input
-                  type="date"
-                  value={offerForm.validUntil}
-                  onChange={(e) => setOfferForm({ ...offerForm, validUntil: e.target.value })}
-                  min={todayDate}
+                  type="number"
+                  placeholder="OR Fixed Amount (LKR)"
+                  value={offerForm.discountAmount}
+                  onChange={(e) => setOfferForm({ ...offerForm, discountAmount: e.target.value })}
+                  min="0"
+                  step="0.01"
                   style={{
                     padding: '0.6rem',
                     border: '1px solid #ddd',
@@ -590,6 +605,44 @@ export default function CustomerCareDashboardPage() {
                     fontFamily: 'Poppins, sans-serif'
                   }}
                 />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.3rem', color: '#666', fontFamily: 'Poppins, sans-serif', fontWeight: '500' }}>Valid From</label>
+                  <input
+                    type="date"
+                    value={offerForm.validFrom}
+                    onChange={(e) => setOfferForm({ ...offerForm, validFrom: e.target.value })}
+                    min={todayDate}
+                    style={{
+                      width: '100%',
+                      padding: '0.6rem',
+                      border: '1px solid #ddd',
+                      borderRadius: 8,
+                      fontSize: '0.94rem',
+                      fontFamily: 'Poppins, sans-serif',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.3rem', color: '#666', fontFamily: 'Poppins, sans-serif', fontWeight: '500' }}>Valid Until</label>
+                  <input
+                    type="date"
+                    value={offerForm.validUntil}
+                    onChange={(e) => setOfferForm({ ...offerForm, validUntil: e.target.value })}
+                    min={todayDate}
+                    style={{
+                      width: '100%',
+                      padding: '0.6rem',
+                      border: '1px solid #ddd',
+                      borderRadius: 8,
+                      fontSize: '0.94rem',
+                      fontFamily: 'Poppins, sans-serif',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
               </div>
               <button
                 type="submit"
@@ -608,12 +661,12 @@ export default function CustomerCareDashboardPage() {
                   transition: 'all 0.2s ease'
                 }}
               >
-                {isCreatingOffer ? (editingOfferId ? 'Updating...' : 'Creating...') : (editingOfferId ? 'Update Offer' : 'Create Offer')}
+                {isCreatingOffer ? (editingOfferId ? 'Saving...' : 'Creating...') : (editingOfferId ? 'Save Changes' : 'Create Offer')}
               </button>
               {editingOfferId && (
                 <button
                   type="button"
-                  onClick={cancelEditOffer}
+                  onClick={cancelEdit}
                   style={{
                     padding: '0.7rem 1.2rem',
                     background: '#fff',
@@ -621,11 +674,13 @@ export default function CustomerCareDashboardPage() {
                     border: '1px solid #ddd',
                     borderRadius: 8,
                     fontSize: '0.95rem',
+                    fontWeight: '600',
                     cursor: 'pointer',
-                    fontFamily: 'Poppins, sans-serif'
+                    fontFamily: 'Poppins, sans-serif',
+                    transition: 'all 0.2s ease'
                   }}
                 >
-                  Cancel Edit
+                  Cancel
                 </button>
               )}
             </form>
@@ -652,47 +707,67 @@ export default function CustomerCareDashboardPage() {
                       {offer.title}
                     </h4>
                     <p style={{ margin: '0.3rem 0', color: '#666', fontSize: '0.9rem' }}>
-                      {offer.message}
+                      {offer.description}
                     </p>
                     <p style={{ margin: '0.3rem 0 0', color: '#999', fontSize: '0.85rem' }}>
-                      {offer.discountPercentage ? `${offer.discountPercentage}% off • ` : ''}
-                      Sent: {offer.sentCount || 0}
+                      Discount: {offer.discountPercentage || 0}% {offer.discountAmount ? `or Rs. ${offer.discountAmount}` : ''} • Valid: {new Date(offer.validFrom).toLocaleDateString()} to {new Date(offer.validUntil).toLocaleDateString()}
                     </p>
+                    <p style={{ margin: '0.3rem 0 0', color: '#d4af37', fontSize: '0.85rem', fontWeight: '600' }}>
+                      Coupon Code: {offer.couponCode}
+                    </p>
+                    {offer.emailSent && offer.recipientsCount > 0 && (
+                      <p style={{ margin: '0.3rem 0 0', color: '#1f7a55', fontSize: '0.85rem', fontWeight: '600' }}>
+                        ✓ Sent to {offer.recipientsCount} customer{offer.recipientsCount !== 1 ? 's' : ''}
+                      </p>
+                    )}
                   </div>
                   <div style={{ display: 'flex', gap: '0.5rem', flexDirection: 'column' }}>
                     <button
-                      onClick={() => startEditOffer(offer)}
+                      onClick={() => sendCoupons(offer._id)}
+                      disabled={busyCouponOfferId === offer._id}
                       style={{
                         padding: '0.5rem 1rem',
-                        background: '#fff',
-                        color: '#6f0022',
-                        border: '1px solid #e0bf63',
+                        background: '#1f7a55',
+                        color: '#fff',
+                        border: 'none',
                         borderRadius: 6,
                         fontSize: '0.85rem',
                         fontWeight: '600',
-                        cursor: 'pointer',
+                        cursor: busyCouponOfferId === offer._id ? 'not-allowed' : 'pointer',
                         fontFamily: 'Poppins, sans-serif',
-                        whiteSpace: 'nowrap'
+                        whiteSpace: 'nowrap',
+                        opacity: busyCouponOfferId === offer._id ? 0.6 : 1
                       }}
                     >
-                      Edit
+                      {busyCouponOfferId === offer._id ? 'Sending...' : 'Send Emails'}
                     </button>
                     <button
-                      onClick={() => sendOfferEmails(offer._id)}
+                      onClick={() => {
+                        setEditingOfferId(offer._id);
+                        setOfferForm({
+                          title: offer.title,
+                          description: offer.description,
+                          discountPercentage: offer.discountPercentage || '',
+                          discountAmount: offer.discountAmount || '',
+                          validFrom: offer.validFrom?.split('T')[0] || '',
+                          validUntil: offer.validUntil?.split('T')[0] || '',
+                          couponCode: offer.couponCode
+                        });
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
                       style={{
                         padding: '0.5rem 1rem',
-                        background: '#e0bf63',
-                        color: '#6f0022',
+                        background: '#8b5e1f',
+                        color: '#fff',
                         border: 'none',
                         borderRadius: 6,
                         fontSize: '0.85rem',
                         fontWeight: '600',
                         cursor: 'pointer',
-                        fontFamily: 'Poppins, sans-serif',
-                        whiteSpace: 'nowrap'
+                        fontFamily: 'Poppins, sans-serif'
                       }}
                     >
-                      Send Email
+                      Edit
                     </button>
                     <button
                       onClick={() => deleteOffer(offer._id)}

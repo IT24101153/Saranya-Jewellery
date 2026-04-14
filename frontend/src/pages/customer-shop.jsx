@@ -331,16 +331,12 @@ export default function CustomerShopPage() {
                         {product.category} - {product.karat}
                       </p>
 
-                      {hasReviews ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', margin: '0.35rem 0 0.5rem' }}>
-                          <span style={{ color: '#e0bf63', fontSize: '0.95rem' }}>{renderStars(summary.avgRating)}</span>
-                          <span style={{ fontSize: '0.82rem', color: '#666' }}>
-                            {Number(summary.avgRating || 0).toFixed(1)} ({summary.totalReviews})
-                          </span>
-                        </div>
-                      ) : (
-                        <p style={{ fontSize: '0.82rem', color: '#999', margin: '0.35rem 0 0.5rem' }}>No reviews yet</p>
-                      )}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', margin: '0.35rem 0 0.5rem' }}>
+                        <span style={{ color: '#e0bf63', fontSize: '0.95rem' }}>{renderStars(summary.avgRating)}</span>
+                        <span style={{ fontSize: '0.82rem', color: '#666' }}>
+                          {hasReviews ? `${Number(summary.avgRating || 0).toFixed(1)} (${summary.totalReviews})` : 'No reviews'}
+                        </span>
+                      </div>
 
                       <p style={{ color: 'var(--brand-gold-strong)', fontWeight: 600, fontSize: '1.1rem', margin: '0.5rem 0' }}>
                         Rs. {product.price?.toLocaleString() || 'N/A'}
