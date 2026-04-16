@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import authManager from '../auth.js';
-import { FiGift, FiMessageCircle, FiStar, FiLogOut } from 'react-icons/fi';
+import { FiBarChart2, FiGift, FiMessageCircle, FiStar, FiLogOut, FiCalendar } from 'react-icons/fi';
 
 const DASHBOARD_LINKS = [
   { href: '/customer-care-dashboard', label: 'Messages' },
@@ -10,10 +10,51 @@ const DASHBOARD_LINKS = [
 
 const SEASON_TYPES = ['Seasonal Offer', 'Clearance Sale', 'Flash Sale', 'New Collection', 'Alert'];
 
+const APPOINTMENT_TYPES = [
+  'In-Store Consultation',
+  'Custom Order Meeting',
+  'Jewelry Fitting',
+  'Repair Drop-off',
+  'Resize',
+  'Valuation',
+  'Gift Consultation'
+];
+
+const BLOCK_REASONS = ['Holiday', 'Staff Leave', 'Maintenance', 'Training', 'Other'];
+
+// Fixed operating hours: 7am to 10pm, 1 hour slots = 15 slots
+const FIXED_TIME_SLOTS = [
+  { display: '7:00 AM - 8:00 AM', start: '07:00', end: '08:00' },
+  { display: '8:00 AM - 9:00 AM', start: '08:00', end: '09:00' },
+  { display: '9:00 AM - 10:00 AM', start: '09:00', end: '10:00' },
+  { display: '10:00 AM - 11:00 AM', start: '10:00', end: '11:00' },
+  { display: '11:00 AM - 12:00 PM', start: '11:00', end: '12:00' },
+  { display: '12:00 PM - 1:00 PM', start: '12:00', end: '13:00' },
+  { display: '1:00 PM - 2:00 PM', start: '13:00', end: '14:00' },
+  { display: '2:00 PM - 3:00 PM', start: '14:00', end: '15:00' },
+  { display: '3:00 PM - 4:00 PM', start: '15:00', end: '16:00' },
+  { display: '4:00 PM - 5:00 PM', start: '16:00', end: '17:00' },
+  { display: '5:00 PM - 6:00 PM', start: '17:00', end: '18:00' },
+  { display: '6:00 PM - 7:00 PM', start: '18:00', end: '19:00' },
+  { display: '7:00 PM - 8:00 PM', start: '19:00', end: '20:00' },
+  { display: '8:00 PM - 9:00 PM', start: '20:00', end: '21:00' },
+  { display: '9:00 PM - 10:00 PM', start: '21:00', end: '22:00' }
+];
+
 export default function CustomerCareDashboardPage() {
   const [staffUser, setStaffUser] = useState(null);
-  const [activeTab, setActiveTab] = useState('offers'); // 'offers', 'messages', 'reviews'
+  const [activeTab, setActiveTab] = useState('overview'); // 'overview', 'offers', 'messages', 'reviews'
   const [isLogoutHovered, setIsLogoutHovered] = useState(false);
+  
+  // Dashboard Overview state
+  const [dashboardStats, setDashboardStats] = useState({
+    activeOffers: 0,
+    qaArticles: 0,
+    pendingQuestions: 0,
+    answeredRate: 0,
+    recentActivities: [],
+    topViewedQuestions: []
+  });
   
   // Offers state
   const [offers, setOffers] = useState([]);
@@ -33,12 +74,22 @@ export default function CustomerCareDashboardPage() {
   const [chatMessages, setChatMessages] = useState([]);
   const [replyText, setReplyText] = useState('');
   const [chatStats, setChatStats] = useState({ active: 0, resolved: 0, pending: 0 });
+  const [hoveredMessageIndex, setHoveredMessageIndex] = useState(null);
 
   // Reviews state
   const [reviews, setReviews] = useState([]);
   const [reviewStats, setReviewStats] = useState({ pending: 0, approved: 0, rejected: 0 });
   const [selectedReview, setSelectedReview] = useState(null);
   const [staffReply, setStaffReply] = useState('');
+
+  // Appointments state
+  const [slots, setSlots] = useState([]);
+  const [appointments, setAppointments] = useState([]);
+  const [appointmentStats, setAppointmentStats] = useState({ total: 0, completed: 0, noShow: 0, cancelled: 0, confirmed: 0 });
+  const [slotForm, setSlotForm] = useState({ date: '', timeSlotIndex: 0, assignedStaff: '', isBlocked: false, blockReason: '' });
+  const [editingSlotId, setEditingSlotId] = useState(null);
+  const [selectedAppointment, setSelectedAppointment] = useState(null);
+  const [appointmentStatusForm, setAppointmentStatusForm] = useState({ status: '', internalNotesAfter: '', followUpNote: '', followUpSuggested: false });
 
   const [error, setError] = useState('');
 
@@ -53,10 +104,91 @@ export default function CustomerCareDashboardPage() {
       const me = await authManager.checkStaffAuth('Customer Care');
       if (!me || me.needsApproval) return;
       setStaffUser(me);
-      await Promise.all([loadOffers(), loadChats(), loadReviews()]);
+      await Promise.all([loadDashboardOverview(), loadOffers(), loadChats(), loadReviews(), loadSlots(), loadAppointments()]);
     }
     bootstrap();
   }, []);
+
+  // ============ DASHBOARD OVERVIEW FUNCTIONS ============
+  async function loadDashboardOverview() {
+    try {
+      // Fetch offers, reviews and chats and derive dashboard values
+      const [offersResp, reviewsResp, chatsResp] = await Promise.all([
+        authManager.apiRequest('/api/messages'),
+        authManager.apiRequest('/api/reviews'),
+        authManager.apiRequest('/api/chat/all')
+      ]);
+
+      const offersJson = await offersResp.json();
+      const offers = Array.isArray(offersJson) ? offersJson : (Array.isArray(offersJson.messages) ? offersJson.messages : []);
+      const activeOffers = Array.isArray(offers) ? offers.filter(m => m.type === 'promotion' && m.status === 'active').length : 0;
+
+      const reviewsJson = await reviewsResp.json();
+      const reviews = Array.isArray(reviewsJson.reviews) ? reviewsJson.reviews : (Array.isArray(reviewsJson) ? reviewsJson : []);
+      const pendingQuestions = reviews.filter(r => r.status === 'pending').length;
+      const totalReviews = reviews.length;
+      const answeredReviews = reviews.filter(r => r.status === 'approved').length;
+      const answeredRate = totalReviews > 0 ? Math.round((answeredReviews / totalReviews) * 100) : 0;
+
+      const chatsJson = await chatsResp.json();
+      const chats = Array.isArray(chatsJson) ? chatsJson : (Array.isArray(chatsJson.chats) ? chatsJson.chats : []);
+
+      // QA articles derived from messages of type 'general' or 'announcement'
+      const qaArticles = Array.isArray(offers)
+        ? offers.filter(m => ['general', 'announcement'].includes(m.type)).length
+        : 0;
+
+      // Build recent activities from offers, chats and reviews (merged & sorted)
+      const activities = [];
+      offers.forEach(o => {
+        activities.push({ type: 'offer', icon: '★', text: `${o.title}`, rawDate: new Date(o.createdAt || o.updatedAt || Date.now()) });
+      });
+      chats.forEach(c => {
+        const lastMsg = Array.isArray(c.messages) && c.messages.length ? c.messages[c.messages.length - 1] : null;
+        const text = lastMsg ? `${c.customerName}: ${lastMsg.message}` : `${c.customerName} started a chat`;
+        activities.push({ type: 'message', icon: '✉', text, rawDate: new Date(c.lastMessageAt || (lastMsg && lastMsg.timestamp) || Date.now()) });
+      });
+      reviews.forEach(r => {
+        activities.push({ type: 'review', icon: '◆', text: r.title || r.comment || `Review on ${r.productName || ''}`.trim(), rawDate: new Date(r.createdAt || Date.now()) });
+      });
+
+      activities.sort((a, b) => b.rawDate - a.rawDate);
+
+      const timeAgo = (date) => {
+        const diff = Math.floor((Date.now() - new Date(date)) / 1000);
+        if (diff < 60) return 'just now';
+        if (diff < 3600) return `${Math.floor(diff / 60)} minutes ago`;
+        if (diff < 86400) return `${Math.floor(diff / 3600)} hours ago`;
+        return `${Math.floor(diff / 86400)} days ago`;
+      };
+
+      const recentActivities = activities.slice(0, 6).map(a => ({ type: a.type, icon: a.icon, text: a.text, time: timeAgo(a.rawDate) }));
+
+      // Derive "top viewed questions" from initial customer chat messages (most common first messages)
+      const questionCounts = {};
+      chats.forEach(c => {
+        if (Array.isArray(c.messages) && c.messages.length) {
+          const first = String(c.messages[0].message || '').trim().slice(0, 220);
+          if (first) questionCounts[first] = (questionCounts[first] || 0) + 1;
+        }
+      });
+      const topViewedQuestions = Object.entries(questionCounts)
+        .map(([text, views]) => ({ text, views }))
+        .sort((a, b) => b.views - a.views)
+        .slice(0, 6);
+
+      setDashboardStats({
+        activeOffers,
+        qaArticles,
+        pendingQuestions,
+        answeredRate,
+        recentActivities,
+        topViewedQuestions,
+      });
+    } catch (err) {
+      console.error('Error loading dashboard overview:', err);
+    }
+  }
 
   // ============ OFFERS FUNCTIONS ============
   async function loadOffers() {
@@ -263,6 +395,26 @@ export default function CustomerCareDashboardPage() {
     }
   }
 
+  async function deleteMessage(chatId, messageIndex) {
+    if (!window.confirm('Delete this message?')) return;
+
+    try {
+      setError('');
+      const response = await authManager.apiRequest(`/api/chat/${chatId}/message/${messageIndex}`, {
+        method: 'DELETE'
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        await selectChat(selectedChat);
+      } else {
+        setError(data.message || 'Failed to delete message');
+      }
+    } catch (err) {
+      setError(err.message || 'Error deleting message');
+    }
+  }
+
   // ============ REVIEWS FUNCTIONS ============
   async function loadReviews() {
     try {
@@ -318,57 +470,209 @@ export default function CustomerCareDashboardPage() {
     }
   }
 
+  // ============ APPOINTMENT SLOTS FUNCTIONS ============
+  async function loadSlots() {
+    try {
+      const response = await authManager.apiRequest('/api/appointments/slots');
+      const data = await response.json();
+      if (response.ok) {
+        setSlots(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      console.error('Error loading slots:', err);
+    }
+  }
+
+  async function loadAppointments() {
+    try {
+      const response = await authManager.apiRequest('/api/appointments');
+      const data = await response.json();
+      if (response.ok) {
+        setAppointments(Array.isArray(data.appointments) ? data.appointments : []);
+        setAppointmentStats(data.stats || { total: 0, completed: 0, noShow: 0, cancelled: 0, confirmed: 0 });
+      }
+    } catch (err) {
+      console.error('Error loading appointments:', err);
+    }
+  }
+
+  async function createOrUpdateSlot(e) {
+    e.preventDefault();
+    if (!slotForm.date || slotForm.timeSlotIndex === undefined || slotForm.timeSlotIndex === null) {
+      setError('All fields required');
+      return;
+    }
+
+    try {
+      setError('');
+      const selectedTimeSlot = FIXED_TIME_SLOTS[slotForm.timeSlotIndex];
+      
+      const url = editingSlotId ? `/api/appointments/slots/${editingSlotId}` : '/api/appointments/slots';
+      const method = editingSlotId ? 'PATCH' : 'POST';
+
+      const response = await authManager.apiRequest(url, {
+        method,
+        body: JSON.stringify({
+          date: slotForm.date,
+          startTime: selectedTimeSlot.start,
+          endTime: selectedTimeSlot.end,
+          assignedStaff: slotForm.assignedStaff,
+          isBlocked: slotForm.isBlocked,
+          blockReason: slotForm.blockReason
+        })
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setSlotForm({ date: '', timeSlotIndex: 0, assignedStaff: '', isBlocked: false, blockReason: '' });
+        setEditingSlotId(null);
+        await loadSlots();
+      } else {
+        setError(data.message || 'Failed to save slot');
+      }
+    } catch (err) {
+      setError(err.message || 'Error saving slot');
+    }
+  }
+
+  async function deleteSlot(slotId) {
+    if (!window.confirm('Delete this slot?')) return;
+
+    try {
+      setError('');
+      const response = await authManager.apiRequest(`/api/appointments/slots/${slotId}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        await loadSlots();
+      } else {
+        const data = await response.json();
+        setError(data.message || 'Failed to delete slot');
+      }
+    } catch (err) {
+      setError(err.message || 'Error deleting slot');
+    }
+  }
+
+  async function blockMultipleSlots(startDate, endDate, reason) {
+    try {
+      setError('');
+      const response = await authManager.apiRequest('/api/appointments/slots/block-multiple', {
+        method: 'POST',
+        body: JSON.stringify({ startDate, endDate, blockReason: reason })
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        await loadSlots();
+      } else {
+        setError(data.message || 'Failed to block slots');
+      }
+    } catch (err) {
+      setError(err.message || 'Error blocking slots');
+    }
+  }
+
+  async function updateAppointmentStatus(appointmentId, newStatus, notes) {
+    try {
+      setError('');
+      const response = await authManager.apiRequest(`/api/appointments/${appointmentId}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          status: newStatus,
+          internalNotesAfter: notes,
+          followUpSuggested: newStatus === 'no-show' || newStatus === 'cancelled'
+        })
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        await loadAppointments();
+        setSelectedAppointment(null);
+      } else {
+        setError(data.message || 'Failed to update appointment');
+      }
+    } catch (err) {
+      setError(err.message || 'Error updating appointment');
+    }
+  }
+
   if (!staffUser) return <p style={{ padding: '1rem' }}>Checking customer care access...</p>;
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#fafbfc' }}>
+    <div style={{ display: "flex", minHeight: "100vh", background: "#470012" }}>
       {/* Sidebar */}
-      <aside style={{
-        width: '320px',
-        background: '#6f0022',
-        color: '#fff',
-        display: 'flex',
-        flexDirection: 'column',
-        position: 'fixed',
-        height: '100vh',
-        left: 0,
-        top: 0,
-        zIndex: 100
-      }}>
+      <aside
+        style={{
+          width: "320px",
+          background: "#470012",
+          color: "#fff",
+          display: "flex",
+          flexDirection: "column",
+          position: "fixed",
+          height: "100vh",
+          left: 0,
+          top: 0,
+          zIndex: 100,
+        }}
+      >
         {/* Sidebar Header */}
-        <div style={{
-          padding: '2rem 1.5rem 1.5rem',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
-        }}>
-          <h1 style={{
-            margin: 0,
-            fontSize: '1.2rem',
-            fontFamily: 'Cormorant Garamond, serif',
-            fontWeight: 600,
-            letterSpacing: '0.5px',
-            color: '#e0bf63',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.6rem',
-            textTransform: 'uppercase'
-          }}>
+        <div
+          style={{
+            padding: "2rem 1.5rem 1.5rem",
+            borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
+          }}
+        >
+          <h1
+            style={{
+              margin: 0,
+              fontSize: "1.2rem",
+              fontFamily: "Arial, serif",
+              fontWeight: 600,
+              letterSpacing: "0.5px",
+              color: "#e0bf63",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.6rem",
+              textTransform: "uppercase",
+            }}
+          >
             <FiGift size={28} />
-            Customer Care
+            Customer Care Management
           </h1>
         </div>
 
         {/* Navigation Items */}
-        <nav style={{
-          flex: 1,
-          padding: '1.5rem 1rem',
-          overflowY: 'auto'
-        }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        <nav
+          style={{
+            flex: 1,
+            padding: "1.5rem 1rem",
+            overflowY: "auto",
+          }}
+        >
+          <div
+            style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
+          >
             {[
-              { id: 'offers', icon: FiGift, label: 'Offers' },
-              { id: 'messages', icon: FiMessageCircle, label: 'Customer Messages' },
-              { id: 'reviews', icon: FiStar, label: 'Product Reviews' }
-            ].map(item => {
+              {
+                id: "overview",
+                icon: FiBarChart2,
+                label: "Dashboard Overview",
+              },
+              { id: "offers", icon: FiGift, label: "Promotional Offers" },
+              {
+                id: "messages",
+                icon: FiMessageCircle,
+                label: "Customer Messages",
+              },
+              { id: "reviews", icon: FiStar, label: "Product Reviews" },
+              {
+                id: "appointments",
+                icon: FiCalendar,
+                label: "Appointment Slots",
+              },
+            ].map((item) => {
               const isActive = activeTab === item.id;
               const IconComponent = item.icon;
               return (
@@ -377,34 +681,35 @@ export default function CustomerCareDashboardPage() {
                   type="button"
                   onClick={() => setActiveTab(item.id)}
                   style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '1rem',
-                    width: '100%',
-                    padding: '1rem 1rem',
-                    background: isActive ? '#e0bf63' : 'transparent',
-                    color: isActive ? '#3d2b00' : '#fff',
-                    border: 'none',
-                    borderRadius: '10px',
-                    fontSize: '1.1rem',
-                    fontFamily: 'Poppins, sans-serif',
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "1rem",
+                    width: "100%",
+                    padding: "1rem 1rem",
+                    background: isActive ? "#e0bf63" : "transparent",
+                    color: isActive ? "#3d2b00" : "#fff",
+                    border: "none",
+                    borderRadius: "10px",
+                    fontSize: "1.1rem",
+                    fontFamily: "Arial, sans-serif",
                     fontWeight: isActive ? 600 : 500,
-                    cursor: 'pointer',
-                    transition: 'all 0.3s',
-                    textAlign: 'left'
+                    cursor: "pointer",
+                    transition: "all 0.3s",
+                    textAlign: "left",
                   }}
                   onMouseEnter={(e) => {
                     if (!isActive) {
-                      e.currentTarget.style.background = 'rgba(224, 191, 99, 0.1)';
+                      e.currentTarget.style.background =
+                        "rgba(224, 191, 99, 0.1)";
                     }
                   }}
                   onMouseLeave={(e) => {
                     if (!isActive) {
-                      e.currentTarget.style.background = 'transparent';
+                      e.currentTarget.style.background = "transparent";
                     }
                   }}
                 >
-                  <IconComponent size={24} style={{ minWidth: '24px' }} />
+                  <IconComponent size={24} style={{ minWidth: "24px" }} />
                   <span>{item.label}</span>
                 </button>
               );
@@ -413,55 +718,64 @@ export default function CustomerCareDashboardPage() {
         </nav>
 
         {/* User Profile Section */}
-        <div style={{
-          padding: '1.5rem',
-          borderTop: '1px solid rgba(255, 255, 255, 0.1)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '1rem'
-        }}>
-          <div style={{
-            width: '48px',
-            height: '48px',
-            borderRadius: '50%',
-            background: '#e0bf63',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '1.5rem',
-            fontWeight: 700,
-            color: '#3d2b00',
-            flexShrink: 0
-          }}>
+        <div
+          style={{
+            padding: "1.5rem",
+            borderTop: "1px solid rgba(255, 255, 255, 0.1)",
+            display: "flex",
+            alignItems: "center",
+            gap: "1rem",
+          }}
+        >
+          <div
+            style={{
+              width: "48px",
+              height: "48px",
+              borderRadius: "50%",
+              background: "#e0bf63",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: "1.5rem",
+              fontWeight: 700,
+              color: "#3d2b00",
+              flexShrink: 0,
+            }}
+          >
             {staffUser?.fullName?.charAt(0).toUpperCase()}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{
-              fontWeight: 600,
-              fontSize: '0.95rem',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis'
-            }}>
-              Hello, {staffUser?.fullName?.split(' ')[0]}
+            <div
+              style={{
+                fontWeight: 600,
+                fontSize: "0.95rem",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+            >
+              {staffUser?.fullName?.split(" ")[0]}Herath
+              <p>customer care manager</p>
             </div>
           </div>
           <button
             onClick={() => authManager.logout()}
             style={{
-              background: isLogoutHovered ? 'rgba(255, 255, 255, 0.3)' : 'rgba(255, 255, 255, 0.2)',
-              color: '#fff',
-              border: 'none',
-              width: '32px',
-              height: '32px',
-              borderRadius: '50%',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '1.2rem',
-              transition: 'background 0.2s',
-              flexShrink: 0
+              background: isLogoutHovered
+                ? "rgba(255, 255, 255, 0.3)"
+                : "rgba(255, 255, 255, 0.2)",
+              color: "#fff",
+              border: "none",
+              width: "32px",
+              height: "32px",
+              borderRadius: "50%",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: "1.2rem",
+              transition: "background 0.2s",
+              flexShrink: 0,
             }}
             title="Logout"
             onMouseEnter={() => setIsLogoutHovered(true)}
@@ -473,668 +787,2960 @@ export default function CustomerCareDashboardPage() {
       </aside>
 
       {/* Main Content */}
-      <main style={{
-        flex: 1,
-        marginLeft: '320px',
-        overflow: 'auto',
-        padding: '2rem'
-      }}>
-        {error && (
-          <div style={{
-            background: '#fee',
-            border: '1px solid #fcc',
-            color: '#c33',
-            padding: '0.75rem 1rem',
-            borderRadius: 8,
-            marginBottom: '1rem'
-          }}>
-            {error}
-          </div>
-        )}
-
-      {/* OFFERS TAB */}
-      {activeTab === 'offers' && (
-        <div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem', marginBottom: '1.5rem' }}>
-            <div style={{ background: '#fafbfc', border: '1px solid #eee', borderRadius: 12, padding: '1rem', textAlign: 'center' }}>
-              <p style={{ margin: 0, color: '#666', fontSize: '0.9rem' }}>Active Offers</p>
-              <h2 style={{ margin: '0.5rem 0 0', color: '#6f0022', fontSize: '1.8rem' }}>
-                {offers.filter(o => o.status === 'active').length}
-              </h2>
+      <main
+        style={{
+          flex: 1,
+          marginLeft: "320px",
+          overflow: "auto",
+          padding: "2rem",
+          backgroundImage: "url('/jewelry-bg.jpg')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundAttachment: "fixed",
+          position: "relative",
+        }}
+      >
+        {/* Background Overlay */}
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: "320px",
+            right: 0,
+            bottom: 0,
+            background: "rgba(0, 0, 0, 0.75)",
+            zIndex: 0,
+            pointerEvents: "none",
+          }}
+        />
+        {/* Content Wrapper */}
+        <div style={{ position: "relative", zIndex: 1 }}>
+          {error && (
+            <div
+              style={{
+                background: "#fee",
+                border: "1px solid #fcc",
+                color: "#c33",
+                padding: "0.75rem 1rem",
+                borderRadius: 8,
+                marginBottom: "1rem",
+              }}
+            >
+              {error}
             </div>
-            <div style={{ background: '#fafbfc', border: '1px solid #eee', borderRadius: 12, padding: '1rem', textAlign: 'center' }}>
-              <p style={{ margin: 0, color: '#666', fontSize: '0.9rem' }}>Total Sent</p>
-              <h2 style={{ margin: '0.5rem 0 0', color: '#6f0022', fontSize: '1.8rem' }}>
-                {offers.reduce((sum, o) => sum + (o.sentCount || 0), 0)}
-              </h2>
-            </div>
-          </div>
+          )}
 
-          {/* Create Offer Form */}
-          <section style={{ background: '#fafbfc', border: '1px solid #eee', borderRadius: 12, padding: '1.5rem', marginBottom: '1.5rem' }}>
-            <h3 style={{ marginTop: 0, color: '#6f0022', fontSize: '1.1rem' }}>
-              {editingOfferId ? 'Edit Offer' : 'Create New Offer'}
-            </h3>
-            <form onSubmit={createOffer} style={{ display: 'grid', gap: '0.8rem' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
-                <input
-                  type="text"
-                  placeholder="Offer Title"
-                  value={offerForm.title}
-                  onChange={(e) => setOfferForm({ ...offerForm, title: e.target.value })}
+          {/* DASHBOARD OVERVIEW TAB */}
+          {activeTab === "overview" && (
+            <div>
+              {/* Header */}
+              <div style={{ marginBottom: "2.5rem" }}>
+                <h2
                   style={{
-                    padding: '0.6rem',
-                    border: '1px solid #ddd',
-                    borderRadius: 8,
-                    fontSize: '0.94rem',
-                    fontFamily: 'Poppins, sans-serif'
-                  }}
-                />
-                <select
-                  value={offerForm.offerType}
-                  onChange={(e) => setOfferForm({ ...offerForm, offerType: e.target.value })}
-                  style={{
-                    padding: '0.6rem',
-                    border: '1px solid #ddd',
-                    borderRadius: 8,
-                    fontSize: '0.94rem',
-                    fontFamily: 'Poppins, sans-serif'
+                    margin: "0 0 0.5rem",
+                    color: "#FFFFFF",
+                    fontSize: "2rem",
+                    fontWeight: 700,
                   }}
                 >
-                  {SEASON_TYPES.map(type => (
-                    <option key={type} value={type}>{type}</option>
-                  ))}
-                </select>
+                  Dashboard Overview
+                </h2>
+                <p style={{ margin: 0, color: "#666", fontSize: "0.95rem" }}>
+                  Welcome back! Here's what is happening today
+                </p>
               </div>
-              <textarea
-                placeholder="Offer Description"
-                value={offerForm.description}
-                onChange={(e) => setOfferForm({ ...offerForm, description: e.target.value })}
+
+              {/* Stats Cards */}
+              <div
                 style={{
-                  padding: '0.6rem',
-                  border: '1px solid #ddd',
-                  borderRadius: 8,
-                  fontSize: '0.94rem',
-                  fontFamily: 'Poppins, sans-serif',
-                  minHeight: '80px',
-                  resize: 'vertical'
-                }}
-              />
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
-                <input
-                  type="number"
-                  placeholder="Discount % (optional)"
-                  value={offerForm.discountPercentage}
-                  onChange={(e) => setOfferForm({ ...offerForm, discountPercentage: e.target.value })}
-                  min="0"
-                  max="100"
-                  step="0.01"
-                  style={{
-                    padding: '0.6rem',
-                    border: '1px solid #ddd',
-                    borderRadius: 8,
-                    fontSize: '0.94rem',
-                    fontFamily: 'Poppins, sans-serif'
-                  }}
-                />
-                <input
-                  type="date"
-                  value={offerForm.validUntil}
-                  onChange={(e) => setOfferForm({ ...offerForm, validUntil: e.target.value })}
-                  min={todayDate}
-                  style={{
-                    padding: '0.6rem',
-                    border: '1px solid #ddd',
-                    borderRadius: 8,
-                    fontSize: '0.94rem',
-                    fontFamily: 'Poppins, sans-serif'
-                  }}
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={isCreatingOffer}
-                style={{
-                  padding: '0.7rem 1.2rem',
-                  background: '#6f0022',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: 8,
-                  fontSize: '0.95rem',
-                  fontWeight: '600',
-                  cursor: isCreatingOffer ? 'not-allowed' : 'pointer',
-                  fontFamily: 'Poppins, sans-serif',
-                  opacity: isCreatingOffer ? 0.6 : 1,
-                  transition: 'all 0.2s ease'
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+                  gap: "1.5rem",
+                  marginBottom: "2.5rem",
                 }}
               >
-                {isCreatingOffer ? (editingOfferId ? 'Updating...' : 'Creating...') : (editingOfferId ? 'Update Offer' : 'Create Offer')}
-              </button>
-              {editingOfferId && (
-                <button
-                  type="button"
-                  onClick={cancelEditOffer}
+                {/* Active Offers Card */}
+                <div
                   style={{
-                    padding: '0.7rem 1.2rem',
-                    background: '#fff',
-                    color: '#666',
-                    border: '1px solid #ddd',
-                    borderRadius: 8,
-                    fontSize: '0.95rem',
-                    cursor: 'pointer',
-                    fontFamily: 'Poppins, sans-serif'
+                    background:
+                      "linear-gradient(135deg, #6f0022 0%, #8b0033 100%)",
+                    borderRadius: "12px",
+                    padding: "1.5rem",
+                    color: "#fff",
+                    boxShadow: "0 4px 15px rgba(111, 0, 34, 0.2)",
                   }}
                 >
-                  Cancel Edit
-                </button>
-              )}
-            </form>
-          </section>
-
-          {/* Offers List */}
-          <div style={{ display: 'grid', gap: '0.8rem' }}>
-            {offers.length === 0 ? (
-              <p style={{ color: '#999', textAlign: 'center', padding: '2rem' }}>No offers created yet</p>
-            ) : (
-              offers.map(offer => (
-                <div key={offer._id} style={{
-                  background: '#fafbfc',
-                  border: '1px solid #eee',
-                  borderRadius: 12,
-                  padding: '1rem',
-                  display: 'grid',
-                  gridTemplateColumns: '1fr auto',
-                  alignItems: 'start',
-                  gap: '1rem'
-                }}>
-                  <div>
-                    <h4 style={{ margin: '0 0 0.4rem', color: '#6f0022', fontSize: '1rem' }}>
-                      {offer.title}
-                    </h4>
-                    <p style={{ margin: '0.3rem 0', color: '#666', fontSize: '0.9rem' }}>
-                      {offer.message}
-                    </p>
-                    <p style={{ margin: '0.3rem 0 0', color: '#999', fontSize: '0.85rem' }}>
-                      {offer.discountPercentage ? `${offer.discountPercentage}% off • ` : ''}
-                      Sent: {offer.sentCount || 0}
-                    </p>
-                  </div>
-                  <div style={{ display: 'flex', gap: '0.5rem', flexDirection: 'column' }}>
-                    <button
-                      onClick={() => startEditOffer(offer)}
-                      style={{
-                        padding: '0.5rem 1rem',
-                        background: '#fff',
-                        color: '#6f0022',
-                        border: '1px solid #e0bf63',
-                        borderRadius: 6,
-                        fontSize: '0.85rem',
-                        fontWeight: '600',
-                        cursor: 'pointer',
-                        fontFamily: 'Poppins, sans-serif',
-                        whiteSpace: 'nowrap'
-                      }}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => sendOfferEmails(offer._id)}
-                      style={{
-                        padding: '0.5rem 1rem',
-                        background: '#e0bf63',
-                        color: '#6f0022',
-                        border: 'none',
-                        borderRadius: 6,
-                        fontSize: '0.85rem',
-                        fontWeight: '600',
-                        cursor: 'pointer',
-                        fontFamily: 'Poppins, sans-serif',
-                        whiteSpace: 'nowrap'
-                      }}
-                    >
-                      Send Email
-                    </button>
-                    <button
-                      onClick={() => deleteOffer(offer._id)}
-                      style={{
-                        padding: '0.5rem 1rem',
-                        background: '#fff',
-                        color: '#c33',
-                        border: '1px solid #ddd',
-                        borderRadius: 6,
-                        fontSize: '0.85rem',
-                        fontWeight: '600',
-                        cursor: 'pointer',
-                        fontFamily: 'Poppins, sans-serif'
-                      }}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* MESSAGES TAB */}
-      {activeTab === 'messages' && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1.5rem', minHeight: '500px' }}>
-          {/* Chat List */}
-          <div>
-            <h3 style={{ marginTop: 0, color: '#6f0022', fontSize: '1rem' }}>Customers</h3>
-            <div style={{ display: 'grid', gap: '0.5rem', maxHeight: '600px', overflowY: 'auto' }}>
-              {chats.length === 0 ? (
-                <p style={{ color: '#999', fontSize: '0.9rem' }}>No messages</p>
-              ) : (
-                chats.map(chat => (
                   <div
-                    key={chat._id}
-                    onClick={() => selectChat(chat)}
                     style={{
-                      padding: '0.8rem',
-                      background: selectedChat?._id === chat._id ? '#e8f0f5' : '#fafbfc',
-                      border: selectedChat?._id === chat._id ? '2px solid #6f0022' : '1px solid #eee',
-                      borderRadius: 8,
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease'
+                      display: "flex",
+                      alignItems: "flex-start",
+                      justifyContent: "space-between",
+                      marginBottom: "1rem",
                     }}
                   >
-                    <p style={{ margin: 0, fontWeight: '600', color: '#333', fontSize: '0.9rem' }}>
-                      {chat.customerName}
-                    </p>
-                    <p style={{ margin: '0.3rem 0 0', color: '#666', fontSize: '0.85rem' }}>
-                      {chat.customerEmail}
-                    </p>
-                    <p style={{
-                      margin: '0.3rem 0 0',
-                      fontSize: '0.75rem',
-                      color: '#999',
-                      fontWeight: chat.status === 'active' ? '600' : '400'
-                    }}>
-                      {chat.status === 'active' && '🟢'} {chat.status}
-                    </p>
+                    <div>
+                      <p
+                        style={{
+                          margin: 0,
+                          color: "#e0bf63",
+                          fontSize: "0.85rem",
+                          fontWeight: 500,
+                          textTransform: "uppercase",
+                          letterSpacing: "0.5px",
+                        }}
+                      >
+                        Active Offers
+                      </p>
+                      <h3
+                        style={{
+                          margin: "0.8rem 0 0",
+                          fontSize: "2.5rem",
+                          fontWeight: 700,
+                          color: "#e0bf63",
+                        }}
+                      >
+                        {dashboardStats.activeOffers}
+                      </h3>
+                    </div>
+                    <span style={{ fontSize: "2.5rem" }}>★</span>
                   </div>
-                ))
-              )}
-            </div>
-          </div>
+                  <p
+                    style={{ margin: 0, color: "#e0bf63", fontSize: "0.85rem" }}
+                  >
+                    active promotions running
+                  </p>
+                </div>
 
-          {/* Chat Detail */}
-          {selectedChat ? (
-            <div style={{ background: '#fafbfc', border: '1px solid #eee', borderRadius: 12, padding: '1.5rem', display: 'flex', flexDirection: 'column' }}>
-              <div style={{ marginBottom: '1rem', borderBottom: '1px solid #eee', paddingBottom: '1rem' }}>
-                <h4 style={{ margin: 0, color: '#6f0022' }}>{selectedChat.customerName}</h4>
-                <p style={{ margin: '0.3rem 0 0', color: '#666', fontSize: '0.9rem' }}>{selectedChat.customerEmail}</p>
-                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.8rem' }}>
-                  {['active', 'pending', 'resolved'].map(status => (
-                    <button
-                      key={status}
-                      onClick={() => updateChatStatus(selectedChat._id, status)}
-                      style={{
-                        padding: '0.4rem 0.8rem',
-                        background: status === selectedChat.status ? '#6f0022' : '#fff',
-                        color: status === selectedChat.status ? '#fff' : '#6f0022',
-                        border: `1px solid ${status === selectedChat.status ? '#6f0022' : '#ddd'}`,
-                        borderRadius: 6,
-                        fontSize: '0.8rem',
-                        fontWeight: '600',
-                        cursor: 'pointer',
-                        fontFamily: 'Poppins, sans-serif',
-                        transition: 'all 0.2s ease'
-                      }}
-                    >
-                      {status}
-                    </button>
-                  ))}
+                {/* Q&A Articles Card */}
+                <div
+                  style={{
+                    background:
+                      "linear-gradient(135deg, #6f0022 0%, #8b0033 100%)",
+                    borderRadius: "12px",
+                    padding: "1.5rem",
+                    color: "#fff",
+                    boxShadow: "0 4px 15px rgba(111, 0, 34, 0.2)",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      justifyContent: "space-between",
+                      marginBottom: "1rem",
+                    }}
+                  >
+                    <div>
+                      <p
+                        style={{
+                          margin: 0,
+                          color: "#fff",
+                          fontSize: "0.85rem",
+                          fontWeight: 500,
+                          textTransform: "uppercase",
+                          letterSpacing: "0.5px",
+                          opacity: 0.8,
+                        }}
+                      >
+                        Q&A Articles
+                      </p>
+                      <h3
+                        style={{
+                          margin: "0.8rem 0 0",
+                          fontSize: "2.5rem",
+                          fontWeight: 700,
+                          color: "#e0bf63",
+                        }}
+                      >
+                        {dashboardStats.qaArticles}
+                      </h3>
+                    </div>
+                    <span style={{ fontSize: "2.5rem" }}>☉</span>
+                  </div>
+                  <p
+                    style={{
+                      margin: 0,
+                      color: "#fff",
+                      fontSize: "0.85rem",
+                      opacity: 0.8,
+                    }}
+                  >
+                    articles published
+                  </p>
+                </div>
+
+                {/* Pending Questions Card */}
+                <div
+                  style={{
+                    background:
+                      "linear-gradient(135deg, #6f0022 0%, #8b0033 100%)",
+                    borderRadius: "12px",
+                    padding: "1.5rem",
+                    color: "#fff",
+                    boxShadow: "0 4px 15px rgba(111, 0, 34, 0.15)",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      justifyContent: "space-between",
+                      marginBottom: "1rem",
+                    }}
+                  >
+                    <div>
+                      <p
+                        style={{
+                          margin: 0,
+                          color: "#fff",
+                          fontSize: "0.85rem",
+                          fontWeight: 500,
+                          textTransform: "uppercase",
+                          letterSpacing: "0.5px",
+                        }}
+                      >
+                        Pending Questions
+                      </p>
+                      <h3
+                        style={{
+                          margin: "0.8rem 0 0",
+                          fontSize: "2.5rem",
+                          fontWeight: 700,
+                          color: "#e0bf63",
+                        }}
+                      >
+                        {dashboardStats.pendingQuestions}
+                      </h3>
+                    </div>
+                    <span style={{ fontSize: "2.5rem" }}>◇</span>
+                  </div>
+                  <p style={{ margin: 0, color: "#fff", fontSize: "0.85rem" }}>
+                    awaiting response
+                  </p>
+                </div>
+
+                {/* Answered Rate Card */}
+                <div
+                  style={{
+                    background:
+                      "linear-gradient(135deg, #6f0022 0%, #8b0033 100%)",
+                    borderRadius: "12px",
+                    padding: "1.5rem",
+                    color: "#fff",
+                    boxShadow: "0 4px 15px rgba(111, 0, 34, 0.15)",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      justifyContent: "space-between",
+                      marginBottom: "1rem",
+                    }}
+                  >
+                    <div>
+                      <p
+                        style={{
+                          margin: 0,
+                          color: "#fff",
+                          fontSize: "0.85rem",
+                          fontWeight: 500,
+                          textTransform: "uppercase",
+                          letterSpacing: "0.5px",
+                        }}
+                      >
+                        Answered Rate
+                      </p>
+                      <h3
+                        style={{
+                          margin: "0.8rem 0 0",
+                          fontSize: "2.5rem",
+                          fontWeight: 700,
+                          color: "#e0bf63",
+                        }}
+                      >
+                        {dashboardStats.answeredRate}%
+                      </h3>
+                    </div>
+                    <span style={{ fontSize: "2.5rem" }}>✓</span>
+                  </div>
+                  <p style={{ margin: 0, color: "#fff", fontSize: "0.85rem" }}>
+                    questions answered
+                  </p>
                 </div>
               </div>
 
-              {/* Messages */}
-              <div style={{ flex: 1, overflowY: 'auto', marginBottom: '1rem', display: 'grid', gap: '0.8rem' }}>
-                {chatMessages.length === 0 ? (
-                  <p style={{ color: '#999', textAlign: 'center' }}>No messages yet</p>
+              {/* Recent Activity & Top Questions */}
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "2rem",
+                }}
+              >
+                {/* Recent Activity */}
+                <div
+                  style={{
+                    background: "#fff",
+                    border: "1px solid #e5e5e5",
+                    borderRadius: "12px",
+                    padding: "2rem",
+                    boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
+                  }}
+                >
+                  <h3
+                    style={{
+                      margin: "0 0 1.5rem",
+                      color: "#1a1a1a",
+                      fontSize: "1.1rem",
+                      fontWeight: 600,
+                    }}
+                  >
+                    Recent Activity
+                  </h3>
+                  <div style={{ display: "grid", gap: "1rem" }}>
+                    {dashboardStats.recentActivities.length === 0 ? (
+                      <p
+                        style={{
+                          color: "#aaa",
+                          textAlign: "center",
+                          padding: "2rem 0",
+                        }}
+                      >
+                        No recent activities
+                      </p>
+                    ) : (
+                      dashboardStats.recentActivities.map((activity, idx) => (
+                        <div
+                          key={idx}
+                          style={{
+                            display: "flex",
+                            gap: "1rem",
+                            paddingBottom: "1rem",
+                            borderBottom:
+                              idx !== dashboardStats.recentActivities.length - 1
+                                ? "1px solid #e5e5e5"
+                                : "none",
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: "40px",
+                              height: "40px",
+                              borderRadius: "8px",
+                              background:
+                                activity.type === "offer"
+                                  ? "#6f0022"
+                                  : activity.type === "message"
+                                    ? "#d4a850"
+                                    : "#e5e5e5",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              color:
+                                activity.type === "offer" ? "#fff" : "#333",
+                              fontSize: "1.2rem",
+                              flexShrink: 0,
+                            }}
+                          >
+                            {activity.icon}
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <p
+                              style={{
+                                margin: 0,
+                                color: "#333",
+                                fontSize: "0.95rem",
+                                fontWeight: 500,
+                              }}
+                            >
+                              {activity.text}
+                            </p>
+                            <p
+                              style={{
+                                margin: "0.3rem 0 0",
+                                color: "#999",
+                                fontSize: "0.8rem",
+                              }}
+                            >
+                              {activity.time}
+                            </p>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                {/* Top Viewed Questions */}
+                <div
+                  style={{
+                    background: "#fff",
+                    border: "1px solid #e5e5e5",
+                    borderRadius: "12px",
+                    padding: "2rem",
+                    boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
+                  }}
+                >
+                  <h3
+                    style={{
+                      margin: "0 0 1.5rem",
+                      color: "#1a1a1a",
+                      fontSize: "1.1rem",
+                      fontWeight: 600,
+                    }}
+                  >
+                    Top Viewed Questions
+                  </h3>
+                  <div style={{ display: "grid", gap: "1rem" }}>
+                    {dashboardStats.topViewedQuestions.length === 0 ? (
+                      <p
+                        style={{
+                          color: "#aaa",
+                          textAlign: "center",
+                          padding: "2rem 0",
+                        }}
+                      >
+                        No questions yet
+                      </p>
+                    ) : (
+                      dashboardStats.topViewedQuestions.map((question, idx) => (
+                        <div
+                          key={idx}
+                          style={{
+                            paddingBottom: "1rem",
+                            borderBottom:
+                              idx !==
+                              dashboardStats.topViewedQuestions.length - 1
+                                ? "1px solid #e5e5e5"
+                                : "none",
+                          }}
+                        >
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "flex-start",
+                              justifyContent: "space-between",
+                              gap: "1rem",
+                            }}
+                          >
+                            <div style={{ flex: 1 }}>
+                              <p
+                                style={{
+                                  margin: 0,
+                                  color: "#333",
+                                  fontSize: "0.95rem",
+                                  fontWeight: 500,
+                                  lineHeight: 1.4,
+                                }}
+                              >
+                                {question.text}
+                              </p>
+                            </div>
+                            <span
+                              style={{
+                                background: "#fff3cd",
+                                color: "#856404",
+                                padding: "0.3rem 0.8rem",
+                                borderRadius: "20px",
+                                fontSize: "0.75rem",
+                                fontWeight: 600,
+                                flexShrink: 0,
+                              }}
+                            >
+                              {question.views} views
+                            </span>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* OFFERS TAB */}
+          {activeTab === "offers" && (
+            <div>
+              {/* Header */}
+              <div style={{ marginBottom: "2.5rem" }}>
+                <h2
+                  style={{
+                    margin: "0 0 0.5rem",
+                    color: "#FFFFFF",
+                    fontSize: "2rem",
+                    fontWeight: 700,
+                  }}
+                >
+                  Promotional Offers
+                </h2>
+                <p style={{ margin: 0, color: "#666", fontSize: "0.95rem" }}>
+                  Create and manage customer offers and promotions
+                </p>
+              </div>
+
+              {/* Stats Cards */}
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+                  gap: "1.5rem",
+                  marginBottom: "2.5rem",
+                }}
+              >
+                <div
+                  style={{
+                    background: "#6f0022",
+                    border: "1px solid #5a001a",
+                    borderRadius: "10px",
+                    padding: "1.5rem",
+                    boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
+                    transition: "all 0.3s ease",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <div>
+                      <p
+                        style={{
+                          margin: "0 0 0.8rem",
+                          color: "#e0bf63",
+                          fontSize: "0.85rem",
+                          fontWeight: 500,
+                          textTransform: "uppercase",
+                          letterSpacing: "0.5px",
+                        }}
+                      >
+                        Active Promotions
+                      </p>
+                      <h3
+                        style={{
+                          margin: 0,
+                          color: "#fff",
+                          fontSize: "2.2rem",
+                          fontWeight: 700,
+                        }}
+                      >
+                        {offers.filter((o) => o.status === "active").length}
+                      </h3>
+                    </div>
+                    <div
+                      style={{
+                        width: "48px",
+                        height: "48px",
+                        borderRadius: "8px",
+                        background:
+                          "linear-gradient(135deg, #6f0022 0%, #9d0033 100%)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "#fff",
+                        fontSize: "1.5rem",
+                      }}
+                    >
+                      ★
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    background: "#6f0022",
+                    border: "1px solid #5a001a",
+                    borderRadius: "10px",
+                    padding: "1.5rem",
+                    boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
+                    transition: "all 0.3s ease",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <div>
+                      <p
+                        style={{
+                          margin: "0 0 0.8rem",
+                          color: "#e0bf63",
+                          fontSize: "0.85rem",
+                          fontWeight: 500,
+                          textTransform: "uppercase",
+                          letterSpacing: "0.5px",
+                        }}
+                      >
+                        Total Sent
+                      </p>
+                      <h3
+                        style={{
+                          margin: 0,
+                          color: "#fff",
+                          fontSize: "2.2rem",
+                          fontWeight: 700,
+                        }}
+                      >
+                        {offers.reduce((sum, o) => sum + (o.sentCount || 0), 0)}
+                      </h3>
+                    </div>
+                    <div
+                      style={{
+                        width: "48px",
+                        height: "48px",
+                        borderRadius: "8px",
+                        background:
+                          "linear-gradient(135deg, #e0bf63 0%, #d4a850 100%)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "#6f0022",
+                        fontSize: "1.5rem",
+                      }}
+                    >
+                      ✉
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Create/Edit Form */}
+              <section
+                style={{
+                  background: "#fff",
+                  border: "1px solid #e5e5e5",
+                  borderRadius: "12px",
+                  padding: "2rem",
+                  marginBottom: "2.5rem",
+                  boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
+                }}
+              >
+                <h3
+                  style={{
+                    margin: "0 0 1.5rem",
+                    color: "#1a1a1a",
+                    fontSize: "1.3rem",
+                    fontWeight: 600,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.8rem",
+                  }}
+                >
+                  {editingOfferId ? "✎ Edit Campaign" : "✚ Create New Campaign"}
+                </h3>
+
+                <form
+                  onSubmit={createOffer}
+                  style={{ display: "grid", gap: "1.5rem" }}
+                >
+                  {/* Row 1: Title & Type */}
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: "1.5rem",
+                    }}
+                  >
+                    <div>
+                      <label
+                        style={{
+                          display: "block",
+                          margin: "0 0 0.6rem",
+                          color: "#333",
+                          fontSize: "0.9rem",
+                          fontWeight: 500,
+                        }}
+                      >
+                        Promo Title *
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g., Holiday Special Discount"
+                        value={offerForm.title}
+                        onChange={(e) =>
+                          setOfferForm({ ...offerForm, title: e.target.value })
+                        }
+                        style={{
+                          width: "100%",
+                          padding: "0.85rem 1rem",
+                          border: "1px solid #d0d0d0",
+                          borderRadius: "8px",
+                          fontSize: "0.95rem",
+                          fontFamily: "Arial, sans-serif",
+                          boxSizing: "border-box",
+                          transition: "border-color 0.2s ease",
+                          background: "#fafbfc",
+                        }}
+                        onFocus={(e) =>
+                          (e.target.style.borderColor = "#6f0022")
+                        }
+                        onBlur={(e) => (e.target.style.borderColor = "#d0d0d0")}
+                      />
+                    </div>
+                    <div>
+                      <label
+                        style={{
+                          display: "block",
+                          margin: "0 0 0.6rem",
+                          color: "#333",
+                          fontSize: "0.9rem",
+                          fontWeight: 500,
+                        }}
+                      >
+                        Promo Type *
+                      </label>
+                      <select
+                        value={offerForm.offerType}
+                        onChange={(e) =>
+                          setOfferForm({
+                            ...offerForm,
+                            offerType: e.target.value,
+                          })
+                        }
+                        style={{
+                          width: "100%",
+                          padding: "0.85rem 1rem",
+                          border: "1px solid #d0d0d0",
+                          borderRadius: "8px",
+                          fontSize: "0.95rem",
+                          fontFamily: "Arial, sans-serif",
+                          boxSizing: "border-box",
+                          background: "#fafbfc",
+                          cursor: "pointer",
+                          color: "#333",
+                        }}
+                      >
+                        {SEASON_TYPES.map((type) => (
+                          <option key={type} value={type}>
+                            {type}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Description */}
+                  <div>
+                    <label
+                      style={{
+                        display: "block",
+                        margin: "0 0 0.6rem",
+                        color: "#333",
+                        fontSize: "0.9rem",
+                        fontWeight: 500,
+                      }}
+                    >
+                      Promo Description *
+                    </label>
+                    <textarea
+                      placeholder="Describe your offer, terms, and any special conditions..."
+                      value={offerForm.description}
+                      onChange={(e) =>
+                        setOfferForm({
+                          ...offerForm,
+                          description: e.target.value,
+                        })
+                      }
+                      style={{
+                        width: "100%",
+                        padding: "0.85rem 1rem",
+                        border: "1px solid #d0d0d0",
+                        borderRadius: "8px",
+                        fontSize: "0.95rem",
+                        fontFamily: "Arial, sans-serif",
+                        minHeight: "100px",
+                        resize: "vertical",
+                        boxSizing: "border-box",
+                        background: "#fafbfc",
+                      }}
+                      onFocus={(e) => (e.target.style.borderColor = "#6f0022")}
+                      onBlur={(e) => (e.target.style.borderColor = "#d0d0d0")}
+                    />
+                  </div>
+
+                  {/* Row 2: Discount & Validity */}
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: "1.5rem",
+                    }}
+                  >
+                    <div>
+                      <label
+                        style={{
+                          display: "block",
+                          margin: "0 0 0.6rem",
+                          color: "#333",
+                          fontSize: "0.9rem",
+                          fontWeight: 500,
+                        }}
+                      >
+                        Discount Percentage (Optional)
+                      </label>
+                      <input
+                        type="number"
+                        placeholder="0-100"
+                        value={offerForm.discountPercentage}
+                        onChange={(e) =>
+                          setOfferForm({
+                            ...offerForm,
+                            discountPercentage: e.target.value,
+                          })
+                        }
+                        min="0"
+                        max="100"
+                        step="0.01"
+                        style={{
+                          width: "100%",
+                          padding: "0.85rem 1rem",
+                          border: "1px solid #d0d0d0",
+                          borderRadius: "8px",
+                          fontSize: "0.95rem",
+                          fontFamily: "Arial, sans-serif",
+                          boxSizing: "border-box",
+                          background: "#fafbfc",
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <label
+                        style={{
+                          display: "block",
+                          margin: "0 0 0.6rem",
+                          color: "#333",
+                          fontSize: "0.9rem",
+                          fontWeight: 500,
+                        }}
+                      >
+                        Valid Until *
+                      </label>
+                      <input
+                        type="date"
+                        value={offerForm.validUntil}
+                        onChange={(e) =>
+                          setOfferForm({
+                            ...offerForm,
+                            validUntil: e.target.value,
+                          })
+                        }
+                        min={todayDate}
+                        style={{
+                          width: "100%",
+                          padding: "0.85rem 1rem",
+                          border: "1px solid #d0d0d0",
+                          borderRadius: "8px",
+                          fontSize: "0.95rem",
+                          fontFamily: "Arial, sans-serif",
+                          boxSizing: "border-box",
+                          background: "#fafbfc",
+                          cursor: "pointer",
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div style={{ display: "flex", gap: "1rem" }}>
+                    <button
+                      type="submit"
+                      disabled={isCreatingOffer}
+                      style={{
+                        padding: "0.9rem 2rem",
+                        background: isCreatingOffer ? "#ccc" : "#6f0022",
+                        color: "#fff",
+                        border: "none",
+                        borderRadius: "8px",
+                        fontSize: "0.95rem",
+                        fontWeight: 600,
+                        cursor: isCreatingOffer ? "not-allowed" : "pointer",
+                        fontFamily: "Arial, sans-serif",
+                        transition: "all 0.2s ease",
+                      }}
+                      onMouseEnter={(e) =>
+                        !isCreatingOffer &&
+                        (e.target.style.background = "#8b0033")
+                      }
+                      onMouseLeave={(e) =>
+                        !isCreatingOffer &&
+                        (e.target.style.background = "#6f0022")
+                      }
+                    >
+                      {isCreatingOffer
+                        ? editingOfferId
+                          ? "Updating..."
+                          : "Creating..."
+                        : editingOfferId
+                          ? "Update Promotion"
+                          : "Create Promotion"}
+                    </button>
+                    {editingOfferId && (
+                      <button
+                        type="button"
+                        onClick={cancelEditOffer}
+                        style={{
+                          padding: "0.9rem 2rem",
+                          background: "#f5f5f5",
+                          color: "#666",
+                          border: "1px solid #ddd",
+                          borderRadius: "8px",
+                          fontSize: "0.95rem",
+                          fontWeight: 600,
+                          cursor: "pointer",
+                          fontFamily: "Arial, sans-serif",
+                          transition: "all 0.2s ease",
+                        }}
+                        onMouseEnter={(e) =>
+                          (e.target.style.background = "#efefef")
+                        }
+                        onMouseLeave={(e) =>
+                          (e.target.style.background = "#f5f5f5")
+                        }
+                      >
+                        Cancel
+                      </button>
+                    )}
+                  </div>
+                </form>
+              </section>
+
+              {/* Offers List */}
+              {offers.length === 0 ? (
+                <div
+                  style={{
+                    background: "#fff",
+                    border: "1px dashed #d0d0d0",
+                    borderRadius: "10px",
+                    padding: "3rem 1.5rem",
+                    textAlign: "center",
+                  }}
+                >
+                  <p style={{ margin: 0, color: "#999", fontSize: "1rem" }}>
+                    ◇ No campaigns yet
+                  </p>
+                  <p
+                    style={{
+                      margin: "0.5rem 0 0",
+                      color: "#bbb",
+                      fontSize: "0.9rem",
+                    }}
+                  >
+                    Create your first campaign to get started
+                  </p>
+                </div>
+              ) : (
+                <div style={{ display: "grid", gap: "1.2rem" }}>
+                  <h3
+                    style={{
+                      margin: "0 0 1rem",
+                      color: "#1a1a1a",
+                      fontSize: "1.1rem",
+                      fontFamily: "Arial, sans-serif",
+                      fontWeight: 600,
+                    }}
+                  >
+                    Active Promotions
+                  </h3>
+                  {offers.map((offer) => (
+                    <div
+                      key={offer._id}
+                      style={{
+                        background: "#fff",
+                        border: "1px solid #e5e5e5",
+                        borderRadius: "10px",
+                        padding: "1.5rem",
+                        display: "grid",
+                        gridTemplateColumns: "1fr auto",
+                        alignItems: "start",
+                        gap: "2rem",
+                        boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
+                        transition: "all 0.3s ease",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.boxShadow =
+                          "0 4px 12px rgba(0, 0, 0, 0.1)";
+                        e.currentTarget.style.borderColor = "#d0d0d0";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.boxShadow =
+                          "0 1px 3px rgba(0, 0, 0, 0.05)";
+                        e.currentTarget.style.borderColor = "#e5e5e5";
+                      }}
+                    >
+                      <div>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "1rem",
+                            marginBottom: "0.8rem",
+                          }}
+                        >
+                          <h4
+                            style={{
+                              margin: 0,
+                              color: "#1a1a1a",
+                              fontSize: "1.1rem",
+                              fontWeight: 600,
+                            }}
+                          >
+                            {offer.title}
+                          </h4>
+                          {offer.discountPercentage > 0 && (
+                            <span
+                              style={{
+                                background: "#fff3cd",
+                                color: "#856404",
+                                padding: "0.25rem 0.75rem",
+                                borderRadius: "20px",
+                                fontSize: "0.8rem",
+                                fontWeight: 600,
+                              }}
+                            >
+                              {offer.discountPercentage}% OFF
+                            </span>
+                          )}
+                        </div>
+                        <p
+                          style={{
+                            margin: "0 0 1rem",
+                            color: "#555",
+                            fontSize: "0.95rem",
+                            lineHeight: 1.5,
+                          }}
+                        >
+                          {offer.message}
+                        </p>
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: "2rem",
+                            fontSize: "0.9rem",
+                            color: "#777",
+                          }}
+                        >
+                          <div>
+                            <span style={{ color: "#999" }}>✓ Sent to: </span>
+                            <strong style={{ color: "#333" }}>
+                              {offer.sentCount || 0}
+                            </strong>
+                          </div>
+                          <div>
+                            <span style={{ color: "#999" }}>
+                              ◆ Valid until:{" "}
+                            </span>
+                            <strong style={{ color: "#333" }}>
+                              {offer.validUntil
+                                ? new Date(
+                                    offer.validUntil,
+                                  ).toLocaleDateString()
+                                : "-"}
+                            </strong>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: "0.8rem",
+                          flexDirection: "column",
+                          minWidth: "130px",
+                        }}
+                      >
+                        <button
+                          onClick={() => sendOfferEmails(offer._id)}
+                          style={{
+                            padding: "0.75rem 1rem",
+                            background: "#6f0022",
+                            color: "#fff",
+                            border: "none",
+                            borderRadius: "6px",
+                            fontSize: "0.85rem",
+                            fontWeight: 600,
+                            cursor: "pointer",
+                            fontFamily: "Arial, sans-serif",
+                            transition: "all 0.2s ease",
+                          }}
+                          onMouseEnter={(e) =>
+                            (e.target.style.background = "#8b0033")
+                          }
+                          onMouseLeave={(e) =>
+                            (e.target.style.background = "#6f0022")
+                          }
+                        >
+                          ✉ Send Email
+                        </button>
+                        <button
+                          onClick={() => startEditOffer(offer)}
+                          style={{
+                            padding: "0.75rem 1rem",
+                            background: "#f0f0f0",
+                            color: "#333",
+                            border: "1px solid #ddd",
+                            borderRadius: "6px",
+                            fontSize: "0.85rem",
+                            fontWeight: 600,
+                            cursor: "pointer",
+                            fontFamily: "Arial, sans-serif",
+                            transition: "all 0.2s ease",
+                          }}
+                          onMouseEnter={(e) => {
+                            e.target.style.background = "#e8e8e8";
+                            e.target.style.borderColor = "#6f0022";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.target.style.background = "#f0f0f0";
+                            e.target.style.borderColor = "#ddd";
+                          }}
+                        >
+                          ✎ Edit
+                        </button>
+                        <button
+                          onClick={() => deleteOffer(offer._id)}
+                          style={{
+                            padding: "0.75rem 1rem",
+                            background: "#ffebee",
+                            color: "#c33",
+                            border: "1px solid #ffcdd2",
+                            borderRadius: "6px",
+                            fontSize: "0.85rem",
+                            fontWeight: 600,
+                            cursor: "pointer",
+                            fontFamily: "Arial, sans-serif",
+                            transition: "all 0.2s ease",
+                          }}
+                          onMouseEnter={(e) => {
+                            e.target.style.background = "#ffcdd2";
+                            e.target.style.color = "#933";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.target.style.background = "#ffebee";
+                            e.target.style.color = "#c33";
+                          }}
+                        >
+                          ✕ Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* MESSAGES TAB */}
+          {activeTab === "messages" && (
+            <div>
+              {/* Header */}
+              <div style={{ marginBottom: "2.5rem" }}>
+                <h2
+                  style={{
+                    margin: "0 0 0.5rem",
+                    color: "#FFFFFF",
+                    fontSize: "2rem",
+                    fontWeight: 700,
+                  }}
+                >
+                  Customer Messages
+                </h2>
+                <p style={{ margin: 0, color: "#666", fontSize: "0.95rem" }}>
+                  Manage customer inquiries and provide support
+                </p>
+              </div>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "320px 1fr",
+                  gap: "2rem",
+                  minHeight: "600px",
+                }}
+              >
+                {/* Chat List Sidebar */}
+                <div
+                  style={{
+                    background: "#fff",
+                    border: "1px solid #e5e5e5",
+                    borderRadius: "12px",
+                    overflow: "hidden",
+                    display: "flex",
+                    flexDirection: "column",
+                    boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
+                  }}
+                >
+                  <div
+                    style={{
+                      padding: "1.5rem",
+                      borderBottom: "1px solid #e5e5e5",
+                      background: "#f9f9f9",
+                    }}
+                  >
+                    <h3
+                      style={{
+                        margin: 0,
+                        color: "#1a1a1a",
+                        fontSize: "1rem",
+                        fontWeight: 600,
+                      }}
+                    >
+                      Conversations
+                    </h3>
+                    <p
+                      style={{
+                        margin: "0.3rem 0 0",
+                        color: "#888",
+                        fontSize: "0.85rem",
+                      }}
+                    >
+                      {chats.length} {chats.length === 1 ? "chat" : "chats"}
+                    </p>
+                  </div>
+
+                  <div
+                    style={{
+                      flex: 1,
+                      overflowY: "auto",
+                      padding: "0.8rem",
+                      display: "grid",
+                      gap: "0.6rem",
+                    }}
+                  >
+                    {chats.length === 0 ? (
+                      <p
+                        style={{
+                          color: "#aaa",
+                          fontSize: "0.9rem",
+                          textAlign: "center",
+                          padding: "2rem 1rem",
+                        }}
+                      >
+                        No conversations yet
+                      </p>
+                    ) : (
+                      chats.map((chat) => {
+                        const isSelected = selectedChat?._id === chat._id;
+                        return (
+                          <div
+                            key={chat._id}
+                            onClick={() => selectChat(chat)}
+                            style={{
+                              padding: "1rem",
+                              background: isSelected ? "#6f0022" : "#fff",
+                              border: isSelected ? "none" : "1px solid #e5e5e5",
+                              borderRadius: "8px",
+                              cursor: "pointer",
+                              transition: "all 0.2s ease",
+                              boxShadow: isSelected
+                                ? "0 2px 8px rgba(111, 0, 34, 0.15)"
+                                : "none",
+                            }}
+                            onMouseEnter={(e) => {
+                              if (!isSelected) {
+                                e.currentTarget.style.background = "#f9f9f9";
+                                e.currentTarget.style.borderColor = "#d0d0d0";
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (!isSelected) {
+                                e.currentTarget.style.background = "#fff";
+                                e.currentTarget.style.borderColor = "#e5e5e5";
+                              }
+                            }}
+                          >
+                            <p
+                              style={{
+                                margin: 0,
+                                fontWeight: "600",
+                                color: isSelected ? "#fff" : "#333",
+                                fontSize: "0.95rem",
+                              }}
+                            >
+                              {chat.customerName}
+                            </p>
+                            <p
+                              style={{
+                                margin: "0.4rem 0 0",
+                                color: isSelected ? "#e0bf63" : "#666",
+                                fontSize: "0.8rem",
+                              }}
+                            >
+                              {chat.customerEmail}
+                            </p>
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "0.4rem",
+                                marginTop: "0.6rem",
+                                fontSize: "0.75rem",
+                              }}
+                            >
+                              <span
+                                style={{
+                                  display: "inline-block",
+                                  width: "8px",
+                                  height: "8px",
+                                  borderRadius: "50%",
+                                  background:
+                                    chat.status === "active"
+                                      ? "#10b981"
+                                      : chat.status === "pending"
+                                        ? "#f59e0b"
+                                        : "#888",
+                                }}
+                              />
+                              <span
+                                style={{ color: isSelected ? "#fff" : "#888" }}
+                              >
+                                {chat.status}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+
+                {/* Chat Detail */}
+                {selectedChat ? (
+                  <div
+                    style={{
+                      background: "#fff",
+                      border: "1px solid #e5e5e5",
+                      borderRadius: "12px",
+                      display: "flex",
+                      flexDirection: "column",
+                      boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
+                    }}
+                  >
+                    {/* Chat Header */}
+                    <div
+                      style={{
+                        padding: "1.5rem",
+                        borderBottom: "1px solid #e5e5e5",
+                        background:
+                          "linear-gradient(135deg, #6f0022 0%, #8b0033 100%)",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "start",
+                          justifyContent: "space-between",
+                        }}
+                      >
+                        <div>
+                          <h3
+                            style={{
+                              margin: 0,
+                              color: "#fff",
+                              fontSize: "1.2rem",
+                              fontWeight: 600,
+                            }}
+                          >
+                            {selectedChat.customerName}
+                          </h3>
+                          <p
+                            style={{
+                              margin: "0.5rem 0 0",
+                              color: "#e0bf63",
+                              fontSize: "0.9rem",
+                            }}
+                          >
+                            {selectedChat.customerEmail}
+                          </p>
+                        </div>
+                        <div style={{ display: "flex", gap: "0.5rem" }}>
+                          {["active", "pending", "resolved"].map((status) => (
+                            <button
+                              key={status}
+                              onClick={() =>
+                                updateChatStatus(selectedChat._id, status)
+                              }
+                              style={{
+                                padding: "0.5rem 1rem",
+                                background:
+                                  status === selectedChat.status
+                                    ? "#fff"
+                                    : "rgba(255,255,255,0.2)",
+                                color:
+                                  status === selectedChat.status
+                                    ? "#6f0022"
+                                    : "#fff",
+                                border: "none",
+                                borderRadius: "6px",
+                                fontSize: "0.8rem",
+                                fontWeight: "600",
+                                cursor: "pointer",
+                                transition: "all 0.2s ease",
+                              }}
+                              onMouseEnter={(e) => {
+                                if (status !== selectedChat.status) {
+                                  e.target.style.background =
+                                    "rgba(255,255,255,0.3)";
+                                }
+                              }}
+                              onMouseLeave={(e) => {
+                                if (status !== selectedChat.status) {
+                                  e.target.style.background =
+                                    "rgba(255,255,255,0.2)";
+                                }
+                              }}
+                            >
+                              {status.charAt(0).toUpperCase() + status.slice(1)}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Messages */}
+                    <div
+                      style={{
+                        flex: 1,
+                        overflowY: "auto",
+                        padding: "1.5rem",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "1rem",
+                      }}
+                    >
+                      {chatMessages.length === 0 ? (
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            height: "100%",
+                            color: "#aaa",
+                            fontSize: "0.95rem",
+                          }}
+                        >
+                          ✉ No messages yet
+                        </div>
+                      ) : (
+                        chatMessages.map((msg, idx) => {
+                          const isStaff = msg.sender === "care-manager";
+                          const isHovered = hoveredMessageIndex === idx;
+                          return (
+                            <div
+                              key={idx}
+                              style={{
+                                display: "flex",
+                                justifyContent: isStaff
+                                  ? "flex-start"
+                                  : "flex-end",
+                                alignItems: "flex-end",
+                                gap: "0.5rem",
+                              }}
+                              onMouseEnter={() => setHoveredMessageIndex(idx)}
+                              onMouseLeave={() => setHoveredMessageIndex(null)}
+                            >
+                              <div
+                                style={{
+                                  maxWidth: "70%",
+                                  background: isStaff ? "#6f0022" : "#f0f0f0",
+                                  color: isStaff ? "#fff" : "#333",
+                                  borderRadius: "12px",
+                                  padding: "1rem",
+                                  boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+                                }}
+                              >
+                                <p
+                                  style={{
+                                    margin: 0,
+                                    fontSize: "0.85rem",
+                                    fontWeight: "600",
+                                    color: isStaff ? "#e0bf63" : "#999",
+                                  }}
+                                >
+                                  {msg.senderName}
+                                </p>
+                                <p
+                                  style={{
+                                    margin: "0.6rem 0 0",
+                                    color: isStaff ? "#fff" : "#333",
+                                    fontSize: "0.95rem",
+                                    lineHeight: 1.5,
+                                  }}
+                                >
+                                  {msg.message}
+                                </p>
+                                <p
+                                  style={{
+                                    margin: "0.6rem 0 0",
+                                    color: isStaff ? "#e0bf63" : "#888",
+                                    fontSize: "0.75rem",
+                                  }}
+                                >
+                                  {new Date(msg.timestamp).toLocaleDateString()}{" "}
+                                  {new Date(msg.timestamp).toLocaleTimeString(
+                                    [],
+                                    {
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    },
+                                  )}
+                                </p>
+                              </div>
+                              {isHovered && isStaff && (
+                                <button
+                                  onClick={() =>
+                                    deleteMessage(selectedChat._id, idx)
+                                  }
+                                  style={{
+                                    background: "#ffebee",
+                                    color: "#c33",
+                                    border: "none",
+                                    borderRadius: "6px",
+                                    width: "32px",
+                                    height: "32px",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    cursor: "pointer",
+                                    fontSize: "1rem",
+                                    transition: "all 0.2s ease",
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.target.style.background = "#ffcdd2";
+                                    e.target.style.color = "#933";
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.target.style.background = "#ffebee";
+                                    e.target.style.color = "#c33";
+                                  }}
+                                  title="Delete message"
+                                >
+                                  ✕
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+
+                    {/* Reply Box */}
+                    <div
+                      style={{
+                        padding: "1.5rem",
+                        borderTop: "1px solid #e5e5e5",
+                        background: "#f9f9f9",
+                        display: "grid",
+                        gap: "1rem",
+                      }}
+                    >
+                      <textarea
+                        placeholder="Type your reply here..."
+                        value={replyText}
+                        onChange={(e) => setReplyText(e.target.value)}
+                        style={{
+                          padding: "0.85rem 1rem",
+                          border: "1px solid #d0d0d0",
+                          borderRadius: "8px",
+                          fontSize: "0.95rem",
+                          fontFamily: "Arial, sans-serif",
+                          minHeight: "80px",
+                          resize: "vertical",
+                          boxSizing: "border-box",
+                        }}
+                        onFocus={(e) =>
+                          (e.target.style.borderColor = "#6f0022")
+                        }
+                        onBlur={(e) => (e.target.style.borderColor = "#d0d0d0")}
+                      />
+                      <button
+                        onClick={sendChatReply}
+                        disabled={!replyText.trim()}
+                        style={{
+                          padding: "0.85rem 2rem",
+                          background: replyText.trim() ? "#6f0022" : "#ccc",
+                          color: "#fff",
+                          border: "none",
+                          borderRadius: "8px",
+                          fontSize: "0.95rem",
+                          fontWeight: "600",
+                          cursor: replyText.trim() ? "pointer" : "not-allowed",
+                          fontFamily: "Arial, sans-serif",
+                          transition: "all 0.2s ease",
+                        }}
+                        onMouseEnter={(e) => {
+                          if (replyText.trim()) {
+                            e.target.style.background = "#8b0033";
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (replyText.trim()) {
+                            e.target.style.background = "#6f0022";
+                          }
+                        }}
+                      >
+                        ↳ Send Reply
+                      </button>
+                    </div>
+                  </div>
                 ) : (
-                  chatMessages.map((msg, idx) => (
-                    <div key={idx} style={{
-                      background: msg.sender === 'care-manager' ? '#e8f0f5' : '#fff',
-                      border: '1px solid #eee',
-                      borderRadius: 8,
-                      padding: '0.8rem',
-                      marginLeft: msg.sender === 'care-manager' ? 0 : '2rem'
-                    }}>
-                      <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: '600', color: '#333' }}>
-                        {msg.senderName}
+                  <div
+                    style={{
+                      background: "#fff",
+                      border: "1px solid #e5e5e5",
+                      borderRadius: "12px",
+                      padding: "3rem 2rem",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "#aaa",
+                      textAlign: "center",
+                      boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
+                    }}
+                  >
+                    <div>
+                      <p style={{ margin: 0, fontSize: "1rem", color: "#999" }}>
+                        ✉ Select a conversation
                       </p>
-                      <p style={{ margin: '0.4rem 0 0', color: '#333', fontSize: '0.9rem' }}>
-                        {msg.message}
+                      <p
+                        style={{
+                          margin: "0.5rem 0 0",
+                          color: "#bbb",
+                          fontSize: "0.9rem",
+                        }}
+                      >
+                        Choose a customer from the list to view and reply to
+                        their messages
                       </p>
-                      <p style={{ margin: '0.4rem 0 0', color: '#999', fontSize: '0.75rem' }}>
-                        {new Date(msg.timestamp).toLocaleDateString()}{' '}
-                        {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* REVIEWS TAB */}
+          {activeTab === "reviews" && (
+            <div>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
+                  gap: "0.75rem",
+                  marginBottom: "1.5rem",
+                }}
+              >
+                <div
+                  style={{
+                    background: "#fafbfc",
+                    border: "1px solid #eee",
+                    borderRadius: 12,
+                    padding: "1rem",
+                    textAlign: "center",
+                  }}
+                >
+                  <p style={{ margin: 0, color: "#666", fontSize: "0.9rem" }}>
+                    Pending
+                  </p>
+                  <h2
+                    style={{
+                      margin: "0.5rem 0 0",
+                      color: "#f39c12",
+                      fontSize: "1.8rem",
+                    }}
+                  >
+                    {reviewStats.pending}
+                  </h2>
+                </div>
+                <div
+                  style={{
+                    background: "#fafbfc",
+                    border: "1px solid #eee",
+                    borderRadius: 12,
+                    padding: "1rem",
+                    textAlign: "center",
+                  }}
+                >
+                  <p style={{ margin: 0, color: "#666", fontSize: "0.9rem" }}>
+                    Approved
+                  </p>
+                  <h2
+                    style={{
+                      margin: "0.5rem 0 0",
+                      color: "#27ae60",
+                      fontSize: "1.8rem",
+                    }}
+                  >
+                    {reviewStats.approved}
+                  </h2>
+                </div>
+                <div
+                  style={{
+                    background: "#fafbfc",
+                    border: "1px solid #eee",
+                    borderRadius: 12,
+                    padding: "1rem",
+                    textAlign: "center",
+                  }}
+                >
+                  <p style={{ margin: 0, color: "#666", fontSize: "0.9rem" }}>
+                    Rejected
+                  </p>
+                  <h2
+                    style={{
+                      margin: "0.5rem 0 0",
+                      color: "#e74c3c",
+                      fontSize: "1.8rem",
+                    }}
+                  >
+                    {reviewStats.rejected}
+                  </h2>
+                </div>
+              </div>
+
+              <div style={{ display: "grid", gap: "0.8rem" }}>
+                {reviews.length === 0 ? (
+                  <p
+                    style={{
+                      color: "#999",
+                      textAlign: "center",
+                      padding: "2rem",
+                    }}
+                  >
+                    No reviews yet
+                  </p>
+                ) : (
+                  reviews.map((review) => (
+                    <div
+                      key={review._id}
+                      style={{
+                        background: "#fafbfc",
+                        border: "1px solid #eee",
+                        borderRadius: 12,
+                        padding: "1rem",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "1fr auto",
+                          alignItems: "start",
+                          gap: "1rem",
+                          marginBottom: "1rem",
+                        }}
+                      >
+                        <div>
+                          <div
+                            style={{
+                              display: "flex",
+                              gap: "0.5rem",
+                              alignItems: "center",
+                              marginBottom: "0.4rem",
+                            }}
+                          >
+                            <h4
+                              style={{
+                                margin: 0,
+                                color: "#6f0022",
+                                fontSize: "0.95rem",
+                              }}
+                            >
+                              {review.customerName} • {review.productName}
+                            </h4>
+                            <span
+                              style={{
+                                background:
+                                  review.status === "approved"
+                                    ? "#d4edda"
+                                    : review.status === "rejected"
+                                      ? "#f8d7da"
+                                      : "#fff3cd",
+                                color:
+                                  review.status === "approved"
+                                    ? "#155724"
+                                    : review.status === "rejected"
+                                      ? "#721c24"
+                                      : "#856404",
+                                padding: "0.2rem 0.6rem",
+                                fontSize: "0.75rem",
+                                fontWeight: "600",
+                                borderRadius: 4,
+                                textTransform: "capitalize",
+                              }}
+                            >
+                              {review.status}
+                            </span>
+                          </div>
+                          <p
+                            style={{
+                              margin: "0.3rem 0",
+                              color: "#6f0022",
+                              fontSize: "0.9rem",
+                              fontWeight: "600",
+                            }}
+                          >
+                            {"⭐".repeat(review.rating)} ({review.rating}/5) -{" "}
+                            {review.title}
+                          </p>
+                          <p
+                            style={{
+                              margin: "0.3rem 0 0",
+                              color: "#333",
+                              fontSize: "0.9rem",
+                            }}
+                          >
+                            {review.comment}
+                          </p>
+                        </div>
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "0.5rem",
+                          }}
+                        >
+                          {review.status === "pending" && (
+                            <>
+                              <button
+                                onClick={() =>
+                                  setSelectedReview(
+                                    selectedReview?._id === review._id
+                                      ? null
+                                      : review,
+                                  )
+                                }
+                                style={{
+                                  padding: "0.5rem 0.8rem",
+                                  background: "#27ae60",
+                                  color: "#fff",
+                                  border: "none",
+                                  borderRadius: 6,
+                                  fontSize: "0.8rem",
+                                  cursor: "pointer",
+                                  fontFamily: "Arial, sans-serif",
+                                }}
+                              >
+                                Approve
+                              </button>
+                              <button
+                                onClick={() =>
+                                  updateReviewStatus(review._id, "rejected")
+                                }
+                                style={{
+                                  padding: "0.5rem 0.8rem",
+                                  background: "#e74c3c",
+                                  color: "#fff",
+                                  border: "none",
+                                  borderRadius: 6,
+                                  fontSize: "0.8rem",
+                                  cursor: "pointer",
+                                  fontFamily: "Arial, sans-serif",
+                                }}
+                              >
+                                Reject
+                              </button>
+                            </>
+                          )}
+                          {review.status === "approved" && (
+                            <button
+                              onClick={() =>
+                                setSelectedReview(
+                                  selectedReview?._id === review._id
+                                    ? null
+                                    : review,
+                                )
+                              }
+                              style={{
+                                padding: "0.5rem 0.8rem",
+                                background: "#3498db",
+                                color: "#fff",
+                                border: "none",
+                                borderRadius: 6,
+                                fontSize: "0.8rem",
+                                cursor: "pointer",
+                                fontFamily: "Arial, sans-serif",
+                              }}
+                            >
+                              Add Reply
+                            </button>
+                          )}
+                          <button
+                            onClick={() => deleteReview(review._id)}
+                            style={{
+                              padding: "0.5rem 0.8rem",
+                              background: "#fff",
+                              color: "#666",
+                              border: "1px solid #ddd",
+                              borderRadius: 6,
+                              fontSize: "0.8rem",
+                              cursor: "pointer",
+                              fontFamily: "Arial, sans-serif",
+                            }}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Reply Section */}
+                      {selectedReview?._id === review._id && (
+                        <div
+                          style={{
+                            background: "#fff",
+                            border: "1px solid #ddd",
+                            borderRadius: 8,
+                            padding: "1rem",
+                            marginTop: "1rem",
+                            display: "grid",
+                            gap: "0.5rem",
+                          }}
+                        >
+                          {review.staffReply?.reply && (
+                            <div
+                              style={{
+                                background: "#f5f5f5",
+                                padding: "0.8rem",
+                                borderRadius: 6,
+                                marginBottom: "0.5rem",
+                              }}
+                            >
+                              <p
+                                style={{
+                                  margin: 0,
+                                  color: "#666",
+                                  fontSize: "0.85rem",
+                                  fontWeight: "600",
+                                }}
+                              >
+                                Staff Reply:
+                              </p>
+                              <p
+                                style={{
+                                  margin: "0.3rem 0 0",
+                                  color: "#333",
+                                  fontSize: "0.9rem",
+                                }}
+                              >
+                                {review.staffReply.reply}
+                              </p>
+                            </div>
+                          )}
+                          {review.status === "pending" && (
+                            <>
+                              <textarea
+                                placeholder="Add staff reply..."
+                                value={staffReply}
+                                onChange={(e) => setStaffReply(e.target.value)}
+                                style={{
+                                  padding: "0.6rem",
+                                  border: "1px solid #ddd",
+                                  borderRadius: 6,
+                                  fontSize: "0.9rem",
+                                  fontFamily: "Arial, sans-serif",
+                                  minHeight: "60px",
+                                }}
+                              />
+                              <div style={{ display: "flex", gap: "0.5rem" }}>
+                                <button
+                                  onClick={() =>
+                                    updateReviewStatus(
+                                      review._id,
+                                      "approved",
+                                      staffReply,
+                                    )
+                                  }
+                                  style={{
+                                    flex: 1,
+                                    padding: "0.5rem",
+                                    background: "#27ae60",
+                                    color: "#fff",
+                                    border: "none",
+                                    borderRadius: 6,
+                                    fontSize: "0.9rem",
+                                    fontWeight: "600",
+                                    cursor: "pointer",
+                                    fontFamily: "Arial, sans-serif",
+                                  }}
+                                >
+                                  Approve with Reply
+                                </button>
+                                <button
+                                  onClick={() => setSelectedReview(null)}
+                                  style={{
+                                    flex: 1,
+                                    padding: "0.5rem",
+                                    background: "#fff",
+                                    color: "#666",
+                                    border: "1px solid #ddd",
+                                    borderRadius: 6,
+                                    fontSize: "0.9rem",
+                                    cursor: "pointer",
+                                    fontFamily: "Arial, sans-serif",
+                                  }}
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            </>
+                          )}
+                          {review.status === "approved" && (
+                            <>
+                              <textarea
+                                placeholder="Update staff reply..."
+                                value={staffReply}
+                                onChange={(e) => setStaffReply(e.target.value)}
+                                style={{
+                                  padding: "0.6rem",
+                                  border: "1px solid #ddd",
+                                  borderRadius: 6,
+                                  fontSize: "0.9rem",
+                                  fontFamily: "Arial, sans-serif",
+                                  minHeight: "60px",
+                                }}
+                              />
+                              <div style={{ display: "flex", gap: "0.5rem" }}>
+                                <button
+                                  onClick={() =>
+                                    updateReviewStatus(
+                                      review._id,
+                                      "approved",
+                                      staffReply,
+                                    )
+                                  }
+                                  style={{
+                                    flex: 1,
+                                    padding: "0.5rem",
+                                    background: "#3498db",
+                                    color: "#fff",
+                                    border: "none",
+                                    borderRadius: 6,
+                                    fontSize: "0.9rem",
+                                    fontWeight: "600",
+                                    cursor: "pointer",
+                                    fontFamily: "Arial, sans-serif",
+                                  }}
+                                >
+                                  Update Reply
+                                </button>
+                                <button
+                                  onClick={() => setSelectedReview(null)}
+                                  style={{
+                                    flex: 1,
+                                    padding: "0.5rem",
+                                    background: "#fff",
+                                    color: "#666",
+                                    border: "1px solid #ddd",
+                                    borderRadius: 6,
+                                    fontSize: "0.9rem",
+                                    cursor: "pointer",
+                                    fontFamily: "Arial, sans-serif",
+                                  }}
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* APPOINTMENTS TAB */}
+          {activeTab === "appointments" && (
+            <div>
+              {/* Header */}
+              <div style={{ marginBottom: "2.5rem" }}>
+                <h2
+                  style={{
+                    margin: "0 0 0.5rem",
+                    color: "#FFFFFF",
+                    fontSize: "2rem",
+                    fontWeight: 700,
+                  }}
+                >
+                  Appointment Slots Management
+                </h2>
+                <p style={{ margin: 0, color: "#666", fontSize: "0.95rem" }}>
+                  Create, manage, and track appointment slots
+                </p>
+              </div>
+
+              {/* Stats Cards */}
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                  gap: "1.5rem",
+                  marginBottom: "2rem",
+                }}
+              >
+                <div
+                  style={{
+                    background: "#800020",
+                    borderRadius: "10px",
+                    padding: "1.5rem",
+                    color: "#fff",
+                    boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
+                  }}
+                >
+                  <p
+                    style={{
+                      margin: 0,
+                      color: "#d4af37",
+                      fontSize: "0.85rem",
+                      fontWeight: 500,
+                    }}
+                  >
+                    Total Appointments
+                  </p>
+                  <h3
+                    style={{
+                      margin: "0.8rem 0 0",
+                      fontSize: "2rem",
+                      fontWeight: 700,
+                      color: "#d4af37",
+                    }}
+                  >
+                    {appointmentStats.total}
+                  </h3>
+                </div>
+                <div
+                  style={{
+                    background: "#800020",
+                    borderRadius: "10px",
+                    padding: "1.5rem",
+                    color: "#fff",
+                    boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
+                  }}
+                >
+                  <p
+                    style={{
+                      margin: 0,
+                      color: "#d4af37",
+                      fontSize: "0.85rem",
+                      fontWeight: 500,
+                    }}
+                  >
+                    Completed
+                  </p>
+                  <h3
+                    style={{
+                      margin: "0.8rem 0 0",
+                      fontSize: "2rem",
+                      fontWeight: 700,
+                      color: "#d4af37",
+                    }}
+                  >
+                    {appointmentStats.completed}
+                  </h3>
+                </div>
+                <div
+                  style={{
+                    background: "#800020",
+                    borderRadius: "10px",
+                    padding: "1.5rem",
+                    color: "#fff",
+                    boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
+                  }}
+                >
+                  <p
+                    style={{
+                      margin: 0,
+                      color: "#d4af37",
+                      fontSize: "0.85rem",
+                      fontWeight: 500,
+                    }}
+                  >
+                    No-Shows
+                  </p>
+                  <h3
+                    style={{
+                      margin: "0.8rem 0 0",
+                      fontSize: "2rem",
+                      fontWeight: 700,
+                      color: "#d4af37",
+                    }}
+                  >
+                    {appointmentStats.noShow}
+                  </h3>
+                </div>
+                <div
+                  style={{
+                    background: "#800020",
+                    borderRadius: "10px",
+                    padding: "1.5rem",
+                    color: "#fff",
+                    boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
+                  }}
+                >
+                  <p
+                    style={{
+                      margin: 0,
+                      color: "#d4af37",
+                      fontSize: "0.85rem",
+                      fontWeight: 500,
+                    }}
+                  >
+                    Cancelled
+                  </p>
+                  <h3
+                    style={{
+                      margin: "0.8rem 0 0",
+                      fontSize: "2rem",
+                      fontWeight: 700,
+                      color: "#d4af37",
+                    }}
+                  >
+                    {appointmentStats.cancelled}
+                  </h3>
+                </div>
+              </div>
+
+              {/* Create Slot Form */}
+              <section
+                style={{
+                  background: "#fff",
+                  border: "1px solid #e5e5e5",
+                  borderRadius: "12px",
+                  padding: "2rem",
+                  marginBottom: "2rem",
+                  boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
+                }}
+              >
+                <h3
+                  style={{
+                    margin: "0 0 1.5rem",
+                    color: "#1a1a1a",
+                    fontSize: "1.3rem",
+                    fontWeight: 600,
+                  }}
+                >
+                  {editingSlotId ? "✎ Edit Slot" : "✚ Create New Slot"}
+                </h3>
+                <form
+                  onSubmit={createOrUpdateSlot}
+                  style={{ display: "grid", gap: "1.5rem" }}
+                >
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr 1fr",
+                      gap: "1.5rem",
+                    }}
+                  >
+                    <div>
+                      <label
+                        style={{
+                          display: "block",
+                          margin: "0 0 0.6rem",
+                          color: "#333",
+                          fontSize: "0.9rem",
+                          fontWeight: 500,
+                        }}
+                      >
+                        Date *
+                      </label>
+                      <input
+                        type="date"
+                        value={slotForm.date}
+                        onChange={(e) =>
+                          setSlotForm({ ...slotForm, date: e.target.value })
+                        }
+                        min={todayDate}
+                        style={{
+                          width: "100%",
+                          padding: "0.85rem 1rem",
+                          border: "1px solid #d0d0d0",
+                          borderRadius: "8px",
+                          fontSize: "0.95rem",
+                          boxSizing: "border-box",
+                          background: "#fafbfc",
+                        }}
+                      />
+                    </div>
+                    <div style={{ gridColumn: "2 / 4" }}>
+                      <label
+                        style={{
+                          display: "block",
+                          margin: "0 0 0.6rem",
+                          color: "#333",
+                          fontSize: "0.9rem",
+                          fontWeight: 500,
+                        }}
+                      >
+                        Time Slot (7 AM - 10 PM) *
+                      </label>
+                      <select
+                        value={slotForm.timeSlotIndex}
+                        onChange={(e) =>
+                          setSlotForm({
+                            ...slotForm,
+                            timeSlotIndex: parseInt(e.target.value),
+                          })
+                        }
+                        style={{
+                          width: "100%",
+                          padding: "0.85rem 1rem",
+                          border: "1px solid #d0d0d0",
+                          borderRadius: "8px",
+                          fontSize: "0.95rem",
+                          boxSizing: "border-box",
+                          background: "#fafbfc",
+                          cursor: "pointer",
+                          color: "#333",
+                        }}
+                      >
+                        {FIXED_TIME_SLOTS.map((slot, idx) => (
+                          <option key={idx} value={idx}>
+                            {slot.display}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* appointment type removed per request */}
+
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: "1.5rem",
+                    }}
+                  >
+                    <div>
+                      <label
+                        style={{
+                          display: "block",
+                          margin: "0 0 0.6rem",
+                          color: "#333",
+                          fontSize: "0.9rem",
+                          fontWeight: 500,
+                        }}
+                      >
+                        Block Slot?
+                      </label>
+                      <input
+                        type="checkbox"
+                        checked={slotForm.isBlocked}
+                        onChange={(e) =>
+                          setSlotForm({
+                            ...slotForm,
+                            isBlocked: e.target.checked,
+                          })
+                        }
+                        style={{
+                          width: "18px",
+                          height: "18px",
+                          cursor: "pointer",
+                        }}
+                      />
+                    </div>
+                    {slotForm.isBlocked && (
+                      <div>
+                        <label
+                          style={{
+                            display: "block",
+                            margin: "0 0 0.6rem",
+                            color: "#333",
+                            fontSize: "0.9rem",
+                            fontWeight: 500,
+                          }}
+                        >
+                          Block Reason
+                        </label>
+                        <select
+                          value={slotForm.blockReason}
+                          onChange={(e) =>
+                            setSlotForm({
+                              ...slotForm,
+                              blockReason: e.target.value,
+                            })
+                          }
+                          style={{
+                            width: "100%",
+                            padding: "0.85rem 1rem",
+                            border: "1px solid #d0d0d0",
+                            borderRadius: "8px",
+                            fontSize: "0.95rem",
+                            boxSizing: "border-box",
+                            background: "#fafbfc",
+                            cursor: "pointer",
+                          }}
+                        >
+                          <option value="">Select reason...</option>
+                          {BLOCK_REASONS.map((reason) => (
+                            <option key={reason} value={reason}>
+                              {reason}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={{ display: "flex", gap: "1rem" }}>
+                    <button
+                      type="submit"
+                      style={{
+                        padding: "0.9rem 2rem",
+                        background: "#6f0022",
+                        color: "#fff",
+                        border: "none",
+                        borderRadius: "8px",
+                        fontSize: "0.95rem",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        transition: "all 0.2s ease",
+                      }}
+                      onMouseEnter={(e) =>
+                        (e.target.style.background = "#8b0033")
+                      }
+                      onMouseLeave={(e) =>
+                        (e.target.style.background = "#6f0022")
+                      }
+                    >
+                      {editingSlotId ? "Update Slot" : "Create Slot"}
+                    </button>
+                    {editingSlotId && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingSlotId(null);
+                          setSlotForm({
+                            date: "",
+                            timeSlotIndex: 0,
+                            type: APPOINTMENT_TYPES[0],
+                            capacity: 1,
+                            assignedStaff: "",
+                            isBlocked: false,
+                            blockReason: "",
+                          });
+                        }}
+                        style={{
+                          padding: "0.9rem 2rem",
+                          background: "#f5f5f5",
+                          color: "#666",
+                          border: "1px solid #ddd",
+                          borderRadius: "8px",
+                          fontSize: "0.95rem",
+                          fontWeight: 600,
+                          cursor: "pointer",
+                          transition: "all 0.2s ease",
+                        }}
+                        onMouseEnter={(e) =>
+                          (e.target.style.background = "#efefef")
+                        }
+                        onMouseLeave={(e) =>
+                          (e.target.style.background = "#f5f5f5")
+                        }
+                      >
+                        Cancel
+                      </button>
+                    )}
+                  </div>
+                </form>
+              </section>
+
+              {/* Slots List */}
+              <div style={{ display: "grid", gap: "1.2rem" }}>
+                <h3
+                  style={{
+                    margin: "0 0 1rem",
+                    color: "#1a1a1a",
+                    fontSize: "1.1rem",
+                    fontWeight: 600,
+                  }}
+                >
+                  Available Slots
+                </h3>
+                {slots.length === 0 ? (
+                  <div
+                    style={{
+                      background: "#fff",
+                      border: "1px dashed #d0d0d0",
+                      borderRadius: "10px",
+                      padding: "2rem",
+                      textAlign: "center",
+                    }}
+                  >
+                    <p style={{ margin: 0, color: "#999", fontSize: "1rem" }}>
+                      ◇ No slots created yet
+                    </p>
+                  </div>
+                ) : (
+                  slots.map((slot) => (
+                    <div
+                      key={slot._id}
+                      style={{
+                        background: "#fff",
+                        border: "1px solid #e5e5e5",
+                        borderRadius: "10px",
+                        padding: "1.5rem",
+                        display: "grid",
+                        gridTemplateColumns: "1fr auto",
+                        alignItems: "center",
+                        gap: "2rem",
+                        boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
+                      }}
+                    >
+                      <div>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "1rem",
+                            marginBottom: "0.8rem",
+                          }}
+                        >
+                          <h4
+                            style={{
+                              margin: 0,
+                              color: "#1a1a1a",
+                              fontSize: "1.1rem",
+                              fontWeight: 600,
+                            }}
+                          >
+                            {slot.type}
+                          </h4>
+                          {slot.isBlocked && (
+                            <span
+                              style={{
+                                background: "#ff6b6b",
+                                color: "#fff",
+                                padding: "0.25rem 0.75rem",
+                                borderRadius: "20px",
+                                fontSize: "0.8rem",
+                                fontWeight: 600,
+                              }}
+                            >
+                              {"Blocked: " + slot.blockReason}
+                            </span>
+                          )}
+                        </div>
+                        <p
+                          style={{
+                            margin: "0.5rem 0",
+                            color: "#555",
+                            fontSize: "0.95rem",
+                          }}
+                        >
+                          📅 {new Date(slot.date).toLocaleDateString()} | ⏰{" "}
+                          {slot.startTime} - {slot.endTime}
+                        </p>
+                        {slot.internalNotes && (
+                          <p
+                            style={{
+                              margin: "0.5rem 0 0",
+                              color: "#999",
+                              fontSize: "0.85rem",
+                            }}
+                          >
+                            📝 {slot.internalNotes}
+                          </p>
+                        )}
+                      </div>
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: "0.8rem",
+                          flexDirection: "column",
+                        }}
+                      >
+                        <button
+                          onClick={() => {
+                            const slotIndex = FIXED_TIME_SLOTS.findIndex(
+                              (s) =>
+                                s.start === slot.startTime &&
+                                s.end === slot.endTime,
+                            );
+                            setEditingSlotId(slot._id);
+                            setSlotForm({
+                              date: slot.date.split("T")[0],
+                              timeSlotIndex: slotIndex >= 0 ? slotIndex : 0,
+                              assignedStaff: slot.assignedStaff,
+                              isBlocked: slot.isBlocked,
+                              blockReason: slot.blockReason,
+                            });
+                          }}
+                          style={{
+                            padding: "0.75rem 1rem",
+                            background: "#f0f0f0",
+                            color: "#333",
+                            border: "1px solid #ddd",
+                            borderRadius: "6px",
+                            fontSize: "0.85rem",
+                            fontWeight: 600,
+                            cursor: "pointer",
+                          }}
+                        >
+                          ✎ Edit
+                        </button>
+                        <button
+                          onClick={() => deleteSlot(slot._id)}
+                          style={{
+                            padding: "0.75rem 1rem",
+                            background: "#ffebee",
+                            color: "#c33",
+                            border: "1px solid #ffcdd2",
+                            borderRadius: "6px",
+                            fontSize: "0.85rem",
+                            fontWeight: 600,
+                            cursor: "pointer",
+                          }}
+                        >
+                          ✕ Delete
+                        </button>
+                      </div>
                     </div>
                   ))
                 )}
               </div>
 
-              {/* Reply Box */}
-              <div style={{ display: 'grid', gap: '0.5rem' }}>
-                <textarea
-                  placeholder="Type your reply..."
-                  value={replyText}
-                  onChange={(e) => setReplyText(e.target.value)}
+              {/* Upcoming Appointments */}
+              <div style={{ marginTop: "3rem" }}>
+                <h3
                   style={{
-                    padding: '0.6rem',
-                    border: '1px solid #ddd',
-                    borderRadius: 8,
-                    fontSize: '0.9rem',
-                    fontFamily: 'Poppins, sans-serif',
-                    minHeight: '80px',
-                    resize: 'vertical'
-                  }}
-                />
-                <button
-                  onClick={sendChatReply}
-                  disabled={!replyText.trim()}
-                  style={{
-                    padding: '0.6rem 1.2rem',
-                    background: replyText.trim() ? '#6f0022' : '#ccc',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: 8,
-                    fontSize: '0.9rem',
-                    fontWeight: '600',
-                    cursor: replyText.trim() ? 'pointer' : 'not-allowed',
-                    fontFamily: 'Poppins, sans-serif'
+                    margin: "0 0 1rem",
+                    color: "#1a1a1a",
+                    fontSize: "1.1rem",
+                    fontWeight: 600,
                   }}
                 >
-                  Send Reply
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div style={{
-              background: '#fafbfc',
-              border: '1px solid #eee',
-              borderRadius: 12,
-              padding: '2rem',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#999'
-            }}>
-              Select a customer to view messages
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* REVIEWS TAB */}
-      {activeTab === 'reviews' && (
-        <div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '0.75rem', marginBottom: '1.5rem' }}>
-            <div style={{ background: '#fafbfc', border: '1px solid #eee', borderRadius: 12, padding: '1rem', textAlign: 'center' }}>
-              <p style={{ margin: 0, color: '#666', fontSize: '0.9rem' }}>Pending</p>
-              <h2 style={{ margin: '0.5rem 0 0', color: '#f39c12', fontSize: '1.8rem' }}>
-                {reviewStats.pending}
-              </h2>
-            </div>
-            <div style={{ background: '#fafbfc', border: '1px solid #eee', borderRadius: 12, padding: '1rem', textAlign: 'center' }}>
-              <p style={{ margin: 0, color: '#666', fontSize: '0.9rem' }}>Approved</p>
-              <h2 style={{ margin: '0.5rem 0 0', color: '#27ae60', fontSize: '1.8rem' }}>
-                {reviewStats.approved}
-              </h2>
-            </div>
-            <div style={{ background: '#fafbfc', border: '1px solid #eee', borderRadius: 12, padding: '1rem', textAlign: 'center' }}>
-              <p style={{ margin: 0, color: '#666', fontSize: '0.9rem' }}>Rejected</p>
-              <h2 style={{ margin: '0.5rem 0 0', color: '#e74c3c', fontSize: '1.8rem' }}>
-                {reviewStats.rejected}
-              </h2>
-            </div>
-          </div>
-
-          <div style={{ display: 'grid', gap: '0.8rem' }}>
-            {reviews.length === 0 ? (
-              <p style={{ color: '#999', textAlign: 'center', padding: '2rem' }}>No reviews yet</p>
-            ) : (
-              reviews.map(review => (
-                <div key={review._id} style={{
-                  background: '#fafbfc',
-                  border: '1px solid #eee',
-                  borderRadius: 12,
-                  padding: '1rem'
-                }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'start', gap: '1rem', marginBottom: '1rem' }}>
-                    <div>
-                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.4rem' }}>
-                        <h4 style={{ margin: 0, color: '#6f0022', fontSize: '0.95rem' }}>
-                          {review.customerName} • {review.productName}
-                        </h4>
-                        <span style={{
-                          background: review.status === 'approved' ? '#d4edda' : review.status === 'rejected' ? '#f8d7da' : '#fff3cd',
-                          color: review.status === 'approved' ? '#155724' : review.status === 'rejected' ? '#721c24' : '#856404',
-                          padding: '0.2rem 0.6rem',
-                          fontSize: '0.75rem',
-                          fontWeight: '600',
-                          borderRadius: 4,
-                          textTransform: 'capitalize'
-                        }}>
-                          {review.status}
-                        </span>
-                      </div>
-                      <p style={{ margin: '0.3rem 0', color: '#6f0022', fontSize: '0.9rem', fontWeight: '600' }}>
-                        {'⭐'.repeat(review.rating)} ({review.rating}/5) - {review.title}
-                      </p>
-                      <p style={{ margin: '0.3rem 0 0', color: '#333', fontSize: '0.9rem' }}>
-                        {review.comment}
-                      </p>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                      {review.status === 'pending' && (
-                        <>
-                          <button
-                            onClick={() => setSelectedReview(selectedReview?._id === review._id ? null : review)}
-                            style={{
-                              padding: '0.5rem 0.8rem',
-                              background: '#27ae60',
-                              color: '#fff',
-                              border: 'none',
-                              borderRadius: 6,
-                              fontSize: '0.8rem',
-                              cursor: 'pointer',
-                              fontFamily: 'Poppins, sans-serif'
-                            }}
-                          >
-                            Approve
-                          </button>
-                          <button
-                            onClick={() => updateReviewStatus(review._id, 'rejected')}
-                            style={{
-                              padding: '0.5rem 0.8rem',
-                              background: '#e74c3c',
-                              color: '#fff',
-                              border: 'none',
-                              borderRadius: 6,
-                              fontSize: '0.8rem',
-                              cursor: 'pointer',
-                              fontFamily: 'Poppins, sans-serif'
-                            }}
-                          >
-                            Reject
-                          </button>
-                        </>
-                      )}
-                      {review.status === 'approved' && (
-                        <button
-                          onClick={() => setSelectedReview(selectedReview?._id === review._id ? null : review)}
+                  Upcoming Appointments
+                </h3>
+                <div style={{ display: "grid", gap: "1.2rem" }}>
+                  {appointments.filter((a) => a.status === "confirmed")
+                    .length === 0 ? (
+                    <p
+                      style={{
+                        color: "#999",
+                        textAlign: "center",
+                        padding: "2rem",
+                      }}
+                    >
+                      No confirmed appointments
+                    </p>
+                  ) : (
+                    appointments
+                      .filter((a) => a.status === "confirmed")
+                      .map((apt) => (
+                        <div
+                          key={apt._id}
                           style={{
-                            padding: '0.5rem 0.8rem',
-                            background: '#3498db',
-                            color: '#fff',
-                            border: 'none',
-                            borderRadius: 6,
-                            fontSize: '0.8rem',
-                            cursor: 'pointer',
-                            fontFamily: 'Poppins, sans-serif'
+                            background: "#fff",
+                            border: "1px solid #e5e5e5",
+                            borderRadius: "10px",
+                            padding: "1.5rem",
+                            cursor: "pointer",
+                            transition: "all 0.2s ease",
+                          }}
+                          onMouseEnter={(e) =>
+                            (e.currentTarget.style.boxShadow =
+                              "0 4px 12px rgba(0,0,0,0.1)")
+                          }
+                          onMouseLeave={(e) =>
+                            (e.currentTarget.style.boxShadow =
+                              "0 1px 3px rgba(0, 0, 0, 0.05)")
+                          }
+                          onClick={() => setSelectedAppointment(apt)}
+                        >
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "start",
+                              justifyContent: "space-between",
+                            }}
+                          >
+                            <div>
+                              <h4
+                                style={{
+                                  margin: 0,
+                                  color: "#1a1a1a",
+                                  fontSize: "1rem",
+                                  fontWeight: 600,
+                                }}
+                              >
+                                {apt.customerName}
+                              </h4>
+                              <p
+                                style={{
+                                  margin: "0.5rem 0 0",
+                                  color: "#555",
+                                  fontSize: "0.9rem",
+                                }}
+                              >
+                                {apt.appointmentType}
+                              </p>
+                              <p
+                                style={{
+                                  margin: "0.3rem 0 0",
+                                  color: "#999",
+                                  fontSize: "0.85rem",
+                                }}
+                              >
+                                📅 {new Date(apt.date).toLocaleDateString()} |
+                                ⏰ {apt.startTime}
+                              </p>
+                              {apt.isVIP && (
+                                <span
+                                  style={{
+                                    background: "#fff3cd",
+                                    color: "#856404",
+                                    padding: "0.25rem 0.75rem",
+                                    borderRadius: "4px",
+                                    fontSize: "0.75rem",
+                                    fontWeight: 600,
+                                    marginTop: "0.5rem",
+                                    display: "inline-block",
+                                  }}
+                                >
+                                  ⭐ VIP Customer
+                                </span>
+                              )}
+                            </div>
+                            <div style={{ textAlign: "right" }}>
+                              <p
+                                style={{
+                                  margin: 0,
+                                  color: "#555",
+                                  fontSize: "0.9rem",
+                                }}
+                              >
+                                {apt.customerEmail}
+                              </p>
+                              <p
+                                style={{
+                                  margin: "0.3rem 0 0",
+                                  color: "#999",
+                                  fontSize: "0.85rem",
+                                }}
+                              >
+                                {apt.customerPhone || "N/A"}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                  )}
+                </div>
+              </div>
+
+              {/* Appointment Detail Modal */}
+              {selectedAppointment && (
+                <div
+                  style={{
+                    position: "fixed",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: "rgba(0,0,0,0.5)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    zIndex: 1000,
+                  }}
+                  onClick={() => setSelectedAppointment(null)}
+                >
+                  <div
+                    style={{
+                      background: "#fff",
+                      borderRadius: "12px",
+                      padding: "2rem",
+                      maxWidth: "500px",
+                      width: "90%",
+                      maxHeight: "80vh",
+                      overflowY: "auto",
+                      boxShadow: "0 10px 40px rgba(0,0,0,0.3)",
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <h3
+                      style={{
+                        margin: "0 0 1.5rem",
+                        color: "#1a1a1a",
+                        fontSize: "1.3rem",
+                        fontWeight: 600,
+                      }}
+                    >
+                      Appointment Details
+                    </h3>
+                    <div
+                      style={{
+                        display: "grid",
+                        gap: "1rem",
+                        marginBottom: "1.5rem",
+                      }}
+                    >
+                      <div>
+                        <p
+                          style={{
+                            margin: 0,
+                            color: "#666",
+                            fontSize: "0.85rem",
+                            fontWeight: 600,
                           }}
                         >
-                          Add Reply
-                        </button>
-                      )}
+                          Customer
+                        </p>
+                        <p
+                          style={{
+                            margin: "0.3rem 0 0",
+                            color: "#333",
+                            fontSize: "0.95rem",
+                          }}
+                        >
+                          {selectedAppointment.customerName}
+                        </p>
+                      </div>
+                      <div>
+                        <p
+                          style={{
+                            margin: 0,
+                            color: "#666",
+                            fontSize: "0.85rem",
+                            fontWeight: 600,
+                          }}
+                        >
+                          Appointment Type
+                        </p>
+                        <p
+                          style={{
+                            margin: "0.3rem 0 0",
+                            color: "#333",
+                            fontSize: "0.95rem",
+                          }}
+                        >
+                          {selectedAppointment.appointmentType}
+                        </p>
+                      </div>
+                      <div>
+                        <label
+                          style={{
+                            display: "block",
+                            margin: "0 0 0.6rem",
+                            color: "#333",
+                            fontSize: "0.9rem",
+                            fontWeight: 500,
+                          }}
+                        >
+                          Status
+                        </label>
+                        <select
+                          value={
+                            appointmentStatusForm.status ||
+                            selectedAppointment.status
+                          }
+                          onChange={(e) =>
+                            setAppointmentStatusForm({
+                              ...appointmentStatusForm,
+                              status: e.target.value,
+                            })
+                          }
+                          style={{
+                            width: "100%",
+                            padding: "0.6rem",
+                            border: "1px solid #d0d0d0",
+                            borderRadius: "6px",
+                            boxSizing: "border-box",
+                          }}
+                        >
+                          <option value="confirmed">Confirmed</option>
+                          <option value="completed">Completed</option>
+                          <option value="no-show">No-Show</option>
+                          <option value="cancelled">Cancelled</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label
+                          style={{
+                            display: "block",
+                            margin: "0 0 0.6rem",
+                            color: "#333",
+                            fontSize: "0.9rem",
+                            fontWeight: 500,
+                          }}
+                        >
+                          Internal Notes
+                        </label>
+                        <textarea
+                          value={appointmentStatusForm.internalNotesAfter}
+                          onChange={(e) =>
+                            setAppointmentStatusForm({
+                              ...appointmentStatusForm,
+                              internalNotesAfter: e.target.value,
+                            })
+                          }
+                          placeholder="Add notes..."
+                          style={{
+                            width: "100%",
+                            padding: "0.6rem",
+                            border: "1px solid #d0d0d0",
+                            borderRadius: "6px",
+                            fontSize: "0.9rem",
+                            minHeight: "60px",
+                            boxSizing: "border-box",
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", gap: "1rem" }}>
                       <button
-                        onClick={() => deleteReview(review._id)}
+                        onClick={() =>
+                          updateAppointmentStatus(
+                            selectedAppointment._id,
+                            appointmentStatusForm.status ||
+                              selectedAppointment.status,
+                            appointmentStatusForm.internalNotesAfter,
+                          )
+                        }
                         style={{
-                          padding: '0.5rem 0.8rem',
-                          background: '#fff',
-                          color: '#666',
-                          border: '1px solid #ddd',
-                          borderRadius: 6,
-                          fontSize: '0.8rem',
-                          cursor: 'pointer',
-                          fontFamily: 'Poppins, sans-serif'
+                          flex: 1,
+                          padding: "0.75rem",
+                          background: "#6f0022",
+                          color: "#fff",
+                          border: "none",
+                          borderRadius: "6px",
+                          fontWeight: 600,
+                          cursor: "pointer",
                         }}
                       >
-                        Delete
+                        Update Status
+                      </button>
+                      <button
+                        onClick={() => setSelectedAppointment(null)}
+                        style={{
+                          flex: 1,
+                          padding: "0.75rem",
+                          background: "#f5f5f5",
+                          color: "#666",
+                          border: "1px solid #ddd",
+                          borderRadius: "6px",
+                          fontWeight: 600,
+                          cursor: "pointer",
+                        }}
+                      >
+                        Close
                       </button>
                     </div>
                   </div>
-
-                  {/* Reply Section */}
-                  {selectedReview?._id === review._id && (
-                    <div style={{
-                      background: '#fff',
-                      border: '1px solid #ddd',
-                      borderRadius: 8,
-                      padding: '1rem',
-                      marginTop: '1rem',
-                      display: 'grid',
-                      gap: '0.5rem'
-                    }}>
-                      {review.staffReply?.reply && (
-                        <div style={{ background: '#f5f5f5', padding: '0.8rem', borderRadius: 6, marginBottom: '0.5rem' }}>
-                          <p style={{ margin: 0, color: '#666', fontSize: '0.85rem', fontWeight: '600' }}>
-                            Staff Reply:
-                          </p>
-                          <p style={{ margin: '0.3rem 0 0', color: '#333', fontSize: '0.9rem' }}>
-                            {review.staffReply.reply}
-                          </p>
-                        </div>
-                      )}
-                      {review.status === 'pending' && (
-                        <>
-                          <textarea
-                            placeholder="Add staff reply..."
-                            value={staffReply}
-                            onChange={(e) => setStaffReply(e.target.value)}
-                            style={{
-                              padding: '0.6rem',
-                              border: '1px solid #ddd',
-                              borderRadius: 6,
-                              fontSize: '0.9rem',
-                              fontFamily: 'Poppins, sans-serif',
-                              minHeight: '60px'
-                            }}
-                          />
-                          <div style={{ display: 'flex', gap: '0.5rem' }}>
-                            <button
-                              onClick={() => updateReviewStatus(review._id, 'approved', staffReply)}
-                              style={{
-                                flex: 1,
-                                padding: '0.5rem',
-                                background: '#27ae60',
-                                color: '#fff',
-                                border: 'none',
-                                borderRadius: 6,
-                                fontSize: '0.9rem',
-                                fontWeight: '600',
-                                cursor: 'pointer',
-                                fontFamily: 'Poppins, sans-serif'
-                              }}
-                            >
-                              Approve with Reply
-                            </button>
-                            <button
-                              onClick={() => setSelectedReview(null)}
-                              style={{
-                                flex: 1,
-                                padding: '0.5rem',
-                                background: '#fff',
-                                color: '#666',
-                                border: '1px solid #ddd',
-                                borderRadius: 6,
-                                fontSize: '0.9rem',
-                                cursor: 'pointer',
-                                fontFamily: 'Poppins, sans-serif'
-                              }}
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        </>
-                      )}
-                      {review.status === 'approved' && (
-                        <>
-                          <textarea
-                            placeholder="Update staff reply..."
-                            value={staffReply}
-                            onChange={(e) => setStaffReply(e.target.value)}
-                            style={{
-                              padding: '0.6rem',
-                              border: '1px solid #ddd',
-                              borderRadius: 6,
-                              fontSize: '0.9rem',
-                              fontFamily: 'Poppins, sans-serif',
-                              minHeight: '60px'
-                            }}
-                          />
-                          <div style={{ display: 'flex', gap: '0.5rem' }}>
-                            <button
-                              onClick={() => updateReviewStatus(review._id, 'approved', staffReply)}
-                              style={{
-                                flex: 1,
-                                padding: '0.5rem',
-                                background: '#3498db',
-                                color: '#fff',
-                                border: 'none',
-                                borderRadius: 6,
-                                fontSize: '0.9rem',
-                                fontWeight: '600',
-                                cursor: 'pointer',
-                                fontFamily: 'Poppins, sans-serif'
-                              }}
-                            >
-                              Update Reply
-                            </button>
-                            <button
-                              onClick={() => setSelectedReview(null)}
-                              style={{
-                                flex: 1,
-                                padding: '0.5rem',
-                                background: '#fff',
-                                color: '#666',
-                                border: '1px solid #ddd',
-                                borderRadius: 6,
-                                fontSize: '0.9rem',
-                                cursor: 'pointer',
-                                fontFamily: 'Poppins, sans-serif'
-                              }}
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  )}
                 </div>
-              ))
-            )}
-          </div>
+              )}
+            </div>
+          )}
         </div>
-      )}
-
       </main>
     </div>
   );

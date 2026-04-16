@@ -12,6 +12,21 @@ export default function CustomerSupportPage() {
   const [messageInput, setMessageInput] = useState('');
   const [sending, setSending] = useState(false);
   const [cart] = useState(() => JSON.parse(localStorage.getItem('saranyaCart') || '[]'));
+  const [slots, setSlots] = useState([]);
+  const [slotsLoading, setSlotsLoading] = useState(true);
+  const [bookingModal, setBookingModal] = useState(false);
+  const [selectedSlot, setSelectedSlot] = useState(null);
+  const [bookingNotes, setBookingNotes] = useState('');
+  const [bookingInProgress, setBookingInProgress] = useState(false);
+  const [bookingError, setBookingError] = useState('');
+  const [appointmentStats, setAppointmentStats] = useState({
+    total: 0,
+    completed: 0,
+    noShow: 0,
+    cancelled: 0,
+    confirmed: 0
+  });
+  const [statsLoading, setStatsLoading] = useState(true);
 
   const cartCount = useMemo(
     () => cart.reduce((sum, item) => sum + Number(item.quantity || 0), 0),
@@ -36,14 +51,19 @@ export default function CustomerSupportPage() {
 
   useEffect(() => {
     let intervalId;
-
     async function init() {
       const loggedInCustomer = await authManager.checkCustomerAuth();
       if (!loggedInCustomer) return;
 
       setCustomer(loggedInCustomer);
       await loadMessages();
-      intervalId = window.setInterval(loadMessages, 5000);
+      await loadAvailableSlots();
+      await loadAppointmentStats();
+      // Reload slots and messages periodically for real-time updates
+      intervalId = window.setInterval(async () => {
+        await loadMessages();
+        await loadAvailableSlots(); // Refresh slots to show real-time bookings
+      }, 5000);
     }
 
     init();
@@ -95,6 +115,89 @@ export default function CustomerSupportPage() {
     }
   }
 
+  async function loadAvailableSlots() {
+    try {
+      setSlotsLoading(true);
+      // Load ALL slots (not just available ones) so we can filter properly
+      const response = await authManager.apiRequest('/api/appointments/slots');
+      if (!response.ok) return;
+      const data = await response.json();
+      // Filter to only include slots that have capacity
+      const availableSlots = (Array.isArray(data) ? data : []).filter(slot => 
+        slot.bookedCount < slot.capacity && !slot.isBlocked
+      );
+      setSlots(availableSlots);
+    } catch (error) {
+      console.error('Error loading slots:', error);
+    } finally {
+      setSlotsLoading(false);
+    }
+  }
+
+  async function loadAppointmentStats() {
+    try {
+      setStatsLoading(true);
+      const response = await authManager.apiRequest('/api/appointments');
+      if (!response.ok) return;
+      const data = await response.json();
+      if (data.stats) {
+        setAppointmentStats(data.stats);
+      }
+    } catch (error) {
+      console.error('Error loading appointment stats:', error);
+    } finally {
+      setStatsLoading(false);
+    }
+  }
+
+  async function handleBookAppointment(e) {
+    e.preventDefault();
+    if (!selectedSlot || !customer) return;
+
+    setBookingError('');
+    setBookingInProgress(true);
+
+    try {
+      // Check if slot is still available before booking
+      if (isSlotFullyBooked(selectedSlot.date, selectedSlot.startTime, selectedSlot.endTime)) {
+        setBookingError('Sorry, this time slot is no longer available. Please refresh and select another slot.');
+        setBookingInProgress(false);
+        return;
+      }
+
+      const response = await authManager.apiRequest('/api/appointments', {
+        method: 'POST',
+        body: JSON.stringify({
+          slotId: selectedSlot._id,
+          customerId: customer._id,
+          customerName: customer.fullName,
+          customerEmail: customer.email,
+          customerPhone: customer.phone || '',
+          appointmentType: selectedSlot.type,
+          notes: bookingNotes,
+          isVIP: customer.loyaltyPoints > 500 // Mark as VIP if high loyalty points
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert('✓ Appointment booked successfully! Check your email for confirmation.');
+        setBookingModal(false);
+        setSelectedSlot(null);
+        setBookingNotes('');
+        await loadAvailableSlots(); // Refresh slots
+      } else {
+        setBookingError(data.message || 'Failed to book appointment');
+      }
+    } catch (error) {
+      console.error('Error booking appointment:', error);
+      setBookingError(error.message || 'Error booking appointment');
+    } finally {
+      setBookingInProgress(false);
+    }
+  }
+
   function logout() {
     authManager.logout();
   }
@@ -119,6 +222,39 @@ export default function CustomerSupportPage() {
     if (status === 'resolved') return 'support-status-resolved';
     if (status === 'pending') return 'support-status-pending';
     return 'support-status-active';
+  }
+
+  function formatSlotDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
+  function isSlotFullyBooked(date, startTime, endTime) {
+    // Find if a slot with this exact date/time combo is fully booked
+    const slotForDateTime = slots.find(s => {
+      const slotDate = new Date(s.date);
+      const checkDate = new Date(date);
+      slotDate.setHours(0, 0, 0, 0);
+      checkDate.setHours(0, 0, 0, 0);
+      return slotDate.getTime() === checkDate.getTime() && s.startTime === startTime && s.endTime === endTime;
+    });
+    
+    if (!slotForDateTime) return false;
+    return slotForDateTime.bookedCount >= slotForDateTime.capacity || slotForDateTime.isBlocked;
+  }
+
+  function getUpcomingSlots() {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return slots
+      .filter(slot => {
+        const slotDate = new Date(slot.date);
+        slotDate.setHours(0, 0, 0, 0);
+        // Only show slots that are truly available (not full, not blocked, and in future)
+        return slotDate >= today && slot.bookedCount < slot.capacity && !slot.isBlocked;
+      })
+      .sort((a, b) => new Date(a.date) - new Date(b.date))
+      .slice(0, 5); // Show next 5 available slots
   }
 
   return (
@@ -259,6 +395,151 @@ export default function CustomerSupportPage() {
               </div>
             </div>
           </section>
+
+          <section className="support-appointments-section" style={{ marginTop: '2rem', padding: '2rem', background: 'linear-gradient(135deg, rgba(224, 191, 99, 0.08) 0%, rgba(111, 0, 34, 0.04) 100%)', borderRadius: '8px', border: '1px solid rgba(224, 191, 99, 0.2)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+              <div style={{
+                background: 'white',
+                padding: '1.5rem',
+                borderRadius: '8px',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+                textAlign: 'center',
+                border: '1px solid rgba(224, 191, 99, 0.2)'
+              }}>
+                <div style={{ fontSize: '0.9rem', color: '#999', marginBottom: '0.5rem' }}>Total Appointments</div>
+                <div style={{ fontSize: '2rem', fontWeight: '700', color: 'var(--brand-burgundy)' }}>
+                  {statsLoading ? '-' : appointmentStats.total}
+                </div>
+              </div>
+
+              <div style={{
+                background: 'white',
+                padding: '1.5rem',
+                borderRadius: '8px',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+                textAlign: 'center',
+                border: '1px solid rgba(224, 191, 99, 0.2)'
+              }}>
+                <div style={{ fontSize: '0.9rem', color: '#999', marginBottom: '0.5rem' }}>Completed</div>
+                <div style={{ fontSize: '2rem', fontWeight: '700', color: '#4CAF50' }}>
+                  {statsLoading ? '-' : appointmentStats.completed}
+                </div>
+              </div>
+
+              <div style={{
+                background: 'white',
+                padding: '1.5rem',
+                borderRadius: '8px',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+                textAlign: 'center',
+                border: '1px solid rgba(224, 191, 99, 0.2)'
+              }}>
+                <div style={{ fontSize: '0.9rem', color: '#999', marginBottom: '0.5rem' }}>No Shows</div>
+                <div style={{ fontSize: '2rem', fontWeight: '700', color: '#FF9800' }}>
+                  {statsLoading ? '-' : appointmentStats.noShow}
+                </div>
+              </div>
+
+              <div style={{
+                background: 'white',
+                padding: '1.5rem',
+                borderRadius: '8px',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+                textAlign: 'center',
+                border: '1px solid rgba(224, 191, 99, 0.2)'
+              }}>
+                <div style={{ fontSize: '0.9rem', color: '#999', marginBottom: '0.5rem' }}>Cancelled</div>
+                <div style={{ fontSize: '2rem', fontWeight: '700', color: '#F44336' }}>
+                  {statsLoading ? '-' : appointmentStats.cancelled}
+                </div>
+              </div>
+            </div>
+
+            <h3 style={{ marginBottom: '1.5rem', fontSize: '1.3rem', color: 'var(--brand-burgundy)' }}>✦ Available Appointment Slots</h3>
+            {slotsLoading ? (
+              <p style={{ fontSize: '0.95rem', color: '#999' }}>Loading slots...</p>
+            ) : getUpcomingSlots().length === 0 ? (
+              <p style={{ fontSize: '0.95rem', color: '#999' }}>No available slots at the moment. Check back soon!</p>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '1rem' }}>
+                {getUpcomingSlots().map((slot) => (
+                  <div
+                    key={slot._id}
+                    style={{
+                      padding: '1.2rem',
+                      background: 'white',
+                      border: '1px solid rgba(224, 191, 99, 0.4)',
+                      borderRadius: '8px',
+                      transition: 'all 0.3s ease',
+                      cursor: 'pointer',
+                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(224, 191, 99, 0.2)';
+                      e.currentTarget.style.transform = 'translateY(-2px)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.05)';
+                      e.currentTarget.style.transform = 'translateY(0)';
+                    }}
+                  >
+                    <div style={{ fontWeight: '700', color: 'var(--brand-burgundy)', marginBottom: '0.8rem', fontSize: '1.05rem' }}>
+                      {formatSlotDate(slot.date)}
+                    </div>
+                    <div style={{ color: '#555', marginBottom: '0.6rem', fontSize: '0.95rem' }}>
+                      <span style={{ fontWeight: '600' }}>⏰ Time:</span> {slot.startTime} - {slot.endTime}
+                    </div>
+                    <div style={{ color: '#555', marginBottom: '0.8rem', fontSize: '0.95rem' }}>
+                      <span style={{ fontWeight: '600' }}>📋 Type:</span> {slot.type}
+                    </div>
+                    <div style={{ paddingTop: '0.8rem', borderTop: '1px solid rgba(224, 191, 99, 0.2)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.8rem' }}>
+                        <div>
+                          <div style={{ color: 'var(--brand-gold-strong)', fontWeight: '600', fontSize: '0.9rem' }}>
+                            {slot.capacity - slot.bookedCount} spot{(slot.capacity - slot.bookedCount) !== 1 ? 's' : ''} available
+                          </div>
+                          <div style={{ fontSize: '0.75rem', color: '#999', marginTop: '0.3rem' }}>
+                            {slot.bookedCount} / {slot.capacity} booked
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setSelectedSlot(slot);
+                            setBookingModal(true);
+                            setBookingError('');
+                          }}
+                          disabled={slot.bookedCount >= slot.capacity}
+                          style={{
+                            padding: '0.5rem 1rem',
+                            background: slot.bookedCount >= slot.capacity ? '#ccc' : 'var(--brand-burgundy)',
+                            color: slot.bookedCount >= slot.capacity ? '#999' : 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: slot.bookedCount >= slot.capacity ? 'not-allowed' : 'pointer',
+                            fontSize: '0.85rem',
+                            fontWeight: '600',
+                            transition: 'all 0.3s ease'
+                          }}
+                          onMouseEnter={(e) => {
+                            if (slot.bookedCount < slot.capacity) {
+                              e.currentTarget.style.background = 'var(--brand-gold-strong)';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (slot.bookedCount < slot.capacity) {
+                              e.currentTarget.style.background = 'var(--brand-burgundy)';
+                            }
+                          }}
+                        >
+                          {slot.bookedCount >= slot.capacity ? 'Full' : 'Book Now'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
         </div>
       </main>
 
@@ -267,6 +548,184 @@ export default function CustomerSupportPage() {
           <p>&copy; 2026 Saranya Jewellery. All rights reserved.</p>
         </div>
       </footer>
+
+      {bookingModal && selectedSlot && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.6)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '8px',
+            padding: '2rem',
+            maxWidth: '500px',
+            width: '90%',
+            boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)',
+            animation: 'slideUp 0.3s ease'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h2 style={{ color: 'var(--brand-burgundy)', margin: 0 }}>Book Appointment</h2>
+              <button
+                onClick={() => {
+                  setBookingModal(false);
+                  setSelectedSlot(null);
+                  setBookingNotes('');
+                  setBookingError('');
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '1.5rem',
+                  cursor: 'pointer',
+                  color: '#999'
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ background: 'rgba(224, 191, 99, 0.1)', padding: '1rem', borderRadius: '6px', marginBottom: '1.5rem' }}>
+              <div style={{ marginBottom: '0.8rem' }}>
+                <strong style={{ color: 'var(--brand-burgundy)' }}>📅 {formatSlotDate(selectedSlot.date)}</strong>
+              </div>
+              <div style={{ marginBottom: '0.5rem', color: '#555' }}>
+                <strong>⏰ Time:</strong> {selectedSlot.startTime} - {selectedSlot.endTime}
+              </div>
+              <div style={{ color: '#555' }}>
+                <strong>📋 Type:</strong> {selectedSlot.type}
+              </div>
+            </div>
+
+            <form onSubmit={handleBookAppointment}>
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#333' }}>
+                  Your Name
+                </label>
+                <input
+                  type="text"
+                  value={customer?.fullName || ''}
+                  disabled
+                  style={{
+                    width: '100%',
+                    padding: '0.8rem',
+                    border: '1px solid #ddd',
+                    borderRadius: '4px',
+                    background: '#f9f9f9',
+                    color: '#666'
+                  }}
+                />
+              </div>
+
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#333' }}>
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={customer?.email || ''}
+                  disabled
+                  style={{
+                    width: '100%',
+                    padding: '0.8rem',
+                    border: '1px solid #ddd',
+                    borderRadius: '4px',
+                    background: '#f9f9f9',
+                    color: '#666'
+                  }}
+                />
+              </div>
+
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#333' }}>
+                  Notes (Optional)
+                </label>
+                <textarea
+                  value={bookingNotes}
+                  onChange={(e) => setBookingNotes(e.target.value)}
+                  placeholder="Any specific requests or notes about your appointment..."
+                  style={{
+                    width: '100%',
+                    padding: '0.8rem',
+                    border: '1px solid #ddd',
+                    borderRadius: '4px',
+                    fontFamily: 'inherit',
+                    resize: 'vertical',
+                    minHeight: '80px'
+                  }}
+                />
+              </div>
+
+              {bookingError && (
+                <div style={{
+                  background: '#fee',
+                  color: '#c33',
+                  padding: '0.8rem',
+                  borderRadius: '4px',
+                  marginBottom: '1rem',
+                  fontSize: '0.9rem'
+                }}>
+                  ⚠ {bookingError}
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: '0.8rem' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBookingModal(false);
+                    setSelectedSlot(null);
+                    setBookingNotes('');
+                    setBookingError('');
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: '0.8rem',
+                    background: '#eee',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontWeight: '600',
+                    color: '#333'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={bookingInProgress}
+                  style={{
+                    flex: 1,
+                    padding: '0.8rem',
+                    background: bookingInProgress ? '#ccc' : 'var(--brand-burgundy)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: bookingInProgress ? 'not-allowed' : 'pointer',
+                    fontWeight: '600',
+                    transition: 'all 0.3s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!bookingInProgress) e.currentTarget.style.background = 'var(--brand-gold-strong)';
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!bookingInProgress) e.currentTarget.style.background = 'var(--brand-burgundy)';
+                  }}
+                >
+                  {bookingInProgress ? 'Booking...' : 'Confirm Booking'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       <zapier-interfaces-chatbot-embed
         is-popup="true"
