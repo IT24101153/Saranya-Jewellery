@@ -11,7 +11,9 @@ const emptyOfferForm = {
   tierType: 'All',
   discountPercentage: '',
   discountAmount: '',
-  validUntil: ''
+  validFrom: '',
+  validUntil: '',
+  couponCode: ''
 };
 
 export default function LoyaltyManagementDashboardPage() {
@@ -23,7 +25,9 @@ export default function LoyaltyManagementDashboardPage() {
   const [offers, setOffers] = useState([]);
   const [offerForm, setOfferForm] = useState(emptyOfferForm);
   const [isCreatingOffer, setIsCreatingOffer] = useState(false);
+  const [editingOfferId, setEditingOfferId] = useState(null);
   const [busyOfferId, setBusyOfferId] = useState('');
+  const [busyCouponOfferId, setBusyCouponOfferId] = useState('');
   const [error, setError] = useState('');
   const [editingPointsId, setEditingPointsId] = useState(null);
   const [editingPointsValue, setEditingPointsValue] = useState('');
@@ -192,30 +196,77 @@ export default function LoyaltyManagementDashboardPage() {
 
   async function createOffer(event) {
     event.preventDefault();
+    const todayDate = new Date().toISOString().split('T')[0];
+    if (!offerForm.title || !offerForm.description || !offerForm.validFrom || !offerForm.validUntil || !offerForm.couponCode) {
+      setError('All fields including coupon code are required');
+      return;
+    }
+    if (offerForm.validFrom < todayDate) {
+      setError('Start date cannot be in the past');
+      return;
+    }
+    if (offerForm.validUntil < todayDate) {
+      setError('End date cannot be in the past');
+      return;
+    }
+    if (new Date(offerForm.validFrom) > new Date(offerForm.validUntil)) {
+      setError('Start date must be before end date');
+      return;
+    }
     setIsCreatingOffer(true);
     setError('');
     try {
-      const response = await authManager.apiRequest('/api/loyalty/offers', {
-        method: 'POST',
-        body: JSON.stringify({
-          title: offerForm.title,
-          description: offerForm.description,
-          tierType: offerForm.tierType,
-          discountPercentage: Number(offerForm.discountPercentage || 0),
-          discountAmount: Number(offerForm.discountAmount || 0),
-          validUntil: offerForm.validUntil
-        })
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || 'Failed to create offer');
-      setOfferForm(emptyOfferForm);
-      await loadOffers();
-      setActiveTab('offers');
+      if (editingOfferId) {
+        // Update existing offer
+        const response = await authManager.apiRequest(`/api/loyalty/offers/${editingOfferId}`, {
+          method: 'PUT',
+          body: JSON.stringify({
+            title: offerForm.title,
+            description: offerForm.description,
+            tierType: offerForm.tierType,
+            discountPercentage: Number(offerForm.discountPercentage || 0),
+            discountAmount: Number(offerForm.discountAmount || 0),
+            validFrom: offerForm.validFrom,
+            validUntil: offerForm.validUntil,
+            couponCode: offerForm.couponCode
+          })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Failed to update offer');
+        setEditingOfferId(null);
+        setOfferForm(emptyOfferForm);
+        await loadOffers();
+      } else {
+        // Create new offer
+        const response = await authManager.apiRequest('/api/loyalty/offers', {
+          method: 'POST',
+          body: JSON.stringify({
+            title: offerForm.title,
+            description: offerForm.description,
+            tierType: offerForm.tierType,
+            discountPercentage: Number(offerForm.discountPercentage || 0),
+            discountAmount: Number(offerForm.discountAmount || 0),
+            validFrom: offerForm.validFrom,
+            validUntil: offerForm.validUntil,
+            couponCode: offerForm.couponCode
+          })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Failed to create offer');
+        setOfferForm(emptyOfferForm);
+        await loadOffers();
+      }
     } catch (createError) {
-      setError(createError.message || 'Failed to create offer');
+      setError(createError.message || (editingOfferId ? 'Failed to update offer' : 'Failed to create offer'));
     } finally {
       setIsCreatingOffer(false);
     }
+  }
+
+  function cancelEdit() {
+    setEditingOfferId(null);
+    setOfferForm(emptyOfferForm);
+    setError('');
   }
 
   async function sendOfferEmail(offerId) {
@@ -250,6 +301,29 @@ export default function LoyaltyManagementDashboardPage() {
       setError(deleteError.message || 'Failed to delete offer');
     } finally {
       setBusyOfferId('');
+    }
+  }
+
+  async function sendCoupons(offerId) {
+    const offer = offers.find(o => o._id === offerId);
+    if (!offer || !offer.couponCode) {
+      setError('This offer does not have a coupon code');
+      return;
+    }
+    
+    setBusyCouponOfferId(offerId);
+    setError('');
+    try {
+      const response = await authManager.apiRequest(`/api/loyalty/offers/${offerId}/send-coupons`, {
+        method: 'POST'
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Failed to send offer emails');
+      await loadOffers();
+    } catch (sendError) {
+      setError(sendError.message || 'Failed to send offer emails');
+    } finally {
+      setBusyCouponOfferId('');
     }
   }
 
@@ -645,68 +719,119 @@ export default function LoyaltyManagementDashboardPage() {
         {activeSection === 'loyaltyOffers' && (
           <>
           <section style={{ background: '#fff', border: '1px solid #ebe6e8', borderRadius: 14, padding: '1rem', boxShadow: '0 4px 16px rgba(51, 25, 35, 0.08)', marginBottom: '1rem' }}>
-            <h3 style={{ margin: '0 0 0.2rem', color: '#6f0022', fontSize: '1.2rem' }}>Create Loyalty Offer</h3>
-            <p style={{ margin: '0 0 0.8rem', color: '#777', fontSize: '0.9rem' }}>Create targeted offers and send to a specific loyalty tier or all tiers.</p>
+            <h3 style={{ margin: '0 0 0.2rem', color: '#6f0022', fontSize: '1.2rem' }}>{editingOfferId ? 'Edit Loyalty Offer' : 'Create Loyalty Offer'}</h3>
+            <p style={{ margin: '0 0 0.8rem', color: '#777', fontSize: '0.9rem' }}>{editingOfferId ? 'Update this offer and resend to customers.' : 'Create targeted offers and send to a specific loyalty tier or all tiers.'}</p>
             <form onSubmit={createOffer} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.6rem' }}>
-              <input
-                required
-                value={offerForm.title}
-                onChange={(e) => setOfferForm((prev) => ({ ...prev, title: e.target.value }))}
-                placeholder="Offer title"
-                style={{ border: '1px solid #d7d0d5', borderRadius: 9, padding: '0.52rem 0.65rem' }}
-              />
-              <select
-                value={offerForm.tierType}
-                onChange={(e) => setOfferForm((prev) => ({ ...prev, tierType: e.target.value }))}
-                style={{ border: '1px solid #d7d0d5', borderRadius: 9, padding: '0.52rem 0.65rem' }}
-              >
-                {OFFER_TIER_OPTIONS.map((tierName) => (
-                  <option key={tierName} value={tierName}>{tierName}</option>
-                ))}
-              </select>
-              <input
-                type="number"
-                min={0}
-                max={100}
-                value={offerForm.discountPercentage}
-                onChange={(e) => {
-                  const value = e.target.value === '' ? '' : Math.max(0, Math.min(100, Number(e.target.value)));
-                  setOfferForm((prev) => ({ ...prev, discountPercentage: value }));
-                }}
-                placeholder="Discount %"
-                style={{ border: '1px solid #d7d0d5', borderRadius: 9, padding: '0.52rem 0.65rem' }}
-              />
-              <input
-                type="number"
-                min={0}
-                value={offerForm.discountAmount}
-                onChange={(e) => setOfferForm((prev) => ({ ...prev, discountAmount: e.target.value }))}
-                placeholder="Discount amount (LKR)"
-                style={{ border: '1px solid #d7d0d5', borderRadius: 9, padding: '0.52rem 0.65rem' }}
-              />
-              <input
-                required
-                type="date"
-                min={new Date().toISOString().split('T')[0]}
-                value={offerForm.validUntil}
-                onChange={(e) => setOfferForm((prev) => ({ ...prev, validUntil: e.target.value }))}
-                style={{ border: '1px solid #d7d0d5', borderRadius: 9, padding: '0.52rem 0.65rem' }}
-              />
-              <textarea
-                required
-                rows={3}
-                value={offerForm.description}
-                onChange={(e) => setOfferForm((prev) => ({ ...prev, description: e.target.value }))}
-                placeholder="Offer description"
-                style={{ gridColumn: '1 / -1', border: '1px solid #d7d0d5', borderRadius: 9, padding: '0.52rem 0.65rem' }}
-              />
-              <button
-                type="submit"
-                disabled={isCreatingOffer}
-                style={{ border: 'none', background: '#6f0022', color: '#fff', borderRadius: 9, padding: '0.55rem 0.8rem', fontWeight: 600, cursor: isCreatingOffer ? 'not-allowed' : 'pointer', opacity: isCreatingOffer ? 0.7 : 1 }}
-              >
-                {isCreatingOffer ? 'Creating...' : 'Create Offer'}
-              </button>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#666' }}>Offer Title</label>
+                <input
+                  required
+                  value={offerForm.title}
+                  onChange={(e) => setOfferForm((prev) => ({ ...prev, title: e.target.value }))}
+                  placeholder="E.g., Summer Sale, Gold Tier Exclusive"
+                  style={{ border: '1px solid #d7d0d5', borderRadius: 9, padding: '0.52rem 0.65rem' }}
+                />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#666' }}>Apply To Tier</label>
+                <select
+                  value={offerForm.tierType}
+                  onChange={(e) => setOfferForm((prev) => ({ ...prev, tierType: e.target.value }))}
+                  style={{ border: '1px solid #d7d0d5', borderRadius: 9, padding: '0.52rem 0.65rem' }}
+                >
+                  {OFFER_TIER_OPTIONS.map((tierName) => (
+                    <option key={tierName} value={tierName}>{tierName}</option>
+                  ))}
+                </select>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#666' }}>Discount %</label>
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={offerForm.discountPercentage}
+                  onChange={(e) => {
+                    const value = e.target.value === '' ? '' : Math.max(0, Math.min(100, Number(e.target.value)));
+                    setOfferForm((prev) => ({ ...prev, discountPercentage: value }));
+                  }}
+                  placeholder="0 - 100"
+                  style={{ border: '1px solid #d7d0d5', borderRadius: 9, padding: '0.52rem 0.65rem' }}
+                />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#666' }}>OR Fixed Amount (LKR)</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={offerForm.discountAmount}
+                  onChange={(e) => setOfferForm((prev) => ({ ...prev, discountAmount: e.target.value }))}
+                  placeholder="0"
+                  style={{ border: '1px solid #d7d0d5', borderRadius: 9, padding: '0.52rem 0.65rem' }}
+                />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#666' }}>Valid From</label>
+                <input
+                  required
+                  type="date"
+                  min={new Date().toISOString().split('T')[0]}
+                  value={offerForm.validFrom}
+                  onChange={(e) => setOfferForm((prev) => ({ ...prev, validFrom: e.target.value }))}
+                  style={{ border: '1px solid #d7d0d5', borderRadius: 9, padding: '0.52rem 0.65rem' }}
+                />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#666' }}>Valid Until</label>
+                <input
+                  required
+                  type="date"
+                  min={new Date().toISOString().split('T')[0]}
+                  value={offerForm.validUntil}
+                  onChange={(e) => setOfferForm((prev) => ({ ...prev, validUntil: e.target.value }))}
+                  style={{ border: '1px solid #d7d0d5', borderRadius: 9, padding: '0.52rem 0.65rem' }}
+                />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#666' }}>Coupon Code</label>
+                <input
+                  required
+                  value={offerForm.couponCode}
+                  onChange={(e) => setOfferForm((prev) => ({ ...prev, couponCode: e.target.value.toUpperCase() }))}
+                  placeholder="E.g., GOLD50, SUMMER25"
+                  maxLength="20"
+                  style={{ border: '1px solid #d7d0d5', borderRadius: 9, padding: '0.52rem 0.65rem', gridColumn: '1 / -1' }}
+                />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', gridColumn: '1 / -1' }}>
+                <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#666' }}>Offer Description</label>
+                <textarea
+                  required
+                  rows={3}
+                  value={offerForm.description}
+                  onChange={(e) => setOfferForm((prev) => ({ ...prev, description: e.target.value }))}
+                  placeholder="Describe the offer details and benefits to customers"
+                  style={{ border: '1px solid #d7d0d5', borderRadius: 9, padding: '0.52rem 0.65rem' }}
+                />
+              </div>
+              <div style={{ display: 'flex', gap: '0.45rem', gridColumn: '1 / -1' }}>
+                <button
+                  type="submit"
+                  disabled={isCreatingOffer}
+                  style={{ border: 'none', background: '#6f0022', color: '#fff', borderRadius: 9, padding: '0.55rem 0.8rem', fontWeight: 600, cursor: isCreatingOffer ? 'not-allowed' : 'pointer', opacity: isCreatingOffer ? 0.7 : 1, flex: 1 }}
+                >
+                  {isCreatingOffer ? (editingOfferId ? 'Saving...' : 'Creating...') : (editingOfferId ? 'Save Changes' : 'Create Offer')}
+                </button>
+                {editingOfferId && (
+                  <button
+                    type="button"
+                    onClick={cancelEdit}
+                    style={{ border: '1px solid #d7d0d5', background: '#fff', color: '#666', borderRadius: 9, padding: '0.55rem 0.8rem', fontWeight: 600, cursor: 'pointer' }}
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
             </form>
           </section>
 
@@ -723,7 +848,10 @@ export default function LoyaltyManagementDashboardPage() {
                   </div>
                   <p style={{ margin: '0.35rem 0 0.4rem', color: '#666' }}>{offer.description}</p>
                   <p style={{ margin: 0, color: '#7d757b', fontSize: '0.86rem' }}>
-                    Discount: {offer.discountPercentage || 0}% {offer.discountAmount ? `or LKR ${Number(offer.discountAmount).toLocaleString()}` : ''} | Valid Until: {offer.validUntil ? new Date(offer.validUntil).toLocaleDateString() : '-'}
+                    Discount: {offer.discountPercentage || 0}% {offer.discountAmount ? `or LKR ${Number(offer.discountAmount).toLocaleString()}` : ''} | Valid: {offer.validFrom ? new Date(offer.validFrom).toLocaleDateString() : '-'} to {offer.validUntil ? new Date(offer.validUntil).toLocaleDateString() : '-'}
+                  </p>
+                  <p style={{ margin: '0.25rem 0 0', color: '#7d757b', fontSize: '0.82rem' }}>
+                    Coupon Code: <strong style={{ color: '#d4af37' }}>{offer.couponCode || 'Not set'}</strong>
                   </p>
                   <p style={{ margin: '0.25rem 0 0', color: '#7d757b', fontSize: '0.82rem' }}>
                     Email Sent: {offer.emailSent ? 'Yes' : 'No'} {offer.sentAt ? `| Last Sent: ${new Date(offer.sentAt).toLocaleString()}` : ''} | Recipients: {offer.recipientsCount || 0}
@@ -731,11 +859,31 @@ export default function LoyaltyManagementDashboardPage() {
                   <div style={{ display: 'flex', gap: '0.45rem', flexWrap: 'wrap', marginTop: '0.6rem' }}>
                     <button
                       type="button"
-                      onClick={() => sendOfferEmail(offer._id)}
-                      disabled={busyOfferId === offer._id}
-                      style={{ border: 'none', background: '#1f7a55', color: '#fff', borderRadius: 8, padding: '0.4rem 0.65rem', fontSize: '0.8rem', fontWeight: 600, cursor: busyOfferId === offer._id ? 'not-allowed' : 'pointer', opacity: busyOfferId === offer._id ? 0.7 : 1 }}
+                      onClick={() => sendCoupons(offer._id)}
+                      disabled={busyCouponOfferId === offer._id}
+                      style={{ border: 'none', background: '#1f7a55', color: '#fff', borderRadius: 8, padding: '0.4rem 0.65rem', fontSize: '0.8rem', fontWeight: 600, cursor: busyCouponOfferId === offer._id ? 'not-allowed' : 'pointer', opacity: busyCouponOfferId === offer._id ? 0.7 : 1 }}
                     >
-                      {busyOfferId === offer._id ? 'Sending...' : 'Send Emails'}
+                      {busyCouponOfferId === offer._id ? 'Sending...' : 'Send Email'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingOfferId(offer._id);
+                        setOfferForm({
+                          title: offer.title,
+                          description: offer.description,
+                          tierType: offer.tierType,
+                          discountPercentage: offer.discountPercentage || '',
+                          discountAmount: offer.discountAmount || '',
+                          validFrom: offer.validFrom?.split('T')[0] || '',
+                          validUntil: offer.validUntil?.split('T')[0] || '',
+                          couponCode: offer.couponCode
+                        });
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      style={{ border: '1px solid #d4af37', background: 'transparent', color: '#8b5e1f', borderRadius: 8, padding: '0.38rem 0.65rem', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}
+                    >
+                      Edit
                     </button>
                     <button
                       type="button"

@@ -58,15 +58,18 @@ export default function CustomerCareDashboardPage() {
   
   // Offers state
   const [offers, setOffers] = useState([]);
+  const [editingOfferId, setEditingOfferId] = useState(null);
   const [offerForm, setOfferForm] = useState({
     title: '',
     description: '',
-    offerType: 'Seasonal Offer',
     discountPercentage: '',
-    validUntil: ''
+    discountAmount: '',
+    validFrom: '',
+    validUntil: '',
+    couponCode: ''
   });
   const [isCreatingOffer, setIsCreatingOffer] = useState(false);
-  const [editingOfferId, setEditingOfferId] = useState(null);
+  const [busyCouponOfferId, setBusyCouponOfferId] = useState('');
 
   // Messages state
   const [chats, setChats] = useState([]);
@@ -193,11 +196,11 @@ export default function CustomerCareDashboardPage() {
   // ============ OFFERS FUNCTIONS ============
   async function loadOffers() {
     try {
-      const response = await authManager.apiRequest('/api/messages');
+      const response = await authManager.apiRequest('/api/loyalty/offers/standard');
       const data = await response.json();
       if (response.ok) {
-        const seasonalOffers = Array.isArray(data) ? data.filter(m => m.type === 'promotion') : [];
-        setOffers(seasonalOffers);
+        // All offers from this endpoint are standard customer offers
+        setOffers(Array.isArray(data) ? data : []);
       }
     } catch (err) {
       console.error('Error loading offers:', err);
@@ -206,8 +209,8 @@ export default function CustomerCareDashboardPage() {
 
   async function createOffer(event) {
     event.preventDefault();
-    if (!offerForm.title || !offerForm.description || !offerForm.validUntil) {
-      setError('All fields required');
+    if (!offerForm.title || !offerForm.description || !offerForm.validFrom || !offerForm.validUntil || !offerForm.couponCode) {
+      setError('All fields including valid dates and coupon code are required');
       return;
     }
 
@@ -217,102 +220,113 @@ export default function CustomerCareDashboardPage() {
       return;
     }
 
+    if (offerForm.validFrom < todayDate) {
+      setError('Offer valid from date cannot be in the past');
+      return;
+    }
+
     if (offerForm.validUntil < todayDate) {
       setError('Offer valid until date cannot be in the past');
+      return;
+    }
+
+    if (new Date(offerForm.validFrom) > new Date(offerForm.validUntil)) {
+      setError('Start date must be before end date');
       return;
     }
 
     setIsCreatingOffer(true);
     setError('');
     try {
-      const endpoint = editingOfferId ? `/api/messages/${editingOfferId}` : '/api/messages';
-      const method = editingOfferId ? 'PUT' : 'POST';
+      if (editingOfferId) {
+        // Update existing offer
+        const response = await authManager.apiRequest(`/api/loyalty/offers/standard/${editingOfferId}`, {
+          method: 'PUT',
+          body: JSON.stringify({
+            title: offerForm.title,
+            description: offerForm.description,
+            discountPercentage: parsedDiscount,
+            discountAmount: Number(offerForm.discountAmount || 0),
+            validFrom: offerForm.validFrom,
+            validUntil: offerForm.validUntil,
+            couponCode: offerForm.couponCode
+          })
+        });
 
-      const response = await authManager.apiRequest(endpoint, {
-        method,
-        body: JSON.stringify({
-          title: offerForm.title,
-          message: offerForm.description,
-          type: 'promotion',
-          status: 'active',
-          targetAudience: 'all',
-          sendOnLogin: true,
-          validUntil: offerForm.validUntil,
-          discountPercentage: parsedDiscount
-        })
-      });
-
-      const data = await response.json();
-      if (!response.ok) {
-        setError(data.message || 'Failed to create offer');
+        const data = await response.json();
+        if (!response.ok) {
+          setError(data.message || 'Failed to update offer');
+        } else {
+          setOfferForm({ title: '', description: '', discountPercentage: '', discountAmount: '', validFrom: '', validUntil: '', couponCode: '' });
+          setEditingOfferId(null);
+          await loadOffers();
+        }
       } else {
-        setOfferForm({ title: '', description: '', offerType: 'Seasonal Offer', discountPercentage: '', validUntil: '' });
-        setEditingOfferId(null);
-        await loadOffers();
+        // Create new offer
+        const response = await authManager.apiRequest('/api/loyalty/offers/standard/create', {
+          method: 'POST',
+          body: JSON.stringify({
+            title: offerForm.title,
+            description: offerForm.description,
+            discountPercentage: parsedDiscount,
+            discountAmount: Number(offerForm.discountAmount || 0),
+            validFrom: offerForm.validFrom,
+            validUntil: offerForm.validUntil,
+            couponCode: offerForm.couponCode
+          })
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+          setError(data.message || 'Failed to create offer');
+        } else {
+          setOfferForm({ title: '', description: '', discountPercentage: '', discountAmount: '', validFrom: '', validUntil: '', couponCode: '' });
+          await loadOffers();
+        }
       }
     } catch (err) {
-      setError(err.message || 'Error creating offer');
+      setError(err.message || 'Error saving offer');
     } finally {
       setIsCreatingOffer(false);
     }
   }
 
-  function startEditOffer(offer) {
-    setEditingOfferId(offer._id);
-    setError('');
-    setOfferForm({
-      title: offer.title || '',
-      description: offer.message || '',
-      offerType: 'Seasonal Offer',
-      discountPercentage: offer.discountPercentage ?? '',
-      validUntil: offer.validUntil ? new Date(offer.validUntil).toISOString().split('T')[0] : ''
-    });
-  }
-
-  function cancelEditOffer() {
+  function cancelEdit() {
     setEditingOfferId(null);
-    setOfferForm({ title: '', description: '', offerType: 'Seasonal Offer', discountPercentage: '', validUntil: '' });
+    setOfferForm({ title: '', description: '', discountPercentage: '', discountAmount: '', validFrom: '', validUntil: '', couponCode: '' });
     setError('');
   }
 
-  async function sendOfferEmails(offerId) {
-    if (!window.confirm('Send this offer to all customers?')) return;
-
+  async function sendCoupons(offerId) {
+    setBusyCouponOfferId(offerId);
+    setError('');
     try {
-      setError('');
-      const response = await authManager.apiRequest(`/api/messages/${offerId}/send-email`, {
+      const response = await authManager.apiRequest(`/api/loyalty/offers/standard/${offerId}/send-coupons`, {
         method: 'POST'
       });
-
       const data = await response.json();
-      if (response.ok) {
-        alert(`Offer sent to ${data.recipientsCount || 0} customers`);
-        await loadOffers();
-      } else {
-        setError(data.message || 'Failed to send offer');
-      }
+      if (!response.ok) throw new Error(data.message || 'Failed to send coupons');
+      await loadOffers();
     } catch (err) {
-      setError(err.message || 'Error sending offer');
+      setError(err.message || 'Failed to send coupons');
+    } finally {
+      setBusyCouponOfferId('');
     }
   }
 
   async function deleteOffer(offerId) {
     if (!window.confirm('Delete this offer?')) return;
-
+    
+    setError('');
     try {
-      setError('');
-      const response = await authManager.apiRequest(`/api/messages/${offerId}`, {
+      const response = await authManager.apiRequest(`/api/loyalty/offers/standard/${offerId}`, {
         method: 'DELETE'
       });
-
       const data = await response.json();
-      if (response.ok) {
-        await loadOffers();
-      } else {
-        setError(data.message || 'Failed to delete offer');
-      }
+      if (!response.ok) throw new Error(data.message || 'Failed to delete offer');
+      await loadOffers();
     } catch (err) {
-      setError(err.message || 'Error deleting offer');
+      setError(err.message || 'Failed to delete offer');
     }
   }
 
