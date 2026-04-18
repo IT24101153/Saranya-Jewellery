@@ -297,7 +297,22 @@ export default function CustomerCareDashboardPage() {
     setError('');
   }
 
-  async function sendCoupons(offerId) {
+  function startEditOffer(offer) {
+    setEditingOfferId(offer._id);
+    setOfferForm({
+      title: offer.title || '',
+      description: offer.description || '',
+      discountPercentage: offer.discountPercentage || '',
+      discountAmount: offer.discountAmount || '',
+      validFrom: offer.validFrom || '',
+      validUntil: offer.validUntil || '',
+      couponCode: offer.couponCode || ''
+    });
+    setError('');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  async function sendOfferEmails(offerId) {
     setBusyCouponOfferId(offerId);
     setError('');
     try {
@@ -305,10 +320,10 @@ export default function CustomerCareDashboardPage() {
         method: 'POST'
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.message || 'Failed to send coupons');
+      if (!response.ok) throw new Error(data.message || 'Failed to send emails');
       await loadOffers();
     } catch (err) {
-      setError(err.message || 'Failed to send coupons');
+      setError(err.message || 'Failed to send offer emails');
     } finally {
       setBusyCouponOfferId('');
     }
@@ -1578,7 +1593,7 @@ export default function CustomerCareDashboardPage() {
                     />
                   </div>
 
-                  {/* Row 2: Discount & Validity */}
+                  {/* Row 2: Discount Percentage & Valid From */}
                   <div
                     style={{
                       display: "grid",
@@ -1633,6 +1648,51 @@ export default function CustomerCareDashboardPage() {
                           fontWeight: 500,
                         }}
                       >
+                        Valid From *
+                      </label>
+                      <input
+                        type="date"
+                        value={offerForm.validFrom}
+                        onChange={(e) =>
+                          setOfferForm({
+                            ...offerForm,
+                            validFrom: e.target.value,
+                          })
+                        }
+                        min={todayDate}
+                        style={{
+                          width: "100%",
+                          padding: "0.85rem 1rem",
+                          border: "1px solid #d0d0d0",
+                          borderRadius: "8px",
+                          fontSize: "0.95rem",
+                          fontFamily: "Arial, sans-serif",
+                          boxSizing: "border-box",
+                          background: "#fafbfc",
+                          cursor: "pointer",
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Row 3: Valid Until & Coupon Code */}
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: "1.5rem",
+                    }}
+                  >
+                    <div>
+                      <label
+                        style={{
+                          display: "block",
+                          margin: "0 0 0.6rem",
+                          color: "#333",
+                          fontSize: "0.9rem",
+                          fontWeight: 500,
+                        }}
+                      >
                         Valid Until *
                       </label>
                       <input
@@ -1656,6 +1716,44 @@ export default function CustomerCareDashboardPage() {
                           background: "#fafbfc",
                           cursor: "pointer",
                         }}
+                      />
+                    </div>
+                    <div>
+                      <label
+                        style={{
+                          display: "block",
+                          margin: "0 0 0.6rem",
+                          color: "#333",
+                          fontSize: "0.9rem",
+                          fontWeight: 500,
+                        }}
+                      >
+                        Coupon Code *
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g., GOLD25"
+                        value={offerForm.couponCode}
+                        onChange={(e) =>
+                          setOfferForm({
+                            ...offerForm,
+                            couponCode: e.target.value.toUpperCase(),
+                          })
+                        }
+                        style={{
+                          width: "100%",
+                          padding: "0.85rem 1rem",
+                          border: "1px solid #d0d0d0",
+                          borderRadius: "8px",
+                          fontSize: "0.95rem",
+                          fontFamily: "Arial, sans-serif",
+                          boxSizing: "border-box",
+                          background: "#fafbfc",
+                        }}
+                        onFocus={(e) =>
+                          (e.target.style.borderColor = "#6f0022")
+                        }
+                        onBlur={(e) => (e.target.style.borderColor = "#d0d0d0")}
                       />
                     </div>
                   </div>
@@ -1697,7 +1795,7 @@ export default function CustomerCareDashboardPage() {
                     {editingOfferId && (
                       <button
                         type="button"
-                        onClick={cancelEditOffer}
+                        onClick={cancelEdit}
                         style={{
                           padding: "0.9rem 2rem",
                           background: "#f5f5f5",
@@ -1820,6 +1918,33 @@ export default function CustomerCareDashboardPage() {
                               {offer.discountPercentage}% OFF
                             </span>
                           )}
+                          {offer.emailSent ? (
+                            <span
+                              style={{
+                                background: "#d4edda",
+                                color: "#155724",
+                                padding: "0.25rem 0.75rem",
+                                borderRadius: "20px",
+                                fontSize: "0.8rem",
+                                fontWeight: 600,
+                              }}
+                            >
+                              ✓ Emails Sent
+                            </span>
+                          ) : (
+                            <span
+                              style={{
+                                background: "#f8d7da",
+                                color: "#721c24",
+                                padding: "0.25rem 0.75rem",
+                                borderRadius: "20px",
+                                fontSize: "0.8rem",
+                                fontWeight: 600,
+                              }}
+                            >
+                              ⚠ Pending
+                            </span>
+                          )}
                         </div>
                         <p
                           style={{
@@ -1837,12 +1962,26 @@ export default function CustomerCareDashboardPage() {
                             gap: "2rem",
                             fontSize: "0.9rem",
                             color: "#777",
+                            marginBottom: "1rem",
+                            flexWrap: "wrap",
                           }}
                         >
                           <div>
                             <span style={{ color: "#999" }}>✓ Sent to: </span>
                             <strong style={{ color: "#333" }}>
                               {offer.sentCount || 0}
+                            </strong>
+                          </div>
+                          <div>
+                            <span style={{ color: "#999" }}>
+                              ⏰ Valid from:{" "}
+                            </span>
+                            <strong style={{ color: "#333" }}>
+                              {offer.validFrom
+                                ? new Date(
+                                    offer.validFrom,
+                                  ).toLocaleDateString()
+                                : "-"}
                             </strong>
                           </div>
                           <div>
@@ -1858,6 +1997,40 @@ export default function CustomerCareDashboardPage() {
                             </strong>
                           </div>
                         </div>
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: "1.5rem",
+                            fontSize: "0.9rem",
+                            color: "#777",
+                            alignItems: "center",
+                            flexWrap: "wrap",
+                          }}
+                        >
+                          <div>
+                            <span style={{ color: "#999" }}>🎟 Coupon: </span>
+                            <strong style={{ color: "#6f0022", fontSize: "1rem", fontFamily: "monospace" }}>
+                              {offer.couponCode || "-"}
+                            </strong>
+                          </div>
+                          <div>
+                            <span style={{ color: "#999" }}>📧 Emails Sent: </span>
+                            <strong style={{ 
+                              color: offer.emailSent ? "#22863a" : "#dc3545",
+                              fontSize: "1rem"
+                            }}>
+                              {offer.recipientsCount || 0}
+                            </strong>
+                          </div>
+                          {offer.sentAt && (
+                            <div>
+                              <span style={{ color: "#999" }}>📨 Sent on: </span>
+                              <strong style={{ color: "#333" }}>
+                                {new Date(offer.sentAt).toLocaleDateString()}
+                              </strong>
+                            </div>
+                          )}
+                        </div>
                       </div>
 
                       {/* Action Buttons */}
@@ -1871,26 +2044,33 @@ export default function CustomerCareDashboardPage() {
                       >
                         <button
                           onClick={() => sendOfferEmails(offer._id)}
+                          disabled={offer.emailSent}
                           style={{
                             padding: "0.75rem 1rem",
-                            background: "#6f0022",
-                            color: "#fff",
+                            background: offer.emailSent ? "#ccc" : "#6f0022",
+                            color: offer.emailSent ? "#999" : "#fff",
                             border: "none",
                             borderRadius: "6px",
                             fontSize: "0.85rem",
                             fontWeight: 600,
-                            cursor: "pointer",
+                            cursor: offer.emailSent ? "not-allowed" : "pointer",
                             fontFamily: "Arial, sans-serif",
                             transition: "all 0.2s ease",
+                            opacity: offer.emailSent ? 0.7 : 1,
                           }}
-                          onMouseEnter={(e) =>
-                            (e.target.style.background = "#8b0033")
-                          }
-                          onMouseLeave={(e) =>
-                            (e.target.style.background = "#6f0022")
-                          }
+                          onMouseEnter={(e) => {
+                            if (!offer.emailSent) {
+                              e.target.style.background = "#8b0033";
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!offer.emailSent) {
+                              e.target.style.background = "#6f0022";
+                            }
+                          }}
+                          title={offer.emailSent ? `Emails already sent to ${offer.recipientsCount} customers` : "Send promotional emails to standard customers"}
                         >
-                          ✉ Send Email
+                          {offer.emailSent ? "✓ Sent" : "✉ Send Email"}
                         </button>
                         <button
                           onClick={() => startEditOffer(offer)}
