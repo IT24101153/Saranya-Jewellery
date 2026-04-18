@@ -14,6 +14,8 @@ export default function HomePage() {
   const [filters, setFilters] = useState({ category: '', karat: '', availability: '', featured: false });
   const [searchText, setSearchText] = useState('');
   const [cart, setCart] = useState(() => JSON.parse(localStorage.getItem('saranyaCart') || '[]'));
+  const [banners, setBanners] = useState([]);
+  const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
   const searchInputRef = useRef(null);
 
   const cartCount = useMemo(
@@ -68,6 +70,37 @@ export default function HomePage() {
   useEffect(() => {
     loadProducts();
   }, [filters]);
+
+  async function loadBanners() {
+    try {
+      const response = await fetch('/api/banners');
+      if (response.ok) {
+        const data = await response.json();
+        setBanners(Array.isArray(data) ? data : []);
+      }
+    } catch (error) {
+      console.error('Error loading banners:', error);
+      setBanners([]);
+    }
+  }
+
+  useEffect(() => {
+    loadBanners();
+  }, []);
+
+  // Auto-rotate banners every 5 seconds if there are 2 or more
+  useEffect(() => {
+    if (banners.length < 2) {
+      setCurrentBannerIndex(0);
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setCurrentBannerIndex(prev => (prev + 1) % banners.length);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [banners]);
 
   async function loadProducts() {
     setLoading(true);
@@ -145,6 +178,21 @@ export default function HomePage() {
         <div><i className="fas fa-phone" /> <a href="tel:0352222098">Contact Us</a></div>
         <div />
       </div>
+
+      {banners.length > 0 && (
+        <div style={{
+          background: banners[currentBannerIndex].backgroundColor || '#fff3cd',
+          color: banners[currentBannerIndex].textColor || '#856404',
+          padding: '1rem',
+          textAlign: 'center',
+          fontSize: '0.95rem',
+          fontWeight: 500,
+          borderBottom: `2px solid ${banners[currentBannerIndex].textColor || '#856404'}`,
+          transition: 'all 0.5s ease-in-out'
+        }}>
+          {banners[currentBannerIndex].message}
+        </div>
+      )}
 
       <header className="header">
         <div className="nav">

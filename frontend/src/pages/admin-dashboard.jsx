@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { FiHome, FiUsers, FiTrendingUp, FiLogOut, FiActivity, FiEye, FiDollarSign, FiShield } from 'react-icons/fi';
+import { FiHome, FiUsers, FiTrendingUp, FiLogOut, FiEye, FiDollarSign, FiShield, FiBell, FiShoppingCart, FiPackage, FiCheck, FiClock, FiRefreshCw } from 'react-icons/fi';
+import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import authManager from '../auth.js';
 
 const dashboardNav = [
@@ -60,9 +61,15 @@ export default function AdminDashboardPage() {
   const [customerFilter, setCustomerFilter] = useState('all');
   const [customerBusyId, setCustomerBusyId] = useState('');
   const [orders, setOrders] = useState([]);
-  const [serverAuditLogs, setServerAuditLogs] = useState([]);
   const [revenueRange, setRevenueRange] = useState('30d');
   const [orderStatusFilter, setOrderStatusFilter] = useState('all');
+  const [banners, setBanners] = useState([]);
+  const [isAddBannerModalOpen, setIsAddBannerModalOpen] = useState(false);
+  const [isEditBannerModalOpen, setIsEditBannerModalOpen] = useState(false);
+  const [editingBannerId, setEditingBannerId] = useState('');
+  const [bannerForm, setBannerForm] = useState({ message: '', type: 'info', backgroundColor: '#fff3cd', textColor: '#856404', startDate: '', endDate: '', isActive: true });
+  const [isSavingBanner, setIsSavingBanner] = useState(false);
+  const [isBannerBusy, setIsBannerBusy] = useState('');
 
   const filteredList = useMemo(() => {
     if (statusFilter === 'all') return staffList;
@@ -99,18 +106,11 @@ export default function AdminDashboardPage() {
 
   const customerInsights = useMemo(() => {
     const spendByEmail = new Map();
-    const latestOrderByEmail = new Map();
 
     orders.forEach((order) => {
       const email = String(order.customerEmail || '').toLowerCase();
       if (!email) return;
       spendByEmail.set(email, (spendByEmail.get(email) || 0) + Number(order.total || 0));
-
-      const existing = latestOrderByEmail.get(email);
-      const currentDate = new Date(order.createdAt);
-      if (!existing || currentDate > existing) {
-        latestOrderByEmail.set(email, currentDate);
-      }
     });
 
     const topSpenders = [...customerList]
@@ -125,18 +125,6 @@ export default function AdminDashboardPage() {
       .sort((a, b) => b.computedSpend - a.computedSpend)
       .slice(0, 5);
 
-    const now = new Date();
-    const inactiveCutoff = new Date(now);
-    inactiveCutoff.setDate(now.getDate() - 90);
-
-    const atRisk = customerList
-      .filter((customer) => {
-        const email = String(customer.email || '').toLowerCase();
-        const lastOrderDate = latestOrderByEmail.get(email);
-        return !lastOrderDate || lastOrderDate < inactiveCutoff;
-      })
-      .slice(0, 5);
-
     const loyaltyBreakdown = {
       standard: customerList.filter((customer) => !customer.loyaltyTier).length,
       silver: customerList.filter((customer) => customer.loyaltyTier === 'Silver').length,
@@ -146,22 +134,52 @@ export default function AdminDashboardPage() {
 
     return {
       topSpenders,
-      atRisk,
       loyaltyBreakdown
     };
   }, [customerList, orders]);
 
-  const staffAuditTrail = useMemo(() => {
-    return serverAuditLogs
-      .map((item) => ({
-        id: item._id,
-        action: `${item.method} ${item.path}`,
-        details: `Status ${item.statusCode}${item.staffRole ? ` • ${item.staffRole}` : ''}`,
-        actor: item.staffName || 'Unknown Staff',
-        at: item.createdAt
-      }))
-      .slice(0, 100);
-  }, [serverAuditLogs]);
+  const chartData = useMemo(() => {
+    // Order status breakdown
+    const orderStatusBreakdown = [
+      { name: 'Pending', value: orders.filter(o => o.status === 'Pending').length, fill: '#ffc107' },
+      { name: 'Completed', value: orders.filter(o => o.status === 'Completed').length, fill: '#28a745' },
+      { name: 'Cancelled', value: orders.filter(o => o.status === 'Cancelled').length, fill: '#dc3545' },
+      { name: 'Refunded', value: orders.filter(o => o.status === 'Refunded').length, fill: '#6c757d' }
+    ];
+
+    // Loyalty tier distribution
+    const loyaltyData = [
+      { name: 'Standard', value: customerInsights.loyaltyBreakdown.standard, fill: '#6f0022' },
+      { name: 'Silver', value: customerInsights.loyaltyBreakdown.silver, fill: '#c0c0c0' },
+      { name: 'Gold', value: customerInsights.loyaltyBreakdown.gold, fill: '#e0bf63' },
+      { name: 'Platinum', value: customerInsights.loyaltyBreakdown.platinum, fill: '#3d5a80' }
+    ];
+
+    // Revenue trend (last 7 days)
+    const now = new Date();
+    const revenueTrend = [];
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(now);
+      date.setDate(now.getDate() - i);
+      const dayOrders = orders.filter(o => {
+        const orderDate = new Date(o.createdAt);
+        return orderDate.toDateString() === date.toDateString();
+      });
+      const dayRevenue = dayOrders.reduce((sum, o) => sum + Number(o.total || 0), 0);
+      revenueTrend.push({
+        date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        revenue: dayRevenue
+      });
+    }
+
+    return {
+      orderStatusBreakdown,
+      loyaltyData,
+      revenueTrend
+    };
+  }, [orders, customerInsights.loyaltyBreakdown]);
+
+
 
   useEffect(() => {
     document.title = 'Admin Dashboard - Saranya Jewellery';
@@ -193,7 +211,7 @@ export default function AdminDashboardPage() {
       const me = await authManager.checkStaffAuth('Admin');
       if (!me || me.needsApproval) return;
       setStaffUser(me);
-      await Promise.all([loadStaff(), loadStats(), loadCustomers(), loadOrders(), loadAuditLogs()]);
+      await Promise.all([loadStaff(), loadStats(), loadCustomers(), loadOrders(), loadBanners()]);
     }
 
     bootstrap();
@@ -237,7 +255,6 @@ export default function AdminDashboardPage() {
       if (!response.ok) throw new Error(data.message || 'Failed to create staff');
       setForm(emptyForm);
       await loadStaff();
-      await loadAuditLogs();
       setIsAddStaffModalOpen(false);
     } catch (saveError) {
       setError(saveError.message || 'Failed to create staff');
@@ -254,7 +271,6 @@ export default function AdminDashboardPage() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'Staff action failed');
       await loadStaff();
-      await loadAuditLogs();
     } catch (actionError) {
       setError(actionError.message || 'Staff action failed');
     } finally {
@@ -271,7 +287,6 @@ export default function AdminDashboardPage() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'Failed to delete staff');
       await loadStaff();
-      await loadAuditLogs();
     } catch (deleteError) {
       setError(deleteError.message || 'Failed to delete staff');
     } finally {
@@ -310,7 +325,6 @@ export default function AdminDashboardPage() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'Failed to update staff');
       await loadStaff();
-      await loadAuditLogs();
       setIsEditStaffModalOpen(false);
       setEditingStaffId('');
       setEditForm(emptyEditForm);
@@ -358,29 +372,186 @@ export default function AdminDashboardPage() {
     }
   }
 
-  async function loadAuditLogs() {
+  async function loadBanners() {
     try {
-      const response = await authManager.apiRequest('/api/admin/audit-logs?limit=250');
+      const response = await authManager.apiRequest('/api/banners/admin/all');
       if (response.ok) {
         const data = await response.json();
-        setServerAuditLogs(Array.isArray(data) ? data : []);
+        setBanners(Array.isArray(data) ? data : []);
+      } else {
+        const errorData = await response.json();
+        console.error('Failed to load banners:', response.status, errorData);
+        setBanners([]);
       }
     } catch (err) {
-      console.error('Failed to load audit logs:', err);
-      setServerAuditLogs([]);
+      console.error('Failed to load banners:', err);
+      setBanners([]);
     }
   }
 
   useEffect(() => {
-    if (!staffUser || activeSection !== 'staffAudit') return undefined;
+    if (!staffUser || activeSection !== 'banners') return undefined;
 
-    loadAuditLogs();
+    loadBanners();
     const intervalId = setInterval(() => {
-      loadAuditLogs();
-    }, 10000);
+      loadBanners();
+    }, 5000);
 
     return () => clearInterval(intervalId);
   }, [staffUser, activeSection]);
+
+  async function createBanner(event) {
+    event.preventDefault();
+    if (!bannerForm.message.trim()) {
+      setError('Banner message is required');
+      return;
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+    
+    if (bannerForm.startDate && bannerForm.startDate < today) {
+      setError('Start date cannot be in the past');
+      return;
+    }
+
+    if (bannerForm.endDate && bannerForm.endDate < today) {
+      setError('End date cannot be in the past');
+      return;
+    }
+
+    if (bannerForm.startDate && bannerForm.endDate && new Date(bannerForm.startDate) > new Date(bannerForm.endDate)) {
+      setError('Start date must be before end date');
+      return;
+    }
+
+    setIsSavingBanner(true);
+    setError('');
+    try {
+      const bannerData = {
+        message: bannerForm.message.trim(),
+        type: bannerForm.type,
+        backgroundColor: bannerForm.backgroundColor,
+        textColor: bannerForm.textColor,
+        isActive: bannerForm.isActive,
+        startDate: bannerForm.startDate || undefined,
+        endDate: bannerForm.endDate || undefined
+      };
+      
+      const response = await authManager.apiRequest('/api/banners', {
+        method: 'POST',
+        body: JSON.stringify(bannerData)
+      });
+      const data = await response.json();
+      
+      if (!response.ok) throw new Error(data.message || 'Failed to create banner');
+      setBannerForm({ message: '', type: 'info', backgroundColor: '#fff3cd', textColor: '#856404', startDate: '', endDate: '', isActive: true });
+      await loadBanners();
+      setIsAddBannerModalOpen(false);
+    } catch (saveError) {
+      console.error('Banner creation error:', saveError);
+      setError(saveError.message || 'Failed to create banner');
+    } finally {
+      setIsSavingBanner(false);
+    }
+  }
+
+  async function updateBanner(event) {
+    event.preventDefault();
+    if (!editingBannerId) return;
+
+    const today = new Date().toISOString().split('T')[0];
+    
+    if (bannerForm.startDate && bannerForm.startDate < today) {
+      setError('Start date cannot be in the past');
+      return;
+    }
+
+    if (bannerForm.endDate && bannerForm.endDate < today) {
+      setError('End date cannot be in the past');
+      return;
+    }
+
+    if (bannerForm.startDate && bannerForm.endDate && new Date(bannerForm.startDate) > new Date(bannerForm.endDate)) {
+      setError('Start date must be before end date');
+      return;
+    }
+
+    setIsSavingBanner(true);
+    setError('');
+    try {
+      const response = await authManager.apiRequest(`/api/banners/${editingBannerId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          message: bannerForm.message.trim(),
+          type: bannerForm.type,
+          backgroundColor: bannerForm.backgroundColor,
+          textColor: bannerForm.textColor,
+          isActive: bannerForm.isActive,
+          startDate: bannerForm.startDate || undefined,
+          endDate: bannerForm.endDate || undefined
+        })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Failed to update banner');
+      setBannerForm({ message: '', type: 'info', backgroundColor: '#fff3cd', textColor: '#856404', startDate: '', endDate: '', isActive: true });
+      await loadBanners();
+      setIsEditBannerModalOpen(false);
+      setEditingBannerId('');
+    } catch (updateError) {
+      setError(updateError.message || 'Failed to update banner');
+    } finally {
+      setIsSavingBanner(false);
+    }
+  }
+
+  async function deleteBanner(bannerId) {
+    if (!window.confirm('Delete this banner?')) return;
+    setIsBannerBusy(bannerId);
+    setError('');
+    try {
+      const response = await authManager.apiRequest(`/api/banners/${bannerId}`, { method: 'DELETE' });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Failed to delete banner');
+      await loadBanners();
+    } catch (deleteError) {
+      setError(deleteError.message || 'Failed to delete banner');
+    } finally {
+      setIsBannerBusy('');
+    }
+  }
+
+  function openEditBannerModal(banner) {
+    setError('');
+    setEditingBannerId(banner._id);
+    setBannerForm({
+      message: banner.message || '',
+      type: banner.type || 'info',
+      backgroundColor: banner.backgroundColor || '#fff3cd',
+      textColor: banner.textColor || '#856404',
+      startDate: banner.startDate ? new Date(banner.startDate).toISOString().split('T')[0] : '',
+      endDate: banner.endDate ? new Date(banner.endDate).toISOString().split('T')[0] : '',
+      isActive: banner.isActive !== false
+    });
+    setIsEditBannerModalOpen(true);
+  }
+
+  async function toggleBannerActive(bannerId, currentStatus) {
+    setIsBannerBusy(bannerId);
+    setError('');
+    try {
+      const response = await authManager.apiRequest(`/api/banners/${bannerId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ isActive: !currentStatus })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Failed to update banner');
+      await loadBanners();
+    } catch (toggleError) {
+      setError(toggleError.message || 'Failed to update banner status');
+    } finally {
+      setIsBannerBusy('');
+    }
+  }
 
   async function deleteCustomer(customerId) {
     if (!window.confirm('Are you sure you want to delete this customer? This action cannot be undone.')) return;
@@ -406,7 +577,7 @@ export default function AdminDashboardPage() {
     { key: 'analytics', icon: FiHome, label: 'Dashboard' },
     { key: 'staff', icon: FiUsers, label: 'Staff' },
     { key: 'customers', icon: FiTrendingUp, label: 'Customers' },
-    { key: 'staffAudit', icon: FiActivity, label: 'Staff Audit' },
+    { key: 'banners', icon: FiBell, label: 'Banners' },
     { key: 'customerInsights', icon: FiEye, label: 'Insights' },
     { key: 'revenueFilters', icon: FiDollarSign, label: 'Revenue' }
   ];
@@ -568,121 +739,308 @@ export default function AdminDashboardPage() {
       }}>
 
         {activeSection === 'analytics' && (
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-          gap: '1.5rem',
-          marginBottom: '2rem'
-        }}>
-          {[
-            { label: 'Total Customers', value: stats.totalCustomers, color: '#6f0022' },
-            { label: 'Total Products', value: stats.totalProducts, color: '#0066cc' },
-            { label: 'Total Orders', value: stats.totalOrders, color: '#28a745' },
-            { label: 'Loyalty Members', value: stats.loyaltyMembers, color: '#e0bf63' },
-            { label: 'Total Income', value: `LKR ${(stats.totalIncome || 0).toLocaleString()}`, color: '#ffc107' },
-            { label: 'This Month Income', value: `LKR ${(stats.monthIncome || 0).toLocaleString()}`, color: '#17a2b8' },
-            { label: 'This Year Income', value: `LKR ${(stats.yearIncome || 0).toLocaleString()}`, color: '#6f0022' },
-            { label: 'Completed Orders', value: stats.completedOrders, color: '#28a745' },
-            { label: 'Pending Orders', value: stats.pendingOrders, color: '#ffc107' },
-            { label: 'Total Refunds', value: `LKR ${(stats.totalRefunds || 0).toLocaleString()}`, color: '#dc3545' },
-            { label: 'Gold Rate (Today)', value: `LKR ${(stats.goldRate || 0).toLocaleString()}/gram`, color: '#e0bf63' },
-            { label: 'Promotions Sent Today', value: stats.promotionsSentToday, color: '#ff6b6b' }
-          ].map((stat, idx) => (
+        <>
+          {/* Revenue Trend Chart */}
+          <section style={{
+            background: '#fff',
+            borderRadius: '12px',
+            padding: '2rem',
+            border: '1px solid #e9ecef',
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+            marginBottom: '2rem'
+          }}>
+            <h3 style={{ margin: '0 0 1.5rem', color: '#6f0022', fontSize: '1.3rem', fontFamily: 'Cormorant Garamond, serif', fontWeight: 600 }}>Revenue Trend (Last 7 Days)</h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={chartData.revenueTrend}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e9ecef" />
+                <XAxis dataKey="date" stroke="#666" />
+                <YAxis stroke="#666" />
+                <Tooltip contentStyle={{ background: '#fff', border: '1px solid #e9ecef', borderRadius: '8px' }} />
+                <Legend />
+                <Line type="monotone" dataKey="revenue" stroke="#6f0022" strokeWidth={3} dot={{ fill: '#6f0022', r: 5 }} activeDot={{ r: 7 }} name="Daily Revenue (LKR)" />
+              </LineChart>
+            </ResponsiveContainer>
+          </section>
+
+          {/* Charts Grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '2rem', marginBottom: '2rem' }}>
+            {/* Order Status Breakdown */}
+            <section style={{
+              background: '#fff',
+              borderRadius: '12px',
+              padding: '2rem',
+              border: '1px solid #e9ecef',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)'
+            }}>
+              <h3 style={{ margin: '0 0 1.5rem', color: '#6f0022', fontSize: '1.2rem', fontFamily: 'Cormorant Garamond, serif', fontWeight: 600 }}>Order Status Distribution</h3>
+              <ResponsiveContainer width="100%" height={250}>
+                <PieChart>
+                  <Pie
+                    data={chartData.orderStatusBreakdown}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, value }) => `${name}: ${value}`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {chartData.orderStatusBreakdown.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.fill} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </section>
+
+            {/* Loyalty Tier Distribution */}
+            <section style={{
+              background: '#fff',
+              borderRadius: '12px',
+              padding: '2rem',
+              border: '1px solid #e9ecef',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)'
+            }}>
+              <h3 style={{ margin: '0 0 1.5rem', color: '#6f0022', fontSize: '1.2rem', fontFamily: 'Cormorant Garamond, serif', fontWeight: 600 }}>Customer Loyalty Tiers</h3>
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={chartData.loyaltyData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e9ecef" />
+                  <XAxis dataKey="name" stroke="#666" />
+                  <YAxis stroke="#666" />
+                  <Tooltip contentStyle={{ background: '#fff', border: '1px solid #e9ecef', borderRadius: '8px' }} />
+                  <Bar dataKey="value" fill="#6f0022" radius={[8, 8, 0, 0]} name="Customer Count" />
+                </BarChart>
+              </ResponsiveContainer>
+            </section>
+          </div>
+
+          {/* Key Statistics */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+            gap: '1.5rem'
+          }}>
+            {[
+              { label: 'Total Customers', value: stats.totalCustomers, color: '#6f0022', icon: FiUsers },
+              { label: 'Total Products', value: stats.totalProducts, color: '#0066cc', icon: FiShoppingCart },
+              { label: 'Total Orders', value: stats.totalOrders, color: '#28a745', icon: FiPackage },
+              { label: 'Loyalty Members', value: stats.loyaltyMembers, color: '#e0bf63', icon: FiTrendingUp },
+              { label: 'Total Income', value: `LKR ${(stats.totalIncome || 0).toLocaleString()}`, color: '#ffc107', icon: FiDollarSign },
+              { label: 'This Month Income', value: `LKR ${(stats.monthIncome || 0).toLocaleString()}`, color: '#17a2b8', icon: FiDollarSign },
+              { label: 'This Year Income', value: `LKR ${(stats.yearIncome || 0).toLocaleString()}`, color: '#6f0022', icon: FiDollarSign },
+              { label: 'Completed Orders', value: stats.completedOrders, color: '#28a745', icon: FiCheck },
+              { label: 'Pending Orders', value: stats.pendingOrders, color: '#ffc107', icon: FiClock },
+            { label: 'Total Refunds', value: `LKR ${(stats.totalRefunds || 0).toLocaleString()}`, color: '#dc3545', icon: FiRefreshCw },
+            { label: 'Gold Rate (Today)', value: `LKR ${(stats.goldRate || 0).toLocaleString()}/gram`, color: '#e0bf63', icon: FiTrendingUp },
+            { label: 'Promotions Sent Today', value: stats.promotionsSentToday, color: '#ff6b6b', icon: FiBell }
+          ].map((stat, idx) => {
+            const IconComponent = stat.icon;
+            return (
             <div
               key={idx}
               style={{
                 background: '#fff',
-                borderRadius: '12px',
-                padding: '1.5rem',
+                borderRadius: '14px',
+                padding: '1.8rem',
                 border: '1px solid #e9ecef',
                 boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
-                transition: 'transform 0.2s, box-shadow 0.2s'
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                position: 'relative',
+                overflow: 'hidden'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-4px)';
-                e.currentTarget.style.boxShadow = '0 8px 16px rgba(0, 0, 0, 0.12)';
+                e.currentTarget.style.transform = 'translateY(-6px)';
+                e.currentTarget.style.boxShadow = '0 12px 24px rgba(0, 0, 0, 0.15)';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.transform = 'translateY(0)';
                 e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.08)';
               }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <p style={{
-                  margin: 0,
-                  color: '#666',
-                  fontSize: '0.9rem',
-                  fontWeight: 500
+              {/* Color accent top border */}
+              <div style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                height: '4px',
+                background: stat.color,
+                borderRadius: '14px 14px 0 0'
+              }} />
+              
+              {/* Content */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
+                <div style={{ flex: 1 }}>
+                  <p style={{
+                    margin: '0.5rem 0 0',
+                    color: '#666',
+                    fontSize: '0.95rem',
+                    fontWeight: 500,
+                    letterSpacing: '0.3px',
+                    textTransform: 'uppercase'
+                  }}>
+                    {stat.label}
+                  </p>
+                  <h2 style={{
+                    margin: '0.8rem 0 0',
+                    color: stat.color,
+                    fontSize: '1.8rem',
+                    fontWeight: 700,
+                    wordBreak: 'break-word',
+                    lineHeight: 1.2
+                  }}>
+                    {stat.value}
+                  </h2>
+                </div>
+                
+                {/* Icon badge */}
+                <div style={{
+                  width: '60px',
+                  height: '60px',
+                  borderRadius: '14px',
+                  background: `${stat.color}15`,
+                  border: `2px solid ${stat.color}30`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0
                 }}>
-                  {stat.label}
-                </p>
-                <span
-                  style={{
-                    width: '32px',
-                    height: '6px',
-                    borderRadius: '999px',
-                    background: stat.color,
-                    display: 'inline-block',
-                    marginTop: '0.35rem'
-                  }}
-                />
+                  <IconComponent size={28} color={stat.color} strokeWidth={2} />
+                </div>
               </div>
-              <h2 style={{
-                margin: '0.8rem 0 0',
-                color: stat.color,
-                fontSize: '2rem',
-                fontWeight: 700,
-                wordBreak: 'break-word'
-              }}>
-                {stat.value}
-              </h2>
             </div>
-          ))}
-        </div>
+            );
+          })}
+          </div>
+        </>
         )}
 
-        {activeSection === 'staffAudit' && (
-          <section style={{
-            background: '#fff',
-            borderRadius: '12px',
-            padding: '2rem',
-            border: '1px solid #e9ecef',
-            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)'
-          }}>
-            <h3 style={{ margin: 0, color: '#6f0022', fontSize: '1.4rem', fontFamily: 'Cormorant Garamond, serif', fontWeight: 600 }}>
-              Staff Audit Log
-            </h3>
-            <p style={{ margin: '0.35rem 0 1.2rem', color: '#666', fontSize: '0.95rem' }}>
-              Recent activity and staff management events.
-            </p>
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.92rem' }}>
-                <thead>
-                  <tr style={{ borderBottom: '2px solid #e9ecef', background: '#f8f9fa' }}>
-                    <th style={{ padding: '0.85rem', textAlign: 'left' }}>Time</th>
-                    <th style={{ padding: '0.85rem', textAlign: 'left' }}>Action</th>
-                    <th style={{ padding: '0.85rem', textAlign: 'left' }}>Details</th>
-                    <th style={{ padding: '0.85rem', textAlign: 'left' }}>Actor</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {staffAuditTrail.map((log) => (
-                    <tr key={log.id} style={{ borderBottom: '1px solid #e9ecef' }}>
-                      <td style={{ padding: '0.85rem', color: '#555' }}>{new Date(log.at).toLocaleString()}</td>
-                      <td style={{ padding: '0.85rem' }}><span style={{ background: '#f3e8eb', color: '#6f0022', padding: '0.25rem 0.6rem', borderRadius: '999px', fontWeight: 600 }}>{log.action}</span></td>
-                      <td style={{ padding: '0.85rem', color: '#444' }}>{log.details}</td>
-                      <td style={{ padding: '0.85rem', color: '#666' }}>{log.actor}</td>
-                    </tr>
-                  ))}
-                  {staffAuditTrail.length === 0 && (
-                    <tr>
-                      <td colSpan={4} style={{ padding: '1.2rem', textAlign: 'center', color: '#999' }}>No staff audit logs yet.</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </section>
+        {activeSection === 'banners' && (
+          <>
+            <section style={{
+              background: '#fff',
+              borderRadius: '12px',
+              padding: '2rem',
+              border: '1px solid #e9ecef',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+              marginBottom: '2rem'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                <div>
+                  <h3 style={{ margin: 0, color: '#6f0022', fontSize: '1.4rem', fontFamily: 'Cormorant Garamond, serif', fontWeight: 600 }}>Site Banners</h3>
+                  <p style={{ margin: '0.35rem 0 0', color: '#666', fontSize: '0.95rem' }}>Manage promotional banners displayed on the home page.</p>
+                </div>
+                <button type="button" onClick={() => { setError(''); setBannerForm({ message: '', type: 'info', backgroundColor: '#fff3cd', textColor: '#856404', startDate: '', endDate: '' }); setIsAddBannerModalOpen(true); }} style={{ background: '#6f0022', color: '#fff', border: 'none', padding: '0.85rem 1.35rem', borderRadius: '999px', fontWeight: 700, fontSize: '0.95rem', cursor: 'pointer', boxShadow: '0 8px 16px rgba(111, 0, 34, 0.18)', transition: 'transform 0.2s, background 0.2s' }} onMouseEnter={(e) => { e.target.style.background = '#4f0018'; e.target.style.transform = 'translateY(-1px)'; }} onMouseLeave={(e) => { e.target.style.background = '#6f0022'; e.target.style.transform = 'translateY(0)'; }}>Create Banner</button>
+              </div>
+            </section>
+
+            {error && activeSection === 'banners' && (
+              <div style={{ background: '#f8d7da', border: '1px solid #f5c6cb', color: '#721c24', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem' }}>
+                {error}
+              </div>
+            )}
+
+            <section style={{ background: '#fff', borderRadius: '12px', padding: '2rem', border: '1px solid #e9ecef', boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)' }}>
+              <h4 style={{ margin: '0 0 1rem', color: '#333' }}>All Banners ({banners.length})</h4>
+              
+              {banners.length === 0 ? (
+                <div style={{ padding: '2rem', textAlign: 'center', color: '#999' }}>
+                  No banners yet. Create one to get started.
+                </div>
+              ) : (
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.92rem' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '2px solid #e9ecef', background: '#f8f9fa' }}>
+                        <th style={{ padding: '1rem', textAlign: 'left', color: '#333', fontWeight: 600 }}>Message</th>
+                        <th style={{ padding: '1rem', textAlign: 'left', color: '#333', fontWeight: 600 }}>Type</th>
+                        <th style={{ padding: '1rem', textAlign: 'center', color: '#333', fontWeight: 600 }}>Active</th>
+                        <th style={{ padding: '1rem', textAlign: 'left', color: '#333', fontWeight: 600 }}>Date Range</th>
+                        <th style={{ padding: '1rem', textAlign: 'center', color: '#333', fontWeight: 600 }}>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {banners.map((banner) => (
+                        <tr key={banner._id} style={{ borderBottom: '1px solid #e9ecef', background: '#fff' }}>
+                          <td style={{ padding: '1rem', color: '#333', maxWidth: '250px', wordBreak: 'break-word' }}>{banner.message}</td>
+                          <td style={{ padding: '1rem' }}>
+                            <span style={{ background: '#e7f3ff', color: '#0066cc', padding: '0.35rem 0.7rem', borderRadius: '4px', fontWeight: 600, fontSize: '0.8rem', display: 'inline-block' }}>
+                              {banner.type}
+                            </span>
+                          </td>
+                          <td style={{ padding: '1rem', textAlign: 'center' }}>
+                            <button
+                              type="button"
+                              onClick={() => toggleBannerActive(banner._id, banner.isActive)}
+                              disabled={isBannerBusy === banner._id}
+                              style={{
+                                background: banner.isActive ? '#28a745' : '#dc3545',
+                                color: '#fff',
+                                border: 'none',
+                                padding: '0.4rem 0.8rem',
+                                borderRadius: '4px',
+                                fontWeight: 600,
+                                fontSize: '0.8rem',
+                                cursor: isBannerBusy === banner._id ? 'not-allowed' : 'pointer',
+                                opacity: isBannerBusy === banner._id ? 0.6 : 1,
+                                transition: 'background 0.2s'
+                              }}
+                              title={banner.isActive ? 'Click to deactivate' : 'Click to activate'}
+                            >
+                              {banner.isActive ? 'Active' : 'Inactive'}
+                            </button>
+                          </td>
+                          <td style={{ padding: '1rem', fontSize: '0.9rem', color: '#666' }}>
+                            {banner.startDate ? new Date(banner.startDate).toLocaleDateString() : 'Now'} to {banner.endDate ? new Date(banner.endDate).toLocaleDateString() : 'No end'}
+                          </td>
+                          <td style={{ padding: '1rem', textAlign: 'center' }}>
+                            <button 
+                              type="button" 
+                              onClick={() => openEditBannerModal(banner)} 
+                              disabled={isBannerBusy === banner._id} 
+                              style={{ 
+                                background: '#0066cc', 
+                                color: '#fff', 
+                                border: 'none', 
+                                padding: '0.5rem 1rem', 
+                                borderRadius: '4px', 
+                                cursor: isBannerBusy === banner._id ? 'not-allowed' : 'pointer', 
+                                marginRight: '0.5rem', 
+                                fontSize: '0.85rem',
+                                fontWeight: 500,
+                                opacity: isBannerBusy === banner._id ? 0.6 : 1
+                              }}
+                            >
+                              Edit
+                            </button>
+                            <button 
+                              type="button" 
+                              onClick={() => deleteBanner(banner._id)} 
+                              disabled={isBannerBusy === banner._id} 
+                              style={{ 
+                                background: '#dc3545', 
+                                color: '#fff', 
+                                border: 'none', 
+                                padding: '0.5rem 1rem', 
+                                borderRadius: '4px', 
+                                cursor: isBannerBusy === banner._id ? 'not-allowed' : 'pointer', 
+                                fontSize: '0.85rem',
+                                fontWeight: 500,
+                                opacity: isBannerBusy === banner._id ? 0.6 : 1
+                              }}
+                            >
+                              Delete
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </section>
+          </>
         )}
 
         {activeSection === 'revenueFilters' && (
@@ -835,7 +1193,7 @@ export default function AdminDashboardPage() {
               <div style={{ background: '#f8fafc', border: '1px solid #e9ecef', borderRadius: '10px', padding: '0.9rem' }}><strong>Platinum:</strong> {customerInsights.loyaltyBreakdown.platinum}</div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem' }}>
               <div style={{ border: '1px solid #e9ecef', borderRadius: '10px', padding: '1rem' }}>
                 <h4 style={{ margin: '0 0 0.8rem', color: '#6f0022' }}>Top Spenders</h4>
                 {customerInsights.topSpenders.map((customer) => (
@@ -845,17 +1203,6 @@ export default function AdminDashboardPage() {
                   </div>
                 ))}
                 {customerInsights.topSpenders.length === 0 && <p style={{ color: '#888', margin: 0 }}>No spender insights yet.</p>}
-              </div>
-
-              <div style={{ border: '1px solid #e9ecef', borderRadius: '10px', padding: '1rem' }}>
-                <h4 style={{ margin: '0 0 0.8rem', color: '#6f0022' }}>At-Risk Customers (90+ days inactive)</h4>
-                {customerInsights.atRisk.map((customer) => (
-                  <div key={customer._id} style={{ padding: '0.5rem 0', borderBottom: '1px solid #f1f3f5' }}>
-                    <div style={{ fontWeight: 600 }}>{customer.fullName}</div>
-                    <div style={{ fontSize: '0.88rem', color: '#666' }}>{customer.email}</div>
-                  </div>
-                ))}
-                {customerInsights.atRisk.length === 0 && <p style={{ color: '#888', margin: 0 }}>No inactive customers in this range.</p>}
               </div>
             </div>
           </section>
@@ -1801,6 +2148,174 @@ export default function AdminDashboardPage() {
             </table>
           </div>
         </section>
+        )}
+
+        {(isAddBannerModalOpen || isEditBannerModalOpen) && (
+          <div
+            role="presentation"
+            onClick={() => { setIsAddBannerModalOpen(false); setIsEditBannerModalOpen(false); }}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(18, 18, 18, 0.65)',
+              backdropFilter: 'blur(6px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '1rem',
+              zIndex: 1000
+            }}
+          >
+            <div
+              role="dialog"
+              aria-modal="true"
+              onClick={(event) => event.stopPropagation()}
+              style={{
+                width: 'min(100%, 600px)',
+                background: '#fff',
+                borderRadius: '24px',
+                border: '1px solid #eadfd6',
+                boxShadow: '0 24px 60px rgba(0, 0, 0, 0.28)',
+                overflow: 'hidden'
+              }}
+            >
+              <div style={{ padding: '2rem', borderBottom: '1px solid #f1e8ea', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h3 style={{ margin: 0, color: '#6f0022', fontSize: '1.6rem', fontFamily: 'Cormorant Garamond, serif', fontWeight: 600 }}>
+                  {isEditBannerModalOpen ? 'Edit Banner' : 'Create New Banner'}
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => { setIsAddBannerModalOpen(false); setIsEditBannerModalOpen(false); }}
+                  style={{ width: '2.9rem', height: '2.9rem', borderRadius: '50%', border: '1px solid #eadfd6', background: '#fff', color: '#6f0022', fontSize: '1.45rem', lineHeight: 1, cursor: 'pointer' }}
+                >
+                  ×
+                </button>
+              </div>
+
+              <form onSubmit={isEditBannerModalOpen ? updateBanner : createBanner} style={{ padding: '2rem' }}>
+                {error && (
+                  <div style={{
+                    background: '#f8d7da',
+                    color: '#721c24',
+                    padding: '0.9rem 1rem',
+                    borderRadius: '10px',
+                    border: '1px solid #f1b0b7',
+                    fontSize: '0.92rem',
+                    fontWeight: 500,
+                    marginBottom: '1.5rem'
+                  }}>
+                    {error}
+                  </div>
+                )}
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, color: '#333' }}>Banner Message</label>
+                  <textarea
+                    value={bannerForm.message}
+                    onChange={(e) => setBannerForm({ ...bannerForm, message: e.target.value })}
+                    placeholder="Enter banner message (e.g., 'New collection launched! Check it out.')"
+                    style={{ width: '100%', minHeight: '100px', padding: '0.75rem', border: '1px solid #dee2e6', borderRadius: '8px', fontFamily: 'inherit', fontSize: '0.95rem', resize: 'vertical' }}
+                  />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, color: '#333' }}>Banner Type</label>
+                    <select
+                      value={bannerForm.type}
+                      onChange={(e) => setBannerForm({ ...bannerForm, type: e.target.value })}
+                      style={{ width: '100%', padding: '0.75rem', border: '1px solid #dee2e6', borderRadius: '8px', fontSize: '0.95rem' }}
+                    >
+                      <option value="info">Information</option>
+                      <option value="success">Success</option>
+                      <option value="warning">Warning</option>
+                      <option value="promo">Promotion</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, color: '#333' }}>Background Color</label>
+                    <input
+                      type="color"
+                      value={bannerForm.backgroundColor}
+                      onChange={(e) => setBannerForm({ ...bannerForm, backgroundColor: e.target.value })}
+                      style={{ width: '100%', height: '2.5rem', border: '1px solid #dee2e6', borderRadius: '8px', cursor: 'pointer' }}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, color: '#333' }}>Text Color</label>
+                    <input
+                      type="color"
+                      value={bannerForm.textColor}
+                      onChange={(e) => setBannerForm({ ...bannerForm, textColor: e.target.value })}
+                      style={{ width: '100%', height: '2.5rem', border: '1px solid #dee2e6', borderRadius: '8px', cursor: 'pointer' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, color: '#333' }}>Start Date (optional)</label>
+                    <input
+                      type="date"
+                      value={bannerForm.startDate}
+                      onChange={(e) => setBannerForm({ ...bannerForm, startDate: e.target.value })}
+                      min={new Date().toISOString().split('T')[0]}
+                      style={{ width: '100%', padding: '0.75rem', border: '1px solid #dee2e6', borderRadius: '8px', fontSize: '0.95rem' }}
+                      title="Start date cannot be in the past"
+                    />
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, color: '#333' }}>End Date (optional)</label>
+                  <input
+                    type="date"
+                    value={bannerForm.endDate}
+                    onChange={(e) => setBannerForm({ ...bannerForm, endDate: e.target.value })}
+                    min={new Date().toISOString().split('T')[0]}
+                    style={{ width: '100%', padding: '0.75rem', border: '1px solid #dee2e6', borderRadius: '8px', fontSize: '0.95rem' }}
+                    title="End date cannot be in the past"
+                  />
+                </div>
+
+                <div style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <input
+                    type="checkbox"
+                    id="isActiveBanner"
+                    checked={bannerForm.isActive}
+                    onChange={(e) => setBannerForm({ ...bannerForm, isActive: e.target.checked })}
+                    style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                  />
+                  <label htmlFor="isActiveBanner" style={{ fontWeight: 600, color: '#333', cursor: 'pointer', margin: 0 }}>Banner is Active</label>
+                </div>
+
+                <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                  <button
+                    type="button"
+                    onClick={() => { setIsAddBannerModalOpen(false); setIsEditBannerModalOpen(false); }}
+                    style={{ padding: '0.8rem 1.5rem', border: '1px solid #dee2e6', background: '#fff', color: '#333', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSavingBanner}
+                    style={{
+                      padding: '0.8rem 1.5rem',
+                      background: '#6f0022',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontWeight: 600,
+                      cursor: isSavingBanner ? 'not-allowed' : 'pointer',
+                      opacity: isSavingBanner ? 0.6 : 1
+                    }}
+                  >
+                    {isSavingBanner ? 'Saving...' : (isEditBannerModalOpen ? 'Update Banner' : 'Create Banner')}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
         )}
       </main>
     </div>

@@ -22,6 +22,7 @@ import loyaltyRoutes from './routes/loyalty.js';
 import reviewRoutes from './routes/reviews.js';
 import supplierRoutes from './routes/suppliers.js';
 import appointmentRoutes from './routes/appointments.js';
+import bannerRoutes from './routes/banners.js';
 import staffAuditLogger from './middleware/staffAuditLogger.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -83,6 +84,7 @@ app.use('/api/loyalty', loyaltyRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/suppliers', supplierRoutes);
 app.use('/api/appointments', appointmentRoutes);
+app.use('/api/banners', bannerRoutes);
 
 // Serve uploaded images from backend storage
 app.use('/uploads', express.static(uploadsDir));
