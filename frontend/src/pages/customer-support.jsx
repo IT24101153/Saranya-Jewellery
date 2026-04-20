@@ -123,15 +123,12 @@ export default function CustomerSupportPage() {
   async function loadAvailableSlots() {
     try {
       setSlotsLoading(true);
-      // Load ALL slots (not just available ones) so we can filter properly
-      const response = await authManager.apiRequest('/api/appointments/slots');
+      // Load available slots from the customer endpoint
+      const response = await authManager.apiRequest('/api/appointments/available');
       if (!response.ok) return;
       const data = await response.json();
-      // Filter to only include slots that have capacity
-      const availableSlots = (Array.isArray(data) ? data : []).filter(slot => 
-        slot.bookedCount < slot.capacity && !slot.isBlocked
-      );
-      setSlots(availableSlots);
+      // The API returns slots with the available filter already applied
+      setSlots(Array.isArray(data.slots) ? data.slots : []);
     } catch (error) {
       console.error('Error loading slots:', error);
     } finally {
@@ -218,17 +215,12 @@ export default function CustomerSupportPage() {
         return;
       }
 
-      const response = await authManager.apiRequest('/api/appointments', {
+      const response = await authManager.apiRequest('/api/appointments/book', {
         method: 'POST',
         body: JSON.stringify({
           slotId: selectedSlot._id,
-          customerId: customer._id,
-          customerName: customer.fullName,
-          customerEmail: customer.email,
-          customerPhone: customer.phone || '',
-          appointmentType: selectedSlot.type,
-          notes: bookingNotes,
-          isVIP: customer.loyaltyPoints > 500 // Mark as VIP if high loyalty points
+          type: selectedSlot.type,
+          notes: bookingNotes
         })
       });
 

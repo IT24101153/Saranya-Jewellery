@@ -112,6 +112,16 @@ export default function CustomerCareDashboardPage() {
     bootstrap();
   }, []);
 
+  // Auto-refresh appointment slots every 30 seconds to reflect customer bookings
+  useEffect(() => {
+    const interval = setInterval(() => {
+      loadSlots();
+      loadAppointments();
+    }, 30000); // Refresh every 30 seconds
+
+    return () => clearInterval(interval);
+  }, []);
+
   // ============ DASHBOARD OVERVIEW FUNCTIONS ============
   async function loadDashboardOverview() {
     try {
@@ -3623,16 +3633,45 @@ export default function CustomerCareDashboardPage() {
 
               {/* Slots List */}
               <div style={{ display: "grid", gap: "1.2rem" }}>
-                <h3
-                  style={{
-                    margin: "0 0 1rem",
-                    color: "#FFFFFF",
-                    fontSize: "1.1rem",
-                    fontWeight: 600,
-                  }}
-                >
-                  Available Slots
-                </h3>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <h3
+                    style={{
+                      margin: 0,
+                      color: "#FFFFFF",
+                      fontSize: "1.1rem",
+                      fontWeight: 600,
+                    }}
+                  >
+                    Available Slots
+                  </h3>
+                  <button
+                    onClick={() => {
+                      loadSlots();
+                      loadAppointments();
+                    }}
+                    style={{
+                      padding: "0.5rem 1rem",
+                      background: "var(--brand-burgundy)",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "6px",
+                      cursor: "pointer",
+                      fontSize: "0.9rem",
+                      fontWeight: 500,
+                      transition: "all 0.3s ease"
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.opacity = "0.9";
+                      e.target.style.transform = "scale(1.02)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.opacity = "1";
+                      e.target.style.transform = "scale(1)";
+                    }}
+                  >
+                    🔄 Refresh
+                  </button>
+                </div>
                 {slots.length === 0 ? (
                   <div
                     style={{
