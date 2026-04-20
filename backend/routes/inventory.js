@@ -74,6 +74,10 @@ router.post('/gold-rates', isInventoryManager, async (req, res) => {
     // Upsert the single gold rate document
     let goldRate = await GoldRate.findOne();
     if (goldRate) {
+      // Store previous rates before updating
+      goldRate.previous18K = goldRate['18K'];
+      goldRate.previous22K = goldRate['22K'];
+      goldRate.previous24K = goldRate['24K'];
       goldRate['18K'] = parsed18K;
       goldRate['22K'] = parsed22K;
       goldRate['24K'] = parsed24K;
@@ -83,6 +87,9 @@ router.post('/gold-rates', isInventoryManager, async (req, res) => {
         '18K': parsed18K,
         '22K': parsed22K,
         '24K': parsed24K,
+        previous18K: parsed18K,
+        previous22K: parsed22K,
+        previous24K: parsed24K,
         updatedBy: req.session.staffId
       });
     }
