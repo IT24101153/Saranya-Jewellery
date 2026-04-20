@@ -68,7 +68,7 @@ export default function CustomerSupportPage() {
         await loadMessages();
         await loadAvailableSlots(); // Refresh slots to show real-time bookings
         await loadMyBookings();
-      }, 5000);
+      }, 2000); // Reduced to 2 seconds for faster cross-browser sync
     }
 
     init();
@@ -860,7 +860,7 @@ export default function CustomerSupportPage() {
 
       <zapier-interfaces-chatbot-embed
         is-popup="true"
-        chatbot-id="cmnd1hjex005bm8ij9enun3qb"
+        chatbot-id="cmo5zldf1004p4ftzwiocldrz"
       />
     </>
   );
