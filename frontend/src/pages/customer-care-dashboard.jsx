@@ -89,7 +89,7 @@ export default function CustomerCareDashboardPage() {
   const [slots, setSlots] = useState([]);
   const [appointments, setAppointments] = useState([]);
   const [appointmentStats, setAppointmentStats] = useState({ total: 0, completed: 0, noShow: 0, cancelled: 0, confirmed: 0 });
-  const [slotForm, setSlotForm] = useState({ date: '', timeSlotIndex: 0, capacity: 1, assignedStaff: '', isBlocked: false, blockReason: '' });
+  const [slotForm, setSlotForm] = useState({ date: '', timeSlotIndex: 0, type: 'In-Store Consultation', capacity: 1, assignedStaff: '', isBlocked: false, blockReason: '' });
   const [editingSlotId, setEditingSlotId] = useState(null);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [appointmentStatusForm, setAppointmentStatusForm] = useState({ status: '', internalNotesAfter: '', followUpNote: '', followUpSuggested: false });
@@ -633,6 +633,7 @@ export default function CustomerCareDashboardPage() {
           date: slotForm.date,
           startTime: selectedTimeSlot.start,
           endTime: selectedTimeSlot.end,
+          type: slotForm.type,
           capacity: slotForm.capacity,
           assignedStaff: slotForm.assignedStaff,
           isBlocked: slotForm.isBlocked,
@@ -642,7 +643,7 @@ export default function CustomerCareDashboardPage() {
 
       const data = await response.json();
       if (response.ok) {
-        setSlotForm({ date: '', timeSlotIndex: 0, capacity: 1, assignedStaff: '', isBlocked: false, blockReason: '' });
+        setSlotForm({ date: '', timeSlotIndex: 0, type: 'In-Store Consultation', capacity: 1, assignedStaff: '', isBlocked: false, blockReason: '' });
         setEditingSlotId(null);
         await loadSlots();
       } else {
@@ -3401,10 +3402,49 @@ export default function CustomerCareDashboardPage() {
                   <div
                     style={{
                       display: "grid",
-                      gridTemplateColumns: "1fr",
+                      gridTemplateColumns: "1fr 1fr",
                       gap: "1.5rem",
                     }}
                   >
+                    <div>
+                      <label
+                        style={{
+                          display: "block",
+                          margin: "0 0 0.6rem",
+                          color: "#333",
+                          fontSize: "0.9rem",
+                          fontWeight: 500,
+                        }}
+                      >
+                        Appointment Type
+                      </label>
+                      <select
+                        value={slotForm.type}
+                        onChange={(e) =>
+                          setSlotForm({
+                            ...slotForm,
+                            type: e.target.value,
+                          })
+                        }
+                        style={{
+                          width: "100%",
+                          padding: "0.85rem 1rem",
+                          border: "1px solid #d0d0d0",
+                          borderRadius: "8px",
+                          fontSize: "0.95rem",
+                          boxSizing: "border-box",
+                          background: "#fafbfc",
+                          cursor: "pointer",
+                          color: "#333",
+                        }}
+                      >
+                        {APPOINTMENT_TYPES.map((type) => (
+                          <option key={type} value={type}>
+                            {type}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                     <div>
                       <label
                         style={{

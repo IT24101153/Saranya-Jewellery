@@ -42,7 +42,7 @@ router.post('/slots', isAuthenticated, hasRole('Customer Care', 'Admin'), async 
   try {
     const { date, startTime, endTime, type, capacity, assignedStaff, isBlocked, blockReason, internalNotes } = req.body;
 
-    if (!date || !startTime || !endTime || !type) {
+    if (!date || !startTime || !endTime) {
       return res.status(400).json({ message: 'Missing required fields' });
     }
 
