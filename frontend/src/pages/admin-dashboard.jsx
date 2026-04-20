@@ -71,6 +71,14 @@ export default function AdminDashboardPage() {
   const [isSavingBanner, setIsSavingBanner] = useState(false);
   const [isBannerBusy, setIsBannerBusy] = useState('');
 
+  // Customer Details Modal State
+  const [isCustomerDetailsModalOpen, setIsCustomerDetailsModalOpen] = useState(false);
+  const [selectedCustomerDetails, setSelectedCustomerDetails] = useState(null);
+  const [isLoadingCustomerDetails, setIsLoadingCustomerDetails] = useState(false);
+  const [customerDetailsError, setCustomerDetailsError] = useState('');
+  const [customerSearchQuery, setCustomerSearchQuery] = useState('');
+  const [customerLoyaltyFilter, setCustomerLoyaltyFilter] = useState('all');
+
   const filteredList = useMemo(() => {
     if (statusFilter === 'all') return staffList;
     return staffList.filter((item) => item.status === statusFilter);
@@ -137,6 +145,29 @@ export default function AdminDashboardPage() {
       loyaltyBreakdown
     };
   }, [customerList, orders]);
+
+  const filteredCustomers = useMemo(() => {
+    let result = customerList;
+
+    // Apply loyalty filter
+    if (customerLoyaltyFilter === 'loyalty') {
+      result = result.filter((customer) => customer.isLoyalty === true);
+    }
+
+    // Apply search filter
+    if (customerSearchQuery.trim()) {
+      const query = customerSearchQuery.toLowerCase();
+      result = result.filter((customer) => {
+        const name = String(customer.fullName || '').toLowerCase();
+        const email = String(customer.email || '').toLowerCase();
+        const phone = String(customer.phone || '').toLowerCase();
+        
+        return name.includes(query) || email.includes(query) || phone.includes(query);
+      });
+    }
+
+    return result;
+  }, [customerList, customerSearchQuery, customerLoyaltyFilter]);
 
   const chartData = useMemo(() => {
     // Order status breakdown
@@ -569,6 +600,63 @@ export default function AdminDashboardPage() {
     } finally {
       setCustomerBusyId('');
     }
+  }
+
+  async function openCustomerDetailsModal(customer) {
+    setIsCustomerDetailsModalOpen(true);
+    setIsLoadingCustomerDetails(true);
+    setCustomerDetailsError('');
+    setSelectedCustomerDetails(null);
+
+    try {
+      // Get customer orders
+      const customerOrders = orders.filter(order => 
+        String(order.customerId) === String(customer._id)
+      );
+
+      // Get customer reviews from all reviews (reviews will have customerId field)
+      // For now, we'll need to fetch reviews separately or filter from existing data
+      // Since we don't have reviews data loaded, we'll show a message if needed
+      
+      // Get coupons used by customer
+      const customerCouponsUsed = customerOrders
+        .filter(order => order.couponCode)
+        .map(order => ({
+          code: order.couponCode,
+          discount: order.couponDiscount,
+          orderNumber: order.orderNumber
+        }));
+
+      // Get unique offers applied to this customer
+      // This would typically come from the LoyaltyOffer data associated with coupons
+      const uniqueOffers = [...new Set(customerCouponsUsed.map(c => c.code))];
+
+      // Compile customer details
+      const details = {
+        ...customer,
+        orderCount: customerOrders.length,
+        totalSpent: customerOrders.reduce((sum, order) => sum + Number(order.total || 0), 0),
+        orders: customerOrders,
+        couponsUsed: customerCouponsUsed,
+        offersReceived: uniqueOffers,
+        registeredDate: customer.createdAt,
+        loyaltyPointsBalance: customer.loyaltyPoints || 0,
+        loyaltyTierStatus: customer.loyaltyTier || 'Standard'
+      };
+
+      setSelectedCustomerDetails(details);
+    } catch (err) {
+      console.error('Error loading customer details:', err);
+      setCustomerDetailsError('Failed to load customer details');
+    } finally {
+      setIsLoadingCustomerDetails(false);
+    }
+  }
+
+  function closeCustomerDetailsModal() {
+    setIsCustomerDetailsModalOpen(false);
+    setSelectedCustomerDetails(null);
+    setCustomerDetailsError('');
   }
 
   if (!staffUser) return <p style={{ padding: '2rem', textAlign: 'center', color: '#666' }}>Checking admin access...</p>;
@@ -1296,7 +1384,7 @@ export default function AdminDashboardPage() {
               aria-labelledby="add-staff-title"
               onClick={(event) => event.stopPropagation()}
               style={{
-                width: 'min(100%, 760px)',
+                width: 'min(100%, 820px)',
                 background: '#fff',
                 borderRadius: '24px',
                 border: '1px solid #eadfd6',
@@ -1304,159 +1392,322 @@ export default function AdminDashboardPage() {
                 overflow: 'hidden'
               }}
             >
+              {/* Header with gradient accent */}
               <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'start',
-                gap: '1rem',
-                padding: '2rem 2rem 1.25rem',
-                borderBottom: '1px solid #f1e8ea'
+                position: 'relative',
+                overflow: 'hidden',
+                paddingBottom: '0'
               }}>
-                <div>
-                  <h3 id="add-staff-title" style={{
-                    margin: 0,
-                    color: '#6f0022',
-                    fontSize: '1.8rem',
-                    fontFamily: 'Cormorant Garamond, serif',
-                    fontWeight: 600
-                  }}>
-                    Add New Staff Member
-                  </h3>
-                  <p style={{ margin: '0.35rem 0 0', color: '#666', fontSize: '0.95rem' }}>
-                    Create a new staff login and assign a role.
-                  </p>
+                {/* Accent bar at top */}
+                <div style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: '4px',
+                  background: 'linear-gradient(90deg, #6f0022, #e0bf63)',
+                }}></div>
+                
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'start',
+                  gap: '1rem',
+                  padding: '2.5rem 2.5rem 2rem',
+                  background: 'linear-gradient(135deg, #fff9f7 0%, #f9f7f4 100%)'
+                }}>
+                  <div style={{ flex: 1 }}>
+                    <h3 id="add-staff-title" style={{
+                      margin: 0,
+                      color: '#6f0022',
+                      fontSize: '2rem',
+                      fontFamily: 'Cormorant Garamond, serif',
+                      fontWeight: 600,
+                      letterSpacing: '0.5px'
+                    }}>
+                      Add New Staff Member
+                    </h3>
+                    <p style={{ 
+                      margin: '0.6rem 0 0', 
+                      color: '#888', 
+                      fontSize: '0.95rem',
+                      fontWeight: 400
+                    }}>
+                      Create a new account and assign a role to get started.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsAddStaffModalOpen(false)}
+                    aria-label="Close add staff dialog"
+                    style={{
+                      width: '2.8rem',
+                      height: '2.8rem',
+                      borderRadius: '50%',
+                      border: '1px solid #e0bf63',
+                      background: '#fff',
+                      color: '#6f0022',
+                      fontSize: '1.5rem',
+                      lineHeight: 1,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.background = '#f1e8ea';
+                      e.target.style.transform = 'scale(1.05)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.background = '#fff';
+                      e.target.style.transform = 'scale(1)';
+                    }}
+                  >
+                    ×
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setIsAddStaffModalOpen(false)}
-                  aria-label="Close add staff dialog"
-                  style={{
-                    width: '2.9rem',
-                    height: '2.9rem',
-                    borderRadius: '50%',
-                    border: '1px solid #eadfd6',
-                    background: '#fff',
-                    color: '#6f0022',
-                    fontSize: '1.45rem',
-                    lineHeight: 1,
-                    cursor: 'pointer'
-                  }}
-                >
-                  ×
-                </button>
               </div>
 
+              {/* Form Content */}
               <form
                 onSubmit={createStaff}
                 style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-                  gap: '1.15rem',
-                  padding: '2rem'
+                  padding: '2.5rem',
+                  background: '#fff'
                 }}
               >
                 {error && (
                   <div style={{
-                    gridColumn: '1 / -1',
-                    background: '#f8d7da',
+                    background: '#fff5f5',
+                    border: '1px solid #f8d7da',
                     color: '#721c24',
-                    padding: '0.9rem 1rem',
-                    borderRadius: '10px',
-                    border: '1px solid #f1b0b7',
+                    padding: '1rem 1.2rem',
+                    borderRadius: '12px',
+                    marginBottom: '1.8rem',
                     fontSize: '0.92rem',
-                    fontWeight: 500
+                    fontWeight: 500,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.8rem'
                   }}>
+                    <span style={{ fontSize: '1.2rem' }}>⚠</span>
                     {error}
                   </div>
                 )}
-                <input
-                  required
-                  value={form.fullName}
-                  onChange={(e) => setForm((prev) => ({ ...prev, fullName: e.target.value }))}
-                  placeholder="Full Name"
-                  style={{
-                    gridColumn: '1 / -1',
-                    padding: '1rem 1.1rem',
-                    border: '1px solid #dee2e6',
-                    borderRadius: '10px',
-                    fontSize: '1rem',
-                    fontFamily: 'Poppins, sans-serif',
-                    transition: 'border-color 0.2s'
-                  }}
-                />
-                <input
-                  required
-                  type="email"
-                  value={form.email}
-                  onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
-                  placeholder="Email Address"
-                  style={{
-                    padding: '1rem 1.1rem',
-                    border: '1px solid #dee2e6',
-                    borderRadius: '10px',
-                    fontSize: '1rem',
-                    fontFamily: 'Poppins, sans-serif',
-                    transition: 'border-color 0.2s'
-                  }}
-                />
-                <input
-                  required
-                  minLength={8}
-                  type="password"
-                  value={form.password}
-                  onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))}
-                  placeholder="Password (min. 8 characters)"
-                  style={{
-                    padding: '1rem 1.1rem',
-                    border: '1px solid #dee2e6',
-                    borderRadius: '10px',
-                    fontSize: '1rem',
-                    fontFamily: 'Poppins, sans-serif',
-                    transition: 'border-color 0.2s'
-                  }}
-                />
-                <select
-                  value={form.role}
-                  onChange={(e) => setForm((prev) => ({ ...prev, role: e.target.value }))}
-                  style={{
-                    gridColumn: '1 / -1',
-                    padding: '1rem 1.1rem',
-                    border: '1px solid #dee2e6',
-                    borderRadius: '10px',
-                    fontSize: '1rem',
-                    fontFamily: 'Poppins, sans-serif',
-                    background: '#fff',
-                    cursor: 'pointer',
-                    transition: 'border-color 0.2s'
-                  }}
-                >
-                  <option>Customer Care</option>
-                  <option>Inventory</option>
-                  <option>Order Management</option>
-                  <option>Product Management</option>
-                  <option>Loyalty Management</option>
-                  <option>Admin</option>
-                </select>
 
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.8rem', marginBottom: '1.8rem' }}>
+                  {/* Full Name Field */}
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <label style={{
+                      display: 'block',
+                      color: '#333',
+                      fontSize: '0.9rem',
+                      fontWeight: 600,
+                      marginBottom: '0.6rem',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.3px'
+                    }}>
+                      Full Name
+                    </label>
+                    <input
+                      required
+                      value={form.fullName}
+                      onChange={(e) => setForm((prev) => ({ ...prev, fullName: e.target.value }))}
+                      placeholder="e.g., John Doe"
+                      style={{
+                        width: '100%',
+                        padding: '0.95rem 1.1rem',
+                        border: '1px solid #e0e7ff',
+                        borderRadius: '12px',
+                        fontSize: '1rem',
+                        fontFamily: 'Poppins, sans-serif',
+                        background: '#f9f9f9',
+                        transition: 'all 0.2s',
+                        boxSizing: 'border-box'
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.border = '2px solid #6f0022';
+                        e.target.style.background = '#fff';
+                        e.target.style.boxShadow = '0 4px 12px rgba(111, 0, 34, 0.1)';
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.border = '1px solid #e0e7ff';
+                        e.target.style.background = '#f9f9f9';
+                        e.target.style.boxShadow = 'none';
+                      }}
+                    />
+                  </div>
+
+                  {/* Email Field */}
+                  <div>
+                    <label style={{
+                      display: 'block',
+                      color: '#333',
+                      fontSize: '0.9rem',
+                      fontWeight: 600,
+                      marginBottom: '0.6rem',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.3px'
+                    }}>
+                      Email Address
+                    </label>
+                    <input
+                      required
+                      type="email"
+                      value={form.email}
+                      onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
+                      placeholder="john@example.com"
+                      style={{
+                        width: '100%',
+                        padding: '0.95rem 1.1rem',
+                        border: '1px solid #e0e7ff',
+                        borderRadius: '12px',
+                        fontSize: '1rem',
+                        fontFamily: 'Poppins, sans-serif',
+                        background: '#f9f9f9',
+                        transition: 'all 0.2s',
+                        boxSizing: 'border-box'
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.border = '2px solid #6f0022';
+                        e.target.style.background = '#fff';
+                        e.target.style.boxShadow = '0 4px 12px rgba(111, 0, 34, 0.1)';
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.border = '1px solid #e0e7ff';
+                        e.target.style.background = '#f9f9f9';
+                        e.target.style.boxShadow = 'none';
+                      }}
+                    />
+                  </div>
+
+                  {/* Password Field */}
+                  <div>
+                    <label style={{
+                      display: 'block',
+                      color: '#333',
+                      fontSize: '0.9rem',
+                      fontWeight: 600,
+                      marginBottom: '0.6rem',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.3px'
+                    }}>
+                      Password
+                    </label>
+                    <input
+                      required
+                      minLength={8}
+                      type="password"
+                      value={form.password}
+                      onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))}
+                      placeholder="Minimum 8 characters"
+                      style={{
+                        width: '100%',
+                        padding: '0.95rem 1.1rem',
+                        border: '1px solid #e0e7ff',
+                        borderRadius: '12px',
+                        fontSize: '1rem',
+                        fontFamily: 'Poppins, sans-serif',
+                        background: '#f9f9f9',
+                        transition: 'all 0.2s',
+                        boxSizing: 'border-box'
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.border = '2px solid #6f0022';
+                        e.target.style.background = '#fff';
+                        e.target.style.boxShadow = '0 4px 12px rgba(111, 0, 34, 0.1)';
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.border = '1px solid #e0e7ff';
+                        e.target.style.background = '#f9f9f9';
+                        e.target.style.boxShadow = 'none';
+                      }}
+                    />
+                    <p style={{ margin: '0.4rem 0 0', color: '#999', fontSize: '0.8rem' }}>Must be at least 8 characters long</p>
+                  </div>
+
+                  {/* Role Field */}
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <label style={{
+                      display: 'block',
+                      color: '#333',
+                      fontSize: '0.9rem',
+                      fontWeight: 600,
+                      marginBottom: '0.6rem',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.3px'
+                    }}>
+                      Staff Role
+                    </label>
+                    <select
+                      value={form.role}
+                      onChange={(e) => setForm((prev) => ({ ...prev, role: e.target.value }))}
+                      style={{
+                        width: '100%',
+                        padding: '0.95rem 1.1rem',
+                        border: '1px solid #e0e7ff',
+                        borderRadius: '12px',
+                        fontSize: '1rem',
+                        fontFamily: 'Poppins, sans-serif',
+                        background: '#f9f9f9',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        boxSizing: 'border-box'
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.border = '2px solid #6f0022';
+                        e.target.style.background = '#fff';
+                        e.target.style.boxShadow = '0 4px 12px rgba(111, 0, 34, 0.1)';
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.border = '1px solid #e0e7ff';
+                        e.target.style.background = '#f9f9f9';
+                        e.target.style.boxShadow = 'none';
+                      }}
+                    >
+                      <option value="Customer Care">Customer Care</option>
+                      <option value="Inventory">Inventory</option>
+                      <option value="Order Management">Order Management</option>
+                      <option value="Product Management">Product Management</option>
+                      <option value="Loyalty Management">Loyalty Management</option>
+                      <option value="Admin">Admin</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
                 <div style={{
-                  gridColumn: '1 / -1',
                   display: 'flex',
                   justifyContent: 'flex-end',
-                  gap: '0.9rem',
+                  gap: '1rem',
                   flexWrap: 'wrap',
-                  paddingTop: '0.5rem'
+                  marginTop: '2rem',
+                  paddingTop: '1.5rem',
+                  borderTop: '1px solid #f0f0f0'
                 }}>
                   <button
                     type="button"
                     onClick={() => setIsAddStaffModalOpen(false)}
                     style={{
-                      border: '1px solid #dee2e6',
-                      color: '#6b7280',
-                      padding: '0.95rem 1.4rem',
-                      fontSize: '0.98rem',
+                      border: '1px solid #e0e7ff',
+                      color: '#666',
+                      background: '#f9f9f9',
+                      padding: '0.85rem 1.6rem',
+                      fontSize: '0.95rem',
                       borderRadius: '999px',
                       fontWeight: 600,
-                      cursor: 'pointer'
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.background = '#f1f1f1';
+                      e.target.style.border = '1px solid #d0d0d0';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.background = '#f9f9f9';
+                      e.target.style.border = '1px solid #e0e7ff';
                     }}
                   >
                     Cancel
@@ -1465,19 +1716,31 @@ export default function AdminDashboardPage() {
                     type="submit"
                     disabled={isSaving}
                     style={{
-                      background: '#6f0022',
+                      background: isSaving ? '#c9c9c9' : 'linear-gradient(135deg, #6f0022, #8b0029)',
                       color: '#fff',
                       border: 'none',
-                      padding: '0.95rem 1.55rem',
+                      padding: '0.85rem 2rem',
                       borderRadius: '999px',
                       fontWeight: 700,
-                      fontSize: '0.98rem',
+                      fontSize: '0.95rem',
                       cursor: isSaving ? 'not-allowed' : 'pointer',
-                      opacity: isSaving ? 0.7 : 1,
-                      transition: 'background 0.2s'
+                      transition: 'all 0.2s',
+                      boxShadow: isSaving ? 'none' : '0 8px 16px rgba(111, 0, 34, 0.2)'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isSaving) {
+                        e.target.style.boxShadow = '0 12px 24px rgba(111, 0, 34, 0.3)';
+                        e.target.style.transform = 'translateY(-2px)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isSaving) {
+                        e.target.style.boxShadow = '0 8px 16px rgba(111, 0, 34, 0.2)';
+                        e.target.style.transform = 'translateY(0)';
+                      }
                     }}
                   >
-                    {isSaving ? 'Creating...' : 'Add Staff Member'}
+                    {isSaving ? 'Creating...' : 'Create Staff Member'}
                   </button>
                 </div>
               </form>
@@ -1985,25 +2248,52 @@ export default function AdminDashboardPage() {
               fontFamily: 'Cormorant Garamond, serif',
               fontWeight: 600
             }}>
-              Customer Management
+              Customers
             </h3>
-            <select
-              value={customerFilter}
-              onChange={(e) => setCustomerFilter(e.target.value)}
-              style={{
-                padding: '0.6rem 1rem',
-                border: '1px solid #dee2e6',
-                borderRadius: '6px',
-                fontSize: '0.95rem',
-                fontFamily: 'Poppins, sans-serif',
-                background: '#fff',
-                cursor: 'pointer'
-              }}
-            >
-              <option value="all">All Customers</option>
-              <option value="active">Active Only</option>
-              <option value="premium">Premium Members</option>
-            </select>
+            <div style={{
+              display: 'flex',
+              gap: '1rem',
+              flexWrap: 'wrap',
+              alignItems: 'center'
+            }}>
+              <select
+                value={customerLoyaltyFilter}
+                onChange={(e) => setCustomerLoyaltyFilter(e.target.value)}
+                style={{
+                  padding: '0.6rem 1rem',
+                  border: '1px solid #dee2e6',
+                  borderRadius: '6px',
+                  fontSize: '0.95rem',
+                  fontFamily: 'Poppins, sans-serif',
+                  background: '#fff',
+                  cursor: 'pointer',
+                  transition: 'border-color 0.2s'
+                }}
+                onFocus={(e) => e.target.style.borderColor = '#6f0022'}
+                onBlur={(e) => e.target.style.borderColor = '#dee2e6'}
+              >
+                <option value="all">All Customers</option>
+                <option value="loyalty">Loyalty Customers</option>
+              </select>
+              <input
+                type="text"
+                placeholder="Search by name, email, or phone..."
+                value={customerSearchQuery}
+                onChange={(e) => setCustomerSearchQuery(e.target.value)}
+                style={{
+                  padding: '0.6rem 1rem',
+                  border: '1px solid #dee2e6',
+                  borderRadius: '6px',
+                  fontSize: '0.95rem',
+                  fontFamily: 'Poppins, sans-serif',
+                  background: '#fff',
+                  flex: '0 1 300px',
+                  transition: 'border-color 0.2s'
+                }}
+                onFocus={(e) => e.target.style.borderColor = '#6f0022'}
+                onBlur={(e) => e.target.style.borderColor = '#dee2e6'}
+              />
+            </div>
           </div>
 
           {error && (
@@ -2055,7 +2345,7 @@ export default function AdminDashboardPage() {
                     fontWeight: 600,
                     fontSize: '0.9rem'
                   }}>
-                    Phone
+                    Orders
                   </th>
                   <th style={{
                     padding: '1rem',
@@ -2078,61 +2368,88 @@ export default function AdminDashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {customerList && customerList.length > 0 ? (
-                  customerList.map((customer) => (
-                    <tr
-                      key={customer._id}
-                      style={{
-                        borderBottom: '1px solid #e9ecef',
-                        transition: 'background 0.2s'
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = '#f8f9fa'}
-                      onMouseLeave={(e) => e.currentTarget.style.background = '#fff'}
-                    >
-                      <td style={{ padding: '1rem' }}>
-                        <div style={{ fontWeight: 500, color: '#333' }}>{customer.fullName || 'N/A'}</div>
-                      </td>
-                      <td style={{ padding: '1rem', color: '#555' }}>
-                        {customer.email}
-                      </td>
-                      <td style={{ padding: '1rem', color: '#555' }}>
-                        {customer.phone || 'N/A'}
-                      </td>
-                      <td style={{ padding: '1rem' }}>
-                        <span style={{
-                          background: '#e9ecef',
-                          padding: '0.3rem 0.7rem',
-                          borderRadius: '4px',
-                          fontSize: '0.85rem',
-                          fontWeight: 500
-                        }}>
-                          {customer.loyaltyTier || 'Standard'}
-                        </span>
-                      </td>
-                      <td style={{ padding: '1rem' }}>
-                        <button
-                          disabled={customerBusyId === customer._id}
-                          onClick={() => deleteCustomer(customer._id)}
-                          style={{
-                            padding: '0.4rem 0.8rem',
-                            border: '1px solid #dc3545',
-                            background: '#fff',
-                            color: '#dc3545',
+                {filteredCustomers && filteredCustomers.length > 0 ? (
+                  filteredCustomers.map((customer) => {
+                    const customerOrderCount = orders.filter(order => 
+                      String(order.customerId) === String(customer._id)
+                    ).length;
+
+                    return (
+                      <tr
+                        key={customer._id}
+                        style={{
+                          borderBottom: '1px solid #e9ecef',
+                          transition: 'background 0.2s'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = '#f8f9fa'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = '#fff'}
+                      >
+                        <td style={{ padding: '1rem' }}>
+                          <div style={{ fontWeight: 500, color: '#333' }}>{customer.fullName || 'N/A'}</div>
+                        </td>
+                        <td style={{ padding: '1rem', color: '#555' }}>
+                          {customer.email}
+                        </td>
+                        <td style={{ padding: '1rem', color: '#333', fontWeight: 600 }}>
+                          {customerOrderCount}
+                        </td>
+                        <td style={{ padding: '1rem' }}>
+                          <span style={{
+                            background: '#e9ecef',
+                            padding: '0.3rem 0.7rem',
                             borderRadius: '4px',
-                            fontSize: '0.8rem',
-                            fontWeight: 500,
-                            cursor: customerBusyId === customer._id ? 'not-allowed' : 'pointer',
-                            opacity: customerBusyId === customer._id ? 0.6 : 1,
-                            transition: 'all 0.2s'
-                          }}
-                          onMouseEnter={(e) => !customerBusyId && (e.target.style.background = '#dc3545', e.target.style.color = '#fff')}
-                          onMouseLeave={(e) => !customerBusyId && (e.target.style.background = '#fff', e.target.style.color = '#dc3545')}
-                        >
-                          {customerBusyId === customer._id ? 'Deleting...' : 'Delete'}
-                        </button>
-                      </td>
-                    </tr>
-                  ))
+                            fontSize: '0.85rem',
+                            fontWeight: 500
+                          }}>
+                            {customer.loyaltyTier || 'Standard'}
+                          </span>
+                        </td>
+                        <td style={{ padding: '1rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                          <button
+                            disabled={customerBusyId === customer._id}
+                            onClick={() => openCustomerDetailsModal(customer)}
+                            title="View full customer details"
+                            style={{
+                              padding: '0.4rem 0.8rem',
+                              border: '1px solid #0066cc',
+                              background: '#fff',
+                              color: '#0066cc',
+                              borderRadius: '4px',
+                              fontSize: '0.8rem',
+                              fontWeight: 500,
+                              cursor: customerBusyId === customer._id ? 'not-allowed' : 'pointer',
+                              opacity: customerBusyId === customer._id ? 0.6 : 1,
+                              transition: 'all 0.2s'
+                            }}
+                            onMouseEnter={(e) => !customerBusyId && (e.target.style.background = '#0066cc', e.target.style.color = '#fff')}
+                            onMouseLeave={(e) => !customerBusyId && (e.target.style.background = '#fff', e.target.style.color = '#0066cc')}
+                          >
+                            Info
+                          </button>
+                          <button
+                            disabled={customerBusyId === customer._id}
+                            onClick={() => deleteCustomer(customer._id)}
+                            style={{
+                              padding: '0.4rem 0.8rem',
+                              border: '1px solid #dc3545',
+                              background: '#fff',
+                              color: '#dc3545',
+                              borderRadius: '4px',
+                              fontSize: '0.8rem',
+                              fontWeight: 500,
+                              cursor: customerBusyId === customer._id ? 'not-allowed' : 'pointer',
+                              opacity: customerBusyId === customer._id ? 0.6 : 1,
+                              transition: 'all 0.2s'
+                            }}
+                            onMouseEnter={(e) => !customerBusyId && (e.target.style.background = '#dc3545', e.target.style.color = '#fff')}
+                            onMouseLeave={(e) => !customerBusyId && (e.target.style.background = '#fff', e.target.style.color = '#dc3545')}
+                          >
+                            {customerBusyId === customer._id ? 'Deleting...' : 'Delete'}
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
                 ) : (
                   <tr>
                     <td colSpan={5} style={{
@@ -2140,7 +2457,12 @@ export default function AdminDashboardPage() {
                       textAlign: 'center',
                       color: '#999'
                     }}>
-                      No customers found.
+                      {customerSearchQuery.trim() 
+                        ? 'No customers match your search.' 
+                        : customerLoyaltyFilter === 'loyalty'
+                          ? 'No loyalty customers found.'
+                          : 'No customers found.'
+                      }
                     </td>
                   </tr>
                 )}
@@ -2148,6 +2470,419 @@ export default function AdminDashboardPage() {
             </table>
           </div>
         </section>
+        )}
+
+        {isCustomerDetailsModalOpen && selectedCustomerDetails && (
+          <div
+            role="presentation"
+            onClick={closeCustomerDetailsModal}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(18, 18, 18, 0.65)',
+              backdropFilter: 'blur(6px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '1rem',
+              zIndex: 1000,
+              overflowY: 'auto'
+            }}
+          >
+            <div
+              role="dialog"
+              aria-modal="true"
+              onClick={(event) => event.stopPropagation()}
+              style={{
+                width: 'min(100%, 900px)',
+                background: '#fff',
+                borderRadius: '24px',
+                border: '1px solid #eadfd6',
+                boxShadow: '0 24px 60px rgba(0, 0, 0, 0.28)',
+                overflow: 'hidden',
+                margin: 'auto 0'
+              }}
+            >
+              {/* Modal Header */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'start',
+                gap: '1rem',
+                padding: '2rem',
+                borderBottom: '1px solid #f1e8ea',
+                background: '#f9f7f4'
+              }}>
+                <div>
+                  <h2 style={{
+                    margin: 0,
+                    color: '#6f0022',
+                    fontSize: '1.8rem',
+                    fontFamily: 'Cormorant Garamond, serif',
+                    fontWeight: 600
+                  }}>
+                    {selectedCustomerDetails.fullName}
+                  </h2>
+                  <p style={{ margin: '0.5rem 0 0', color: '#666', fontSize: '0.95rem' }}>
+                    Customer ID: {selectedCustomerDetails._id}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={closeCustomerDetailsModal}
+                  aria-label="Close customer details dialog"
+                  style={{
+                    width: '2.9rem',
+                    height: '2.9rem',
+                    borderRadius: '50%',
+                    border: '1px solid #eadfd6',
+                    background: '#fff',
+                    color: '#6f0022',
+                    fontSize: '1.45rem',
+                    lineHeight: 1,
+                    cursor: 'pointer',
+                    transition: 'background 0.2s'
+                  }}
+                  onMouseEnter={(e) => e.target.style.background = '#f1e8ea'}
+                  onMouseLeave={(e) => e.target.style.background = '#fff'}
+                >
+                  ×
+                </button>
+              </div>
+
+              {/* Modal Content */}
+              <div style={{ padding: '2rem', maxHeight: '70vh', overflowY: 'auto' }}>
+                {customerDetailsError && (
+                  <div style={{
+                    background: '#f8d7da',
+                    color: '#721c24',
+                    padding: '1rem',
+                    borderRadius: '8px',
+                    marginBottom: '1.5rem',
+                    border: '1px solid #f1b0b7'
+                  }}>
+                    {customerDetailsError}
+                  </div>
+                )}
+
+                {isLoadingCustomerDetails ? (
+                  <div style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>
+                    Loading customer details...
+                  </div>
+                ) : (
+                  <>
+                    {/* Personal Information Section */}
+                    <div style={{ marginBottom: '2rem' }}>
+                      <h3 style={{
+                        margin: '0 0 1rem',
+                        color: '#6f0022',
+                        fontSize: '1.2rem',
+                        fontFamily: 'Cormorant Garamond, serif',
+                        fontWeight: 600,
+                        borderBottom: '2px solid #e0bf63',
+                        paddingBottom: '0.5rem'
+                      }}>
+                        Personal Information
+                      </h3>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                        <div>
+                          <p style={{ margin: '0 0 0.3rem', color: '#666', fontSize: '0.9rem', fontWeight: 500, textTransform: 'uppercase' }}>Full Name</p>
+                          <p style={{ margin: 0, color: '#333', fontSize: '1rem', fontWeight: 500 }}>{selectedCustomerDetails.fullName}</p>
+                        </div>
+                        <div>
+                          <p style={{ margin: '0 0 0.3rem', color: '#666', fontSize: '0.9rem', fontWeight: 500, textTransform: 'uppercase' }}>Email</p>
+                          <p style={{ margin: 0, color: '#333', fontSize: '1rem', wordBreak: 'break-all' }}>{selectedCustomerDetails.email}</p>
+                        </div>
+                        <div>
+                          <p style={{ margin: '0 0 0.3rem', color: '#666', fontSize: '0.9rem', fontWeight: 500, textTransform: 'uppercase' }}>Phone</p>
+                          <p style={{ margin: 0, color: '#333', fontSize: '1rem' }}>{selectedCustomerDetails.phone || 'N/A'}</p>
+                        </div>
+                        <div>
+                          <p style={{ margin: '0 0 0.3rem', color: '#666', fontSize: '0.9rem', fontWeight: 500, textTransform: 'uppercase' }}>Registered Date</p>
+                          <p style={{ margin: 0, color: '#333', fontSize: '1rem' }}>
+                            {selectedCustomerDetails.registeredDate 
+                              ? new Date(selectedCustomerDetails.registeredDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+                              : 'N/A'
+                            }
+                          </p>
+                        </div>
+                      </div>
+                      {selectedCustomerDetails.address && (
+                        <div style={{ marginTop: '1rem' }}>
+                          <p style={{ margin: '0 0 0.3rem', color: '#666', fontSize: '0.9rem', fontWeight: 500, textTransform: 'uppercase' }}>Address</p>
+                          <p style={{ margin: 0, color: '#333', fontSize: '1rem' }}>
+                            {selectedCustomerDetails.address.street}, {selectedCustomerDetails.address.city}, {selectedCustomerDetails.address.state} {selectedCustomerDetails.address.zipCode}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Order Summary Section */}
+                    <div style={{ marginBottom: '2rem' }}>
+                      <h3 style={{
+                        margin: '0 0 1rem',
+                        color: '#6f0022',
+                        fontSize: '1.2rem',
+                        fontFamily: 'Cormorant Garamond, serif',
+                        fontWeight: 600,
+                        borderBottom: '2px solid #e0bf63',
+                        paddingBottom: '0.5rem'
+                      }}>
+                        Order Summary
+                      </h3>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
+                        <div style={{
+                          background: '#f8fafc',
+                          border: '1px solid #e9ecef',
+                          borderRadius: '10px',
+                          padding: '1rem',
+                          textAlign: 'center'
+                        }}>
+                          <p style={{ margin: '0 0 0.5rem', color: '#666', fontSize: '0.9rem', fontWeight: 500 }}>Total Orders</p>
+                          <p style={{ margin: 0, color: '#0066cc', fontSize: '1.8rem', fontWeight: 700 }}>{selectedCustomerDetails.orderCount}</p>
+                        </div>
+                        <div style={{
+                          background: '#f8fafc',
+                          border: '1px solid #e9ecef',
+                          borderRadius: '10px',
+                          padding: '1rem',
+                          textAlign: 'center'
+                        }}>
+                          <p style={{ margin: '0 0 0.5rem', color: '#666', fontSize: '0.9rem', fontWeight: 500 }}>Total Spent</p>
+                          <p style={{ margin: 0, color: '#28a745', fontSize: '1.8rem', fontWeight: 700 }}>LKR {Math.round(selectedCustomerDetails.totalSpent).toLocaleString()}</p>
+                        </div>
+                        <div style={{
+                          background: '#f8fafc',
+                          border: '1px solid #e9ecef',
+                          borderRadius: '10px',
+                          padding: '1rem',
+                          textAlign: 'center'
+                        }}>
+                          <p style={{ margin: '0 0 0.5rem', color: '#666', fontSize: '0.9rem', fontWeight: 500 }}>Avg. Order Value</p>
+                          <p style={{ margin: 0, color: '#6f0022', fontSize: '1.8rem', fontWeight: 700 }}>
+                            LKR {selectedCustomerDetails.orderCount > 0 ? Math.round(selectedCustomerDetails.totalSpent / selectedCustomerDetails.orderCount).toLocaleString() : '0'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Loyalty Program Section */}
+                    <div style={{ marginBottom: '2rem' }}>
+                      <h3 style={{
+                        margin: '0 0 1rem',
+                        color: '#6f0022',
+                        fontSize: '1.2rem',
+                        fontFamily: 'Cormorant Garamond, serif',
+                        fontWeight: 600,
+                        borderBottom: '2px solid #e0bf63',
+                        paddingBottom: '0.5rem'
+                      }}>
+                        Loyalty Program
+                      </h3>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                        <div style={{
+                          background: '#f8fafc',
+                          border: '1px solid #e9ecef',
+                          borderRadius: '10px',
+                          padding: '1rem'
+                        }}>
+                          <p style={{ margin: '0 0 0.5rem', color: '#666', fontSize: '0.9rem', fontWeight: 500, textTransform: 'uppercase' }}>Loyalty Tier</p>
+                          <p style={{ 
+                            margin: 0, 
+                            color: '#6f0022', 
+                            fontSize: '1.3rem', 
+                            fontWeight: 700,
+                            background: selectedCustomerDetails.loyaltyTierStatus === 'Platinum' ? '#3d5a80' : 
+                                        selectedCustomerDetails.loyaltyTierStatus === 'Gold' ? '#e0bf63' :
+                                        selectedCustomerDetails.loyaltyTierStatus === 'Silver' ? '#c0c0c0' : '#999',
+                            color: selectedCustomerDetails.loyaltyTierStatus === 'Gold' ? '#333' : '#fff',
+                            padding: '0.5rem 1rem',
+                            borderRadius: '8px',
+                            textAlign: 'center',
+                            width: 'fit-content'
+                          }}>
+                            {selectedCustomerDetails.loyaltyTierStatus}
+                          </p>
+                        </div>
+                        <div style={{
+                          background: '#f8fafc',
+                          border: '1px solid #e9ecef',
+                          borderRadius: '10px',
+                          padding: '1rem'
+                        }}>
+                          <p style={{ margin: '0 0 0.5rem', color: '#666', fontSize: '0.9rem', fontWeight: 500, textTransform: 'uppercase' }}>Loyalty Points</p>
+                          <p style={{ margin: 0, color: '#e0bf63', fontSize: '1.3rem', fontWeight: 700 }}>{selectedCustomerDetails.loyaltyPointsBalance}</p>
+                          <p style={{ margin: '0.3rem 0 0', color: '#999', fontSize: '0.85rem' }}>
+                            {selectedCustomerDetails.isLoyalty ? 'Active Member' : 'Not a member'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Order History Section */}
+                    {selectedCustomerDetails.orders && selectedCustomerDetails.orders.length > 0 ? (
+                      <div style={{ marginBottom: '2rem' }}>
+                        <h3 style={{
+                          margin: '0 0 1rem',
+                          color: '#6f0022',
+                          fontSize: '1.2rem',
+                          fontFamily: 'Cormorant Garamond, serif',
+                          fontWeight: 600,
+                          borderBottom: '2px solid #e0bf63',
+                          paddingBottom: '0.5rem'
+                        }}>
+                          Order History
+                        </h3>
+                        <div style={{ overflowX: 'auto' }}>
+                          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+                            <thead>
+                              <tr style={{ background: '#f8f9fa', borderBottom: '2px solid #e9ecef' }}>
+                                <th style={{ padding: '0.8rem', textAlign: 'left', fontWeight: 600, color: '#333' }}>Order #</th>
+                                <th style={{ padding: '0.8rem', textAlign: 'left', fontWeight: 600, color: '#333' }}>Date</th>
+                                <th style={{ padding: '0.8rem', textAlign: 'left', fontWeight: 600, color: '#333' }}>Items</th>
+                                <th style={{ padding: '0.8rem', textAlign: 'right', fontWeight: 600, color: '#333' }}>Amount</th>
+                                <th style={{ padding: '0.8rem', textAlign: 'left', fontWeight: 600, color: '#333' }}>Status</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {selectedCustomerDetails.orders.map((order) => {
+                                const itemCount = Array.isArray(order.items)
+                                  ? order.items.reduce((sum, item) => sum + Number(item.quantity || 0), 0)
+                                  : 0;
+                                
+                                const statusColor = order.status === 'Completed'
+                                  ? { bg: '#d4edda', text: '#155724' }
+                                  : order.status === 'Pending'
+                                    ? { bg: '#fff3cd', text: '#856404' }
+                                    : ['Cancelled', 'Refunded'].includes(order.status)
+                                      ? { bg: '#f8d7da', text: '#721c24' }
+                                      : { bg: '#e2e3e5', text: '#383d41' };
+
+                                return (
+                                  <tr key={order._id} style={{ borderBottom: '1px solid #e9ecef' }}>
+                                    <td style={{ padding: '0.8rem', fontWeight: 600, color: '#333' }}>{order.orderNumber}</td>
+                                    <td style={{ padding: '0.8rem', color: '#555' }}>
+                                      {new Date(order.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                                    </td>
+                                    <td style={{ padding: '0.8rem', color: '#555' }}>{itemCount} item{itemCount !== 1 ? 's' : ''}</td>
+                                    <td style={{ padding: '0.8rem', textAlign: 'right', fontWeight: 700, color: '#6f0022' }}>LKR {Math.round(Number(order.total || 0)).toLocaleString()}</td>
+                                    <td style={{ padding: '0.8rem' }}>
+                                      <span style={{
+                                        background: statusColor.bg,
+                                        color: statusColor.text,
+                                        padding: '0.3rem 0.7rem',
+                                        borderRadius: '999px',
+                                        fontSize: '0.8rem',
+                                        fontWeight: 600,
+                                        display: 'inline-block'
+                                      }}>
+                                        {order.status}
+                                      </span>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{
+                        background: '#f8fafc',
+                        border: '1px solid #e9ecef',
+                        borderRadius: '10px',
+                        padding: '1.5rem',
+                        textAlign: 'center',
+                        color: '#999',
+                        marginBottom: '2rem'
+                      }}>
+                        No orders yet.
+                      </div>
+                    )}
+
+                    {/* Coupons Used Section */}
+                    {selectedCustomerDetails.couponsUsed && selectedCustomerDetails.couponsUsed.length > 0 ? (
+                      <div style={{ marginBottom: '2rem' }}>
+                        <h3 style={{
+                          margin: '0 0 1rem',
+                          color: '#6f0022',
+                          fontSize: '1.2rem',
+                          fontFamily: 'Cormorant Garamond, serif',
+                          fontWeight: 600,
+                          borderBottom: '2px solid #e0bf63',
+                          paddingBottom: '0.5rem'
+                        }}>
+                          Coupons Used
+                        </h3>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '1rem' }}>
+                          {selectedCustomerDetails.couponsUsed.map((coupon, idx) => (
+                            <div key={idx} style={{
+                              background: '#f8fafc',
+                              border: '1px solid #e9ecef',
+                              borderRadius: '10px',
+                              padding: '1rem'
+                            }}>
+                              <p style={{ margin: '0 0 0.5rem', color: '#666', fontSize: '0.85rem', fontWeight: 500, textTransform: 'uppercase' }}>Code</p>
+                              <p style={{ margin: '0 0 0.8rem', color: '#6f0022', fontSize: '1.1rem', fontWeight: 700, fontFamily: 'monospace' }}>{coupon.code}</p>
+                              <p style={{ margin: '0 0 0.3rem', color: '#666', fontSize: '0.85rem', fontWeight: 500, textTransform: 'uppercase' }}>Discount</p>
+                              <p style={{ margin: '0 0 0.8rem', color: '#28a745', fontSize: '1rem', fontWeight: 600 }}>LKR {Math.round(coupon.discount).toLocaleString()}</p>
+                              <p style={{ margin: 0, color: '#999', fontSize: '0.85rem' }}>Order: {coupon.orderNumber}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{
+                        background: '#f8fafc',
+                        border: '1px solid #e9ecef',
+                        borderRadius: '10px',
+                        padding: '1.5rem',
+                        textAlign: 'center',
+                        color: '#999',
+                        marginBottom: '2rem'
+                      }}>
+                        No coupons used yet.
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+
+              {/* Modal Footer */}
+              <div style={{
+                padding: '1.5rem 2rem',
+                borderTop: '1px solid #f1e8ea',
+                background: '#f9f7f4',
+                display: 'flex',
+                justifyContent: 'flex-end',
+                gap: '1rem'
+              }}>
+                <button
+                  type="button"
+                  onClick={closeCustomerDetailsModal}
+                  style={{
+                    border: '1px solid #dee2e6',
+                    color: '#6b7280',
+                    background: '#fff',
+                    padding: '0.8rem 1.5rem',
+                    fontSize: '0.95rem',
+                    borderRadius: '999px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.background = '#f1e8ea';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.background = '#fff';
+                  }}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
         )}
 
         {(isAddBannerModalOpen || isEditBannerModalOpen) && (
@@ -2171,7 +2906,7 @@ export default function AdminDashboardPage() {
               aria-modal="true"
               onClick={(event) => event.stopPropagation()}
               style={{
-                width: 'min(100%, 600px)',
+                width: 'min(100%, 820px)',
                 background: '#fff',
                 borderRadius: '24px',
                 border: '1px solid #eadfd6',
@@ -2179,51 +2914,186 @@ export default function AdminDashboardPage() {
                 overflow: 'hidden'
               }}
             >
-              <div style={{ padding: '2rem', borderBottom: '1px solid #f1e8ea', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h3 style={{ margin: 0, color: '#6f0022', fontSize: '1.6rem', fontFamily: 'Cormorant Garamond, serif', fontWeight: 600 }}>
-                  {isEditBannerModalOpen ? 'Edit Banner' : 'Create New Banner'}
-                </h3>
-                <button
-                  type="button"
-                  onClick={() => { setIsAddBannerModalOpen(false); setIsEditBannerModalOpen(false); }}
-                  style={{ width: '2.9rem', height: '2.9rem', borderRadius: '50%', border: '1px solid #eadfd6', background: '#fff', color: '#6f0022', fontSize: '1.45rem', lineHeight: 1, cursor: 'pointer' }}
-                >
-                  ×
-                </button>
+              {/* Header with gradient accent */}
+              <div style={{
+                position: 'relative',
+                overflow: 'hidden',
+                paddingBottom: '0'
+              }}>
+                {/* Accent bar at top */}
+                <div style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: '4px',
+                  background: 'linear-gradient(90deg, #6f0022, #e0bf63)',
+                }}></div>
+                
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'start',
+                  gap: '1rem',
+                  padding: '2.5rem 2.5rem 2rem',
+                  background: 'linear-gradient(135deg, #fff9f7 0%, #f9f7f4 100%)'
+                }}>
+                  <div style={{ flex: 1 }}>
+                    <h3 style={{
+                      margin: 0,
+                      color: '#6f0022',
+                      fontSize: '2rem',
+                      fontFamily: 'Cormorant Garamond, serif',
+                      fontWeight: 600,
+                      letterSpacing: '0.5px'
+                    }}>
+                      {isEditBannerModalOpen ? 'Edit Banner' : 'Create Banner'}
+                    </h3>
+                    <p style={{ 
+                      margin: '0.6rem 0 0', 
+                      color: '#888', 
+                      fontSize: '0.95rem',
+                      fontWeight: 400
+                    }}>
+                      {isEditBannerModalOpen ? 'Update your banner content and settings' : 'Create a new promotional banner for your store'}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => { setIsAddBannerModalOpen(false); setIsEditBannerModalOpen(false); }}
+                    style={{
+                      width: '2.8rem',
+                      height: '2.8rem',
+                      borderRadius: '50%',
+                      border: '1px solid #e0bf63',
+                      background: '#fff',
+                      color: '#6f0022',
+                      fontSize: '1.5rem',
+                      lineHeight: 1,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.background = '#f1e8ea';
+                      e.target.style.transform = 'scale(1.05)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.background = '#fff';
+                      e.target.style.transform = 'scale(1)';
+                    }}
+                  >
+                    ×
+                  </button>
+                </div>
               </div>
 
-              <form onSubmit={isEditBannerModalOpen ? updateBanner : createBanner} style={{ padding: '2rem' }}>
+              {/* Form Content */}
+              <form onSubmit={isEditBannerModalOpen ? updateBanner : createBanner} style={{ padding: '2.5rem', background: '#fff' }}>
                 {error && (
                   <div style={{
-                    background: '#f8d7da',
+                    background: '#fff5f5',
+                    border: '1px solid #f8d7da',
                     color: '#721c24',
-                    padding: '0.9rem 1rem',
-                    borderRadius: '10px',
-                    border: '1px solid #f1b0b7',
+                    padding: '1rem 1.2rem',
+                    borderRadius: '12px',
+                    marginBottom: '1.8rem',
                     fontSize: '0.92rem',
                     fontWeight: 500,
-                    marginBottom: '1.5rem'
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.8rem'
                   }}>
+                    <span style={{ fontSize: '1.2rem' }}>⚠</span>
                     {error}
                   </div>
                 )}
-                <div style={{ marginBottom: '1.5rem' }}>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, color: '#333' }}>Banner Message</label>
+
+                {/* Banner Message */}
+                <div style={{ marginBottom: '1.8rem' }}>
+                  <label style={{
+                    display: 'block',
+                    color: '#333',
+                    fontSize: '0.9rem',
+                    fontWeight: 600,
+                    marginBottom: '0.6rem',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.3px'
+                  }}>
+                    Banner Message
+                  </label>
                   <textarea
                     value={bannerForm.message}
                     onChange={(e) => setBannerForm({ ...bannerForm, message: e.target.value })}
-                    placeholder="Enter banner message (e.g., 'New collection launched! Check it out.')"
-                    style={{ width: '100%', minHeight: '100px', padding: '0.75rem', border: '1px solid #dee2e6', borderRadius: '8px', fontFamily: 'inherit', fontSize: '0.95rem', resize: 'vertical' }}
+                    placeholder="Enter your banner message (e.g., 'New collection launched! Check it out.')"
+                    style={{
+                      width: '100%',
+                      minHeight: '100px',
+                      padding: '0.95rem 1.1rem',
+                      border: '1px solid #e0e7ff',
+                      borderRadius: '12px',
+                      fontFamily: 'Poppins, sans-serif',
+                      fontSize: '1rem',
+                      background: '#f9f9f9',
+                      resize: 'vertical',
+                      transition: 'all 0.2s',
+                      boxSizing: 'border-box'
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.border = '2px solid #6f0022';
+                      e.target.style.background = '#fff';
+                      e.target.style.boxShadow = '0 4px 12px rgba(111, 0, 34, 0.1)';
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.border = '1px solid #e0e7ff';
+                      e.target.style.background = '#f9f9f9';
+                      e.target.style.boxShadow = 'none';
+                    }}
                   />
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+                {/* Banner Type and Background Color */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.8rem', marginBottom: '1.8rem' }}>
                   <div>
-                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, color: '#333' }}>Banner Type</label>
+                    <label style={{
+                      display: 'block',
+                      color: '#333',
+                      fontSize: '0.9rem',
+                      fontWeight: 600,
+                      marginBottom: '0.6rem',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.3px'
+                    }}>
+                      Banner Type
+                    </label>
                     <select
                       value={bannerForm.type}
                       onChange={(e) => setBannerForm({ ...bannerForm, type: e.target.value })}
-                      style={{ width: '100%', padding: '0.75rem', border: '1px solid #dee2e6', borderRadius: '8px', fontSize: '0.95rem' }}
+                      style={{
+                        width: '100%',
+                        padding: '0.95rem 1.1rem',
+                        border: '1px solid #e0e7ff',
+                        borderRadius: '12px',
+                        fontSize: '1rem',
+                        fontFamily: 'Poppins, sans-serif',
+                        background: '#f9f9f9',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        boxSizing: 'border-box'
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.border = '2px solid #6f0022';
+                        e.target.style.background = '#fff';
+                        e.target.style.boxShadow = '0 4px 12px rgba(111, 0, 34, 0.1)';
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.border = '1px solid #e0e7ff';
+                        e.target.style.background = '#f9f9f9';
+                        e.target.style.boxShadow = 'none';
+                      }}
                     >
                       <option value="info">Information</option>
                       <option value="success">Success</option>
@@ -2232,67 +3102,236 @@ export default function AdminDashboardPage() {
                     </select>
                   </div>
                   <div>
-                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, color: '#333' }}>Background Color</label>
-                    <input
-                      type="color"
-                      value={bannerForm.backgroundColor}
-                      onChange={(e) => setBannerForm({ ...bannerForm, backgroundColor: e.target.value })}
-                      style={{ width: '100%', height: '2.5rem', border: '1px solid #dee2e6', borderRadius: '8px', cursor: 'pointer' }}
-                    />
+                    <label style={{
+                      display: 'block',
+                      color: '#333',
+                      fontSize: '0.9rem',
+                      fontWeight: 600,
+                      marginBottom: '0.6rem',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.3px'
+                    }}>
+                      Background Color
+                    </label>
+                    <div style={{
+                      display: 'flex',
+                      gap: '0.8rem',
+                      alignItems: 'center'
+                    }}>
+                      <input
+                        type="color"
+                        value={bannerForm.backgroundColor}
+                        onChange={(e) => setBannerForm({ ...bannerForm, backgroundColor: e.target.value })}
+                        style={{
+                          width: '60px',
+                          height: '44px',
+                          border: '1px solid #e0e7ff',
+                          borderRadius: '12px',
+                          cursor: 'pointer',
+                          transition: 'border-color 0.2s'
+                        }}
+                        onFocus={(e) => e.target.style.border = '2px solid #6f0022'}
+                        onBlur={(e) => e.target.style.border = '1px solid #e0e7ff'}
+                      />
+                      <span style={{ color: '#999', fontSize: '0.85rem', fontFamily: 'monospace' }}>{bannerForm.backgroundColor}</span>
+                    </div>
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+                {/* Text Color and Start Date */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.8rem', marginBottom: '1.8rem' }}>
                   <div>
-                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, color: '#333' }}>Text Color</label>
-                    <input
-                      type="color"
-                      value={bannerForm.textColor}
-                      onChange={(e) => setBannerForm({ ...bannerForm, textColor: e.target.value })}
-                      style={{ width: '100%', height: '2.5rem', border: '1px solid #dee2e6', borderRadius: '8px', cursor: 'pointer' }}
-                    />
+                    <label style={{
+                      display: 'block',
+                      color: '#333',
+                      fontSize: '0.9rem',
+                      fontWeight: 600,
+                      marginBottom: '0.6rem',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.3px'
+                    }}>
+                      Text Color
+                    </label>
+                    <div style={{
+                      display: 'flex',
+                      gap: '0.8rem',
+                      alignItems: 'center'
+                    }}>
+                      <input
+                        type="color"
+                        value={bannerForm.textColor}
+                        onChange={(e) => setBannerForm({ ...bannerForm, textColor: e.target.value })}
+                        style={{
+                          width: '60px',
+                          height: '44px',
+                          border: '1px solid #e0e7ff',
+                          borderRadius: '12px',
+                          cursor: 'pointer',
+                          transition: 'border-color 0.2s'
+                        }}
+                        onFocus={(e) => e.target.style.border = '2px solid #6f0022'}
+                        onBlur={(e) => e.target.style.border = '1px solid #e0e7ff'}
+                      />
+                      <span style={{ color: '#999', fontSize: '0.85rem', fontFamily: 'monospace' }}>{bannerForm.textColor}</span>
+                    </div>
                   </div>
                   <div>
-                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, color: '#333' }}>Start Date (optional)</label>
+                    <label style={{
+                      display: 'block',
+                      color: '#333',
+                      fontSize: '0.9rem',
+                      fontWeight: 600,
+                      marginBottom: '0.6rem',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.3px'
+                    }}>
+                      Start Date
+                    </label>
                     <input
                       type="date"
                       value={bannerForm.startDate}
                       onChange={(e) => setBannerForm({ ...bannerForm, startDate: e.target.value })}
                       min={new Date().toISOString().split('T')[0]}
-                      style={{ width: '100%', padding: '0.75rem', border: '1px solid #dee2e6', borderRadius: '8px', fontSize: '0.95rem' }}
+                      style={{
+                        width: '100%',
+                        padding: '0.95rem 1.1rem',
+                        border: '1px solid #e0e7ff',
+                        borderRadius: '12px',
+                        fontSize: '1rem',
+                        fontFamily: 'Poppins, sans-serif',
+                        background: '#f9f9f9',
+                        transition: 'all 0.2s',
+                        boxSizing: 'border-box'
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.border = '2px solid #6f0022';
+                        e.target.style.background = '#fff';
+                        e.target.style.boxShadow = '0 4px 12px rgba(111, 0, 34, 0.1)';
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.border = '1px solid #e0e7ff';
+                        e.target.style.background = '#f9f9f9';
+                        e.target.style.boxShadow = 'none';
+                      }}
                       title="Start date cannot be in the past"
                     />
                   </div>
                 </div>
 
-                <div style={{ marginBottom: '1.5rem' }}>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, color: '#333' }}>End Date (optional)</label>
-                  <input
-                    type="date"
-                    value={bannerForm.endDate}
-                    onChange={(e) => setBannerForm({ ...bannerForm, endDate: e.target.value })}
-                    min={new Date().toISOString().split('T')[0]}
-                    style={{ width: '100%', padding: '0.75rem', border: '1px solid #dee2e6', borderRadius: '8px', fontSize: '0.95rem' }}
-                    title="End date cannot be in the past"
-                  />
+                {/* End Date and Active Status */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.8rem', marginBottom: '1.8rem' }}>
+                  <div>
+                    <label style={{
+                      display: 'block',
+                      color: '#333',
+                      fontSize: '0.9rem',
+                      fontWeight: 600,
+                      marginBottom: '0.6rem',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.3px'
+                    }}>
+                      End Date
+                    </label>
+                    <input
+                      type="date"
+                      value={bannerForm.endDate}
+                      onChange={(e) => setBannerForm({ ...bannerForm, endDate: e.target.value })}
+                      min={new Date().toISOString().split('T')[0]}
+                      style={{
+                        width: '100%',
+                        padding: '0.95rem 1.1rem',
+                        border: '1px solid #e0e7ff',
+                        borderRadius: '12px',
+                        fontSize: '1rem',
+                        fontFamily: 'Poppins, sans-serif',
+                        background: '#f9f9f9',
+                        transition: 'all 0.2s',
+                        boxSizing: 'border-box'
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.border = '2px solid #6f0022';
+                        e.target.style.background = '#fff';
+                        e.target.style.boxShadow = '0 4px 12px rgba(111, 0, 34, 0.1)';
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.border = '1px solid #e0e7ff';
+                        e.target.style.background = '#f9f9f9';
+                        e.target.style.boxShadow = 'none';
+                      }}
+                      title="End date cannot be in the past"
+                    />
+                  </div>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'flex-end',
+                    paddingBottom: '0.5rem'
+                  }}>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.8rem',
+                      padding: '0.8rem 1.1rem',
+                      background: '#f9f9f9',
+                      borderRadius: '12px',
+                      border: '1px solid #e0e7ff'
+                    }}>
+                      <input
+                        type="checkbox"
+                        id="isActiveBanner"
+                        checked={bannerForm.isActive}
+                        onChange={(e) => setBannerForm({ ...bannerForm, isActive: e.target.checked })}
+                        style={{
+                          width: '18px',
+                          height: '18px',
+                          cursor: 'pointer',
+                          accentColor: '#6f0022'
+                        }}
+                      />
+                      <label htmlFor="isActiveBanner" style={{
+                        fontWeight: 600,
+                        color: '#333',
+                        cursor: 'pointer',
+                        margin: 0,
+                        fontSize: '0.95rem'
+                      }}>
+                        Active
+                      </label>
+                    </div>
+                  </div>
                 </div>
 
-                <div style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <input
-                    type="checkbox"
-                    id="isActiveBanner"
-                    checked={bannerForm.isActive}
-                    onChange={(e) => setBannerForm({ ...bannerForm, isActive: e.target.checked })}
-                    style={{ width: '18px', height: '18px', cursor: 'pointer' }}
-                  />
-                  <label htmlFor="isActiveBanner" style={{ fontWeight: 600, color: '#333', cursor: 'pointer', margin: 0 }}>Banner is Active</label>
-                </div>
-
-                <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                {/* Action Buttons */}
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  gap: '1rem',
+                  flexWrap: 'wrap',
+                  marginTop: '2rem',
+                  paddingTop: '1.5rem',
+                  borderTop: '1px solid #f0f0f0'
+                }}>
                   <button
                     type="button"
                     onClick={() => { setIsAddBannerModalOpen(false); setIsEditBannerModalOpen(false); }}
-                    style={{ padding: '0.8rem 1.5rem', border: '1px solid #dee2e6', background: '#fff', color: '#333', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}
+                    style={{
+                      border: '1px solid #e0e7ff',
+                      color: '#666',
+                      background: '#f9f9f9',
+                      padding: '0.85rem 1.6rem',
+                      fontSize: '0.95rem',
+                      borderRadius: '999px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.background = '#f1f1f1';
+                      e.target.style.border = '1px solid #d0d0d0';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.background = '#f9f9f9';
+                      e.target.style.border = '1px solid #e0e7ff';
+                    }}
                   >
                     Cancel
                   </button>
@@ -2300,14 +3339,28 @@ export default function AdminDashboardPage() {
                     type="submit"
                     disabled={isSavingBanner}
                     style={{
-                      padding: '0.8rem 1.5rem',
-                      background: '#6f0022',
+                      background: isSavingBanner ? '#c9c9c9' : 'linear-gradient(135deg, #6f0022, #8b0029)',
                       color: '#fff',
                       border: 'none',
-                      borderRadius: '8px',
-                      fontWeight: 600,
+                      padding: '0.85rem 2rem',
+                      borderRadius: '999px',
+                      fontWeight: 700,
+                      fontSize: '0.95rem',
                       cursor: isSavingBanner ? 'not-allowed' : 'pointer',
-                      opacity: isSavingBanner ? 0.6 : 1
+                      transition: 'all 0.2s',
+                      boxShadow: isSavingBanner ? 'none' : '0 8px 16px rgba(111, 0, 34, 0.2)'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isSavingBanner) {
+                        e.target.style.boxShadow = '0 12px 24px rgba(111, 0, 34, 0.3)';
+                        e.target.style.transform = 'translateY(-2px)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isSavingBanner) {
+                        e.target.style.boxShadow = '0 8px 16px rgba(111, 0, 34, 0.2)';
+                        e.target.style.transform = 'translateY(0)';
+                      }
                     }}
                   >
                     {isSavingBanner ? 'Saving...' : (isEditBannerModalOpen ? 'Update Banner' : 'Create Banner')}

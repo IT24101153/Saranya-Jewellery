@@ -142,11 +142,18 @@ export default function CustomerSupportPage() {
   async function loadAppointmentStats() {
     try {
       setStatsLoading(true);
-      const response = await authManager.apiRequest('/api/appointments');
+      const response = await authManager.apiRequest('/api/appointments/my-bookings');
       if (!response.ok) return;
       const data = await response.json();
-      if (data.stats) {
-        setAppointmentStats(data.stats);
+      if (data.bookings && Array.isArray(data.bookings)) {
+        const bookings = data.bookings;
+        setAppointmentStats({
+          total: bookings.length,
+          completed: bookings.filter(a => a.status === 'completed').length,
+          noShow: bookings.filter(a => a.status === 'no-show').length,
+          cancelled: bookings.filter(a => a.status === 'cancelled').length,
+          confirmed: bookings.filter(a => a.status === 'confirmed').length
+        });
       }
     } catch (error) {
       console.error('Error loading appointment stats:', error);
