@@ -58,18 +58,18 @@ export default function CustomerCareDashboardPage() {
   
   // Offers state
   const [offers, setOffers] = useState([]);
-  const [editingOfferId, setEditingOfferId] = useState(null);
+  const [offersLoading, setOffersLoading] = useState(false);
+  const [offersError, setOffersError] = useState('');
   const [offerForm, setOfferForm] = useState({
     title: '',
     description: '',
+    offerType: 'Seasonal Offer',
     discountPercentage: '',
-    discountAmount: '',
-    validFrom: '',
     validUntil: '',
     couponCode: ''
   });
   const [isCreatingOffer, setIsCreatingOffer] = useState(false);
-  const [busyCouponOfferId, setBusyCouponOfferId] = useState('');
+  const [editingOfferId, setEditingOfferId] = useState(null);
 
   // Messages state
   const [chats, setChats] = useState([]);
@@ -89,7 +89,7 @@ export default function CustomerCareDashboardPage() {
   const [slots, setSlots] = useState([]);
   const [appointments, setAppointments] = useState([]);
   const [appointmentStats, setAppointmentStats] = useState({ total: 0, completed: 0, noShow: 0, cancelled: 0, confirmed: 0 });
-  const [slotForm, setSlotForm] = useState({ date: '', timeSlotIndex: 0, assignedStaff: '', isBlocked: false, blockReason: '' });
+  const [slotForm, setSlotForm] = useState({ date: '', timeSlotIndex: 0, capacity: 1, assignedStaff: '', isBlocked: false, blockReason: '' });
   const [editingSlotId, setEditingSlotId] = useState(null);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [appointmentStatusForm, setAppointmentStatusForm] = useState({ status: '', internalNotesAfter: '', followUpNote: '', followUpSuggested: false });
@@ -115,77 +115,172 @@ export default function CustomerCareDashboardPage() {
   // ============ DASHBOARD OVERVIEW FUNCTIONS ============
   async function loadDashboardOverview() {
     try {
-      // Fetch offers, reviews and chats and derive dashboard values
-      const [offersResp, reviewsResp, chatsResp] = await Promise.all([
-        authManager.apiRequest('/api/messages'),
-        authManager.apiRequest('/api/reviews'),
-        authManager.apiRequest('/api/chat/all')
-      ]);
-
-      const offersJson = await offersResp.json();
-      const offers = Array.isArray(offersJson) ? offersJson : (Array.isArray(offersJson.messages) ? offersJson.messages : []);
-      const activeOffers = Array.isArray(offers) ? offers.filter(m => m.type === 'promotion' && m.status === 'active').length : 0;
-
-      const reviewsJson = await reviewsResp.json();
-      const reviews = Array.isArray(reviewsJson.reviews) ? reviewsJson.reviews : (Array.isArray(reviewsJson) ? reviewsJson : []);
-      const pendingQuestions = reviews.filter(r => r.status === 'pending').length;
-      const totalReviews = reviews.length;
-      const answeredReviews = reviews.filter(r => r.status === 'approved').length;
-      const answeredRate = totalReviews > 0 ? Math.round((answeredReviews / totalReviews) * 100) : 0;
-
-      const chatsJson = await chatsResp.json();
-      const chats = Array.isArray(chatsJson) ? chatsJson : (Array.isArray(chatsJson.chats) ? chatsJson.chats : []);
-
-      // QA articles derived from messages of type 'general' or 'announcement'
-      const qaArticles = Array.isArray(offers)
-        ? offers.filter(m => ['general', 'announcement'].includes(m.type)).length
-        : 0;
-
-      // Build recent activities from offers, chats and reviews (merged & sorted)
-      const activities = [];
-      offers.forEach(o => {
-        activities.push({ type: 'offer', icon: '★', text: `${o.title}`, rawDate: new Date(o.createdAt || o.updatedAt || Date.now()) });
-      });
-      chats.forEach(c => {
-        const lastMsg = Array.isArray(c.messages) && c.messages.length ? c.messages[c.messages.length - 1] : null;
-        const text = lastMsg ? `${c.customerName}: ${lastMsg.message}` : `${c.customerName} started a chat`;
-        activities.push({ type: 'message', icon: '✉', text, rawDate: new Date(c.lastMessageAt || (lastMsg && lastMsg.timestamp) || Date.now()) });
-      });
-      reviews.forEach(r => {
-        activities.push({ type: 'review', icon: '◆', text: r.title || r.comment || `Review on ${r.productName || ''}`.trim(), rawDate: new Date(r.createdAt || Date.now()) });
-      });
-
-      activities.sort((a, b) => b.rawDate - a.rawDate);
-
-      const timeAgo = (date) => {
-        const diff = Math.floor((Date.now() - new Date(date)) / 1000);
-        if (diff < 60) return 'just now';
-        if (diff < 3600) return `${Math.floor(diff / 60)} minutes ago`;
-        if (diff < 86400) return `${Math.floor(diff / 3600)} hours ago`;
-        return `${Math.floor(diff / 86400)} days ago`;
-      };
-
-      const recentActivities = activities.slice(0, 6).map(a => ({ type: a.type, icon: a.icon, text: a.text, time: timeAgo(a.rawDate) }));
-
-      // Derive "top viewed questions" from initial customer chat messages (most common first messages)
-      const questionCounts = {};
-      chats.forEach(c => {
-        if (Array.isArray(c.messages) && c.messages.length) {
-          const first = String(c.messages[0].message || '').trim().slice(0, 220);
-          if (first) questionCounts[first] = (questionCounts[first] || 0) + 1;
+      // Prefer direct counts for promotions to avoid any mismatch
+      let activeOffers = 0;
+      try {
+        const promoResp = await authManager.apiRequest('/api/messages?type=promotion&status=active');
+        const promoData = await promoResp.json();
+        console.debug('promoResp.ok', promoResp.ok, 'promoData', promoData);
+        if (promoResp.ok && Array.isArray(promoData)) {
+          activeOffers = promoData.length;
+        } else if (promoResp.ok && promoData.length === undefined) {
+          // fallback when API returns object
+          activeOffers = 0;
         }
-      });
-      const topViewedQuestions = Object.entries(questionCounts)
-        .map(([text, views]) => ({ text, views }))
-        .sort((a, b) => b.views - a.views)
-        .slice(0, 6);
+      } catch (e) {
+        console.warn('Failed to load promotions directly, falling back to stats', e);
+      }
+
+      // If direct count failed, fall back to /api/messages/stats
+      if (!activeOffers) {
+        try {
+          const msgStatsResp = await authManager.apiRequest('/api/messages/stats');
+          const msgStats = await msgStatsResp.json();
+          console.debug('msgStatsResp.ok', msgStatsResp.ok, 'msgStats', msgStats);
+          activeOffers = msgStatsResp.ok ? (msgStats.activeMessages || 0) : 0;
+        } catch (e) {
+          console.warn('Failed to load message stats', e);
+        }
+      }
+
+      // Count total chats (not messages)
+      let qaArticles = 0; // reused field for backward compatibility with UI
+      let pendingQuestions = 0; // count of pending chats
+      try {
+        const chatsResp = await authManager.apiRequest('/api/chat/all');
+        const chatsData = await chatsResp.json();
+        console.debug('Chats data for chat count:', chatsData);
+        if (chatsResp.ok && Array.isArray(chatsData)) {
+          // Count total chats
+          qaArticles = chatsData.length;
+          console.debug('Total chats calculated:', qaArticles);
+          
+          // Count pending chats (status === 'pending')
+          pendingQuestions = chatsData.filter(chat => chat.status === 'pending').length;
+          console.debug('Pending chats calculated:', pendingQuestions);
+        }
+      } catch (e) {
+        console.warn('Failed to load chats for chat count', e);
+      }
+
+      // Chat stats for answered rate
+      let answeredRate = 0;
+      try {
+        const chatResp = await authManager.apiRequest('/api/chat/stats/summary');
+        const chatStats = await chatResp.json();
+        console.debug('chatResp.ok', chatResp.ok, 'chatStats', chatStats);
+        const totalChats = chatResp.ok ? (chatStats.totalChats || 0) : 0;
+        const resolvedChats = chatResp.ok ? (chatStats.resolvedChats || 0) : 0;
+        answeredRate = totalChats > 0 ? Math.round((resolvedChats / totalChats) * 100) : 0;
+      } catch (e) {
+        console.warn('Failed to load chat stats', e);
+      }
+
+      // Keep a lightweight recent activity and top questions using available data
+      const recentActivities = [];
+      const topViewedQuestions = [];
+      
+      // Load recent promotional offers for activity feed
+      try {
+        const offersResp = await authManager.apiRequest('/api/messages?type=promotion');
+        const offersData = await offersResp.json();
+        if (offersResp.ok && Array.isArray(offersData)) {
+          offersData.slice(0, 3).forEach((offer) => {
+            recentActivities.push({
+              type: 'offer',
+              icon: '★',
+              text: `New promotion: "${offer.title}"`,
+              time: new Date(offer.createdAt).toLocaleDateString()
+            });
+          });
+        }
+      } catch (e) {
+        console.warn('Failed to load offers for activity', e);
+      }
+      
+      // Add recent customer messages to activity feed
+      try {
+        const chatsResp = await authManager.apiRequest('/api/chat/all');
+        const chatsData = await chatsResp.json();
+        if (chatsResp.ok && Array.isArray(chatsData)) {
+          chatsData.slice(0, 3).forEach((chat) => {
+            if (chat.lastMessage) {
+              recentActivities.push({
+                type: 'message',
+                icon: '💬',
+                text: `Message from ${chat.customerName}`,
+                time: new Date(chat.lastMessageAt).toLocaleDateString()
+              });
+            }
+          });
+        }
+      } catch (e) {
+        console.warn('Failed to load chats for activity', e);
+      }
+      
+      // Add recent reviews to activity feed
+      try {
+        const reviewsResp = await authManager.apiRequest('/api/reviews');
+        const reviewsData = await reviewsResp.json();
+        if (reviewsResp.ok && Array.isArray(reviewsData)) {
+          reviewsData.slice(0, 3).forEach((review) => {
+            recentActivities.push({
+              type: 'review',
+              icon: '⭐',
+              text: `New review: "${review.title || review.message?.substring(0, 30)}"`,
+              time: new Date(review.createdAt).toLocaleDateString()
+            });
+          });
+        }
+      } catch (e) {
+        console.warn('Failed to load reviews for activity', e);
+      }
+      
+      // Sort activities by most recent and limit to 5
+      recentActivities.sort((a, b) => new Date(b.time) - new Date(a.time));
+      const sortedActivities = recentActivities.slice(0, 5);
+      
+      // Load top customer questions/messages for top questions section
+      try {
+        const chatsResp = await authManager.apiRequest('/api/chat/all');
+        const chatsData = await chatsResp.json();
+        if (chatsResp.ok && Array.isArray(chatsData)) {
+          // For each chat, get the full chat data to access all messages
+          for (const chatSummary of chatsData.slice(0, 10)) {
+            try {
+              const chatDetailResp = await authManager.apiRequest(`/api/chat/${chatSummary._id}`);
+              const chatDetail = await chatDetailResp.json();
+              
+              if (chatDetailResp.ok && chatDetail.messages && Array.isArray(chatDetail.messages)) {
+                // Filter for customer-only messages (questions from customers)
+                const customerMessages = chatDetail.messages.filter(m => m.sender === 'customer');
+                if (customerMessages.length > 0) {
+                  // Get the last customer message
+                  const lastCustomerMsg = customerMessages[customerMessages.length - 1];
+                  topViewedQuestions.push({
+                    text: lastCustomerMsg.message?.substring(0, 100),
+                    customerName: chatSummary.customerName,
+                    views: customerMessages.length
+                  });
+                }
+              }
+            } catch (e) {
+              console.warn(`Failed to load chat details for ${chatSummary._id}`, e);
+            }
+          }
+          // Limit to 5
+          topViewedQuestions = topViewedQuestions.slice(0, 5);
+        }
+      } catch (e) {
+        console.warn('Failed to load top customer questions', e);
+      }
 
       setDashboardStats({
         activeOffers,
         qaArticles,
         pendingQuestions,
         answeredRate,
-        recentActivities,
+        recentActivities: sortedActivities,
         topViewedQuestions,
       });
     } catch (err) {
@@ -196,20 +291,36 @@ export default function CustomerCareDashboardPage() {
   // ============ OFFERS FUNCTIONS ============
   async function loadOffers() {
     try {
-      const response = await authManager.apiRequest('/api/loyalty/offers/standard');
+      setOffersLoading(true);
+      setOffersError('');
+      // Query the backend directly for promotions
+      const response = await authManager.apiRequest('/api/messages?type=promotion');
       const data = await response.json();
+      
       if (response.ok) {
-        // All offers from this endpoint are standard customer offers
-        setOffers(Array.isArray(data) ? data : []);
+        const promotionalOffers = Array.isArray(data) ? data : [];
+        console.log('Loaded promotional offers:', promotionalOffers);
+        console.log('Number of promotional offers:', promotionalOffers.length);
+        console.log('Active offers count:', promotionalOffers.filter(o => o.status === 'active').length);
+        const totalSent = promotionalOffers.reduce((sum, o) => sum + (o.sentCount || 0), 0);
+        console.log('Total sent:', totalSent);
+        console.log('Debug - First offer:', promotionalOffers[0] || 'No offers');
+        setOffers(promotionalOffers);
+      } else {
+        console.error('Failed to load offers:', data);
+        setOffersError(data.message || 'Failed to load promotional offers');
       }
     } catch (err) {
       console.error('Error loading offers:', err);
+      setOffersError(err.message || 'Error loading promotional offers');
+    } finally {
+      setOffersLoading(false);
     }
   }
 
   async function createOffer(event) {
     event.preventDefault();
-    if (!offerForm.title || !offerForm.description || !offerForm.validFrom || !offerForm.validUntil || !offerForm.couponCode) {
+    if (!offerForm.title || !offerForm.description || !offerForm.validUntil || !offerForm.couponCode) {
       setError('All fields including valid dates and coupon code are required');
       return;
     }
@@ -220,128 +331,105 @@ export default function CustomerCareDashboardPage() {
       return;
     }
 
-    if (offerForm.validFrom < todayDate) {
-      setError('Offer valid from date cannot be in the past');
-      return;
-    }
-
     if (offerForm.validUntil < todayDate) {
       setError('Offer valid until date cannot be in the past');
-      return;
-    }
-
-    if (new Date(offerForm.validFrom) > new Date(offerForm.validUntil)) {
-      setError('Start date must be before end date');
       return;
     }
 
     setIsCreatingOffer(true);
     setError('');
     try {
-      if (editingOfferId) {
-        // Update existing offer
-        const response = await authManager.apiRequest(`/api/loyalty/offers/standard/${editingOfferId}`, {
-          method: 'PUT',
-          body: JSON.stringify({
-            title: offerForm.title,
-            description: offerForm.description,
-            discountPercentage: parsedDiscount,
-            discountAmount: Number(offerForm.discountAmount || 0),
-            validFrom: offerForm.validFrom,
-            validUntil: offerForm.validUntil,
-            couponCode: offerForm.couponCode
-          })
-        });
+      const endpoint = editingOfferId ? `/api/messages/${editingOfferId}` : '/api/messages';
+      const method = editingOfferId ? 'PUT' : 'POST';
 
-        const data = await response.json();
-        if (!response.ok) {
-          setError(data.message || 'Failed to update offer');
-        } else {
-          setOfferForm({ title: '', description: '', discountPercentage: '', discountAmount: '', validFrom: '', validUntil: '', couponCode: '' });
-          setEditingOfferId(null);
-          await loadOffers();
-        }
+      const response = await authManager.apiRequest(endpoint, {
+        method,
+        body: JSON.stringify({
+          title: offerForm.title,
+          message: offerForm.description,
+          type: 'promotion',
+          status: 'active',
+          targetAudience: 'all',
+          sendOnLogin: true,
+          validUntil: offerForm.validUntil,
+          discountPercentage: parsedDiscount,
+          couponCode: offerForm.couponCode
+        })
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        setError(data.message || 'Failed to create offer');
       } else {
-        // Create new offer
-        const response = await authManager.apiRequest('/api/loyalty/offers/standard/create', {
-          method: 'POST',
-          body: JSON.stringify({
-            title: offerForm.title,
-            description: offerForm.description,
-            discountPercentage: parsedDiscount,
-            discountAmount: Number(offerForm.discountAmount || 0),
-            validFrom: offerForm.validFrom,
-            validUntil: offerForm.validUntil,
-            couponCode: offerForm.couponCode
-          })
-        });
-
-        const data = await response.json();
-        if (!response.ok) {
-          setError(data.message || 'Failed to create offer');
-        } else {
-          setOfferForm({ title: '', description: '', discountPercentage: '', discountAmount: '', validFrom: '', validUntil: '', couponCode: '' });
-          await loadOffers();
-        }
+        setOfferForm({ title: '', description: '', offerType: 'Seasonal Offer', discountPercentage: '', validUntil: '', couponCode: '' });
+        setEditingOfferId(null);
+        setError('');
+        await loadOffers();
       }
     } catch (err) {
-      setError(err.message || 'Error saving offer');
+      setError(err.message || 'Error creating offer');
     } finally {
       setIsCreatingOffer(false);
     }
   }
 
-  function cancelEdit() {
-    setEditingOfferId(null);
-    setOfferForm({ title: '', description: '', discountPercentage: '', discountAmount: '', validFrom: '', validUntil: '', couponCode: '' });
-    setError('');
-  }
-
   function startEditOffer(offer) {
     setEditingOfferId(offer._id);
+    setError('');
     setOfferForm({
       title: offer.title || '',
-      description: offer.description || '',
-      discountPercentage: offer.discountPercentage || '',
-      discountAmount: offer.discountAmount || '',
-      validFrom: offer.validFrom || '',
-      validUntil: offer.validUntil || '',
+      description: offer.message || '',
+      offerType: 'Seasonal Offer',
+      discountPercentage: offer.discountPercentage ?? '',
+      validUntil: offer.validUntil ? new Date(offer.validUntil).toISOString().split('T')[0] : '',
       couponCode: offer.couponCode || ''
     });
+  }
+
+  function cancelEditOffer() {
+    setEditingOfferId(null);
+    setOfferForm({ title: '', description: '', offerType: 'Seasonal Offer', discountPercentage: '', validUntil: '', couponCode: '' });
     setError('');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   async function sendOfferEmails(offerId) {
-    setBusyCouponOfferId(offerId);
-    setError('');
+    if (!window.confirm('Send this offer to all customers?')) return;
+
     try {
-      const response = await authManager.apiRequest(`/api/loyalty/offers/standard/${offerId}/send-coupons`, {
+      setError('');
+      const response = await authManager.apiRequest(`/api/messages/${offerId}/send-email`, {
         method: 'POST'
       });
+
       const data = await response.json();
-      if (!response.ok) throw new Error(data.message || 'Failed to send emails');
-      await loadOffers();
+      if (response.ok) {
+        alert(`Offer sent to ${data.recipientsCount || 0} customers`);
+        await loadOffers();
+      } else {
+        setError(data.message || 'Failed to send offer');
+      }
     } catch (err) {
-      setError(err.message || 'Failed to send offer emails');
-    } finally {
-      setBusyCouponOfferId('');
+      setError(err.message || 'Error sending offer');
     }
   }
 
   async function deleteOffer(offerId) {
     if (!window.confirm('Delete this offer?')) return;
-    
-    setError('');
+
     try {
-      const response = await authManager.apiRequest(`/api/loyalty/offers/standard/${offerId}`, {
+      setError('');
+      const response = await authManager.apiRequest(`/api/messages/${offerId}`, {
         method: 'DELETE'
       });
+
       const data = await response.json();
-      if (!response.ok) throw new Error(data.message || 'Failed to delete offer');
-      await loadOffers();
+      if (response.ok) {
+        await loadOffers();
+      } else {
+        setError(data.message || 'Failed to delete offer');
+      }
     } catch (err) {
-      setError(err.message || 'Failed to delete offer');
+      setError(err.message || 'Error deleting offer');
     }
   }
 
@@ -545,6 +633,7 @@ export default function CustomerCareDashboardPage() {
           date: slotForm.date,
           startTime: selectedTimeSlot.start,
           endTime: selectedTimeSlot.end,
+          capacity: slotForm.capacity,
           assignedStaff: slotForm.assignedStaff,
           isBlocked: slotForm.isBlocked,
           blockReason: slotForm.blockReason
@@ -553,7 +642,7 @@ export default function CustomerCareDashboardPage() {
 
       const data = await response.json();
       if (response.ok) {
-        setSlotForm({ date: '', timeSlotIndex: 0, assignedStaff: '', isBlocked: false, blockReason: '' });
+        setSlotForm({ date: '', timeSlotIndex: 0, capacity: 1, assignedStaff: '', isBlocked: false, blockReason: '' });
         setEditingSlotId(null);
         await loadSlots();
       } else {
@@ -940,7 +1029,7 @@ export default function CustomerCareDashboardPage() {
                   </p>
                 </div>
 
-                {/* Q&A Articles Card */}
+                {/* Total Customer Messages Card */}
                 <div
                   style={{
                     background:
@@ -963,15 +1052,14 @@ export default function CustomerCareDashboardPage() {
                       <p
                         style={{
                           margin: 0,
-                          color: "#fff",
+                          color: "#e0bf63",
                           fontSize: "0.85rem",
                           fontWeight: 500,
                           textTransform: "uppercase",
                           letterSpacing: "0.5px",
-                          opacity: 0.8,
                         }}
                       >
-                        Q&A Articles
+                        Total Customer Messages
                       </p>
                       <h3
                         style={{
@@ -984,21 +1072,20 @@ export default function CustomerCareDashboardPage() {
                         {dashboardStats.qaArticles}
                       </h3>
                     </div>
-                    <span style={{ fontSize: "2.5rem" }}>☉</span>
+                    <span style={{ fontSize: "2.5rem" }}>💬</span>
                   </div>
                   <p
                     style={{
                       margin: 0,
-                      color: "#fff",
+                      color: "#e0bf63",
                       fontSize: "0.85rem",
-                      opacity: 0.8,
                     }}
                   >
-                    articles published
+                    from customers
                   </p>
                 </div>
 
-                {/* Pending Questions Card */}
+                {/* Pending Messages Card */}
                 <div
                   style={{
                     background:
@@ -1006,7 +1093,7 @@ export default function CustomerCareDashboardPage() {
                     borderRadius: "12px",
                     padding: "1.5rem",
                     color: "#fff",
-                    boxShadow: "0 4px 15px rgba(111, 0, 34, 0.15)",
+                    boxShadow: "0 4px 15px rgba(111, 0, 34, 0.2)",
                   }}
                 >
                   <div
@@ -1021,14 +1108,14 @@ export default function CustomerCareDashboardPage() {
                       <p
                         style={{
                           margin: 0,
-                          color: "#fff",
+                          color: "#e0bf63",
                           fontSize: "0.85rem",
                           fontWeight: 500,
                           textTransform: "uppercase",
                           letterSpacing: "0.5px",
                         }}
                       >
-                        Pending Questions
+                        Pending Messages
                       </p>
                       <h3
                         style={{
@@ -1041,9 +1128,11 @@ export default function CustomerCareDashboardPage() {
                         {dashboardStats.pendingQuestions}
                       </h3>
                     </div>
-                    <span style={{ fontSize: "2.5rem" }}>◇</span>
+                    <span style={{ fontSize: "2.5rem" }}>⏳</span>
                   </div>
-                  <p style={{ margin: 0, color: "#fff", fontSize: "0.85rem" }}>
+                  <p
+                    style={{ margin: 0, color: "#e0bf63", fontSize: "0.85rem" }}
+                  >
                     awaiting response
                   </p>
                 </div>
@@ -1056,7 +1145,7 @@ export default function CustomerCareDashboardPage() {
                     borderRadius: "12px",
                     padding: "1.5rem",
                     color: "#fff",
-                    boxShadow: "0 4px 15px rgba(111, 0, 34, 0.15)",
+                    boxShadow: "0 4px 15px rgba(111, 0, 34, 0.2)",
                   }}
                 >
                   <div
@@ -1071,7 +1160,7 @@ export default function CustomerCareDashboardPage() {
                       <p
                         style={{
                           margin: 0,
-                          color: "#fff",
+                          color: "#e0bf63",
                           fontSize: "0.85rem",
                           fontWeight: 500,
                           textTransform: "uppercase",
@@ -1093,7 +1182,9 @@ export default function CustomerCareDashboardPage() {
                     </div>
                     <span style={{ fontSize: "2.5rem" }}>✓</span>
                   </div>
-                  <p style={{ margin: 0, color: "#fff", fontSize: "0.85rem" }}>
+                  <p
+                    style={{ margin: 0, color: "#e0bf63", fontSize: "0.85rem" }}
+                  >
                     questions answered
                   </p>
                 </div>
@@ -1265,6 +1356,17 @@ export default function CustomerCareDashboardPage() {
                               >
                                 {question.text}
                               </p>
+                              {question.customerName && (
+                                <p
+                                  style={{
+                                    margin: "0.4rem 0 0",
+                                    color: "#999",
+                                    fontSize: "0.8rem",
+                                  }}
+                                >
+                                  from {question.customerName}
+                                </p>
+                              )}
                             </div>
                             <span
                               style={{
@@ -1277,7 +1379,7 @@ export default function CustomerCareDashboardPage() {
                                 flexShrink: 0,
                               }}
                             >
-                              {question.views} views
+                              {question.views} msg
                             </span>
                           </div>
                         </div>
@@ -1292,22 +1394,87 @@ export default function CustomerCareDashboardPage() {
           {/* OFFERS TAB */}
           {activeTab === "offers" && (
             <div>
-              {/* Header */}
-              <div style={{ marginBottom: "2.5rem" }}>
-                <h2
+              {/* Header with Refresh Button */}
+              <div
+                style={{
+                  marginBottom: "2.5rem",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "flex-start",
+                }}
+              >
+                <div>
+                  <h2
+                    style={{
+                      margin: "0 0 0.5rem",
+                      color: "#FFFFFF",
+                      fontSize: "2rem",
+                      fontWeight: 700,
+                    }}
+                  >
+                    Promotional Offers
+                  </h2>
+                  <p style={{ margin: 0, color: "#666", fontSize: "0.95rem" }}>
+                    Create and manage customer offers and promotions
+                  </p>
+                </div>
+                <button
+                  onClick={loadOffers}
+                  disabled={offersLoading}
                   style={{
-                    margin: "0 0 0.5rem",
-                    color: "#FFFFFF",
-                    fontSize: "2rem",
-                    fontWeight: 700,
+                    padding: "0.75rem 1.5rem",
+                    background: "#6f0022",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: "8px",
+                    fontSize: "0.9rem",
+                    fontWeight: 600,
+                    cursor: offersLoading ? "not-allowed" : "pointer",
+                    opacity: offersLoading ? 0.6 : 1,
+                    transition: "all 0.2s ease",
+                  }}
+                  onMouseEnter={(e) =>
+                    !offersLoading && (e.target.style.background = "#8b0033")
+                  }
+                  onMouseLeave={(e) =>
+                    !offersLoading && (e.target.style.background = "#6f0022")
+                  }
+                  title="Refresh promotional offers"
+                >
+                  {offersLoading ? "Loading..." : "↻ Refresh"}
+                </button>
+              </div>
+
+              {/* Error Message */}
+              {offersError && (
+                <div
+                  style={{
+                    background: "#fff3cd",
+                    border: "1px solid #ffc107",
+                    borderRadius: "8px",
+                    padding: "1rem",
+                    marginBottom: "2rem",
+                    color: "#856404",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
                   }}
                 >
-                  Promotional Offers
-                </h2>
-                <p style={{ margin: 0, color: "#666", fontSize: "0.95rem" }}>
-                  Create and manage customer offers and promotions
-                </p>
-              </div>
+                  <div>⚠ {offersError}</div>
+                  <button
+                    onClick={() => setOffersError("")}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      fontSize: "1.2rem",
+                      cursor: "pointer",
+                      color: "#856404",
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
 
               {/* Stats Cards */}
               <div
@@ -1316,6 +1483,8 @@ export default function CustomerCareDashboardPage() {
                   gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
                   gap: "1.5rem",
                   marginBottom: "2.5rem",
+                  opacity: offersLoading ? 0.6 : 1,
+                  transition: "opacity 0.2s ease",
                 }}
               >
                 <div
@@ -1358,6 +1527,15 @@ export default function CustomerCareDashboardPage() {
                       >
                         {offers.filter((o) => o.status === "active").length}
                       </h3>
+                      <p
+                        style={{
+                          margin: "0.5rem 0 0",
+                          fontSize: "0.75rem",
+                          color: "#d0d0d0",
+                        }}
+                      >
+                        of {offers.length} total
+                      </p>
                     </div>
                     <div
                       style={{
@@ -1418,6 +1596,15 @@ export default function CustomerCareDashboardPage() {
                       >
                         {offers.reduce((sum, o) => sum + (o.sentCount || 0), 0)}
                       </h3>
+                      <p
+                        style={{
+                          margin: "0.5rem 0 0",
+                          fontSize: "0.75rem",
+                          color: "#d0d0d0",
+                        }}
+                      >
+                        across all promotions
+                      </p>
                     </div>
                     <div
                       style={{
@@ -1593,11 +1780,11 @@ export default function CustomerCareDashboardPage() {
                     />
                   </div>
 
-                  {/* Row 2: Discount Percentage & Valid From */}
+                  {/* Row 2: Discount & Validity */}
                   <div
                     style={{
                       display: "grid",
-                      gridTemplateColumns: "1fr 1fr",
+                      gridTemplateColumns: "1fr 1fr 1fr",
                       gap: "1.5rem",
                     }}
                   >
@@ -1648,51 +1835,6 @@ export default function CustomerCareDashboardPage() {
                           fontWeight: 500,
                         }}
                       >
-                        Valid From *
-                      </label>
-                      <input
-                        type="date"
-                        value={offerForm.validFrom}
-                        onChange={(e) =>
-                          setOfferForm({
-                            ...offerForm,
-                            validFrom: e.target.value,
-                          })
-                        }
-                        min={todayDate}
-                        style={{
-                          width: "100%",
-                          padding: "0.85rem 1rem",
-                          border: "1px solid #d0d0d0",
-                          borderRadius: "8px",
-                          fontSize: "0.95rem",
-                          fontFamily: "Arial, sans-serif",
-                          boxSizing: "border-box",
-                          background: "#fafbfc",
-                          cursor: "pointer",
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Row 3: Valid Until & Coupon Code */}
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1fr",
-                      gap: "1.5rem",
-                    }}
-                  >
-                    <div>
-                      <label
-                        style={{
-                          display: "block",
-                          margin: "0 0 0.6rem",
-                          color: "#333",
-                          fontSize: "0.9rem",
-                          fontWeight: 500,
-                        }}
-                      >
                         Valid Until *
                       </label>
                       <input
@@ -1732,12 +1874,12 @@ export default function CustomerCareDashboardPage() {
                       </label>
                       <input
                         type="text"
-                        placeholder="e.g., GOLD25"
+                        placeholder="e.g., SUMMER21"
                         value={offerForm.couponCode}
                         onChange={(e) =>
                           setOfferForm({
                             ...offerForm,
-                            couponCode: e.target.value.toUpperCase(),
+                            couponCode: e.target.value,
                           })
                         }
                         style={{
@@ -1750,10 +1892,6 @@ export default function CustomerCareDashboardPage() {
                           boxSizing: "border-box",
                           background: "#fafbfc",
                         }}
-                        onFocus={(e) =>
-                          (e.target.style.borderColor = "#6f0022")
-                        }
-                        onBlur={(e) => (e.target.style.borderColor = "#d0d0d0")}
                       />
                     </div>
                   </div>
@@ -1795,7 +1933,7 @@ export default function CustomerCareDashboardPage() {
                     {editingOfferId && (
                       <button
                         type="button"
-                        onClick={cancelEdit}
+                        onClick={cancelEditOffer}
                         style={{
                           padding: "0.9rem 2rem",
                           background: "#f5f5f5",
@@ -1823,7 +1961,21 @@ export default function CustomerCareDashboardPage() {
               </section>
 
               {/* Offers List */}
-              {offers.length === 0 ? (
+              {offersLoading ? (
+                <div
+                  style={{
+                    background: "#fff",
+                    border: "1px dashed #d0d0d0",
+                    borderRadius: "10px",
+                    padding: "3rem 1.5rem",
+                    textAlign: "center",
+                  }}
+                >
+                  <p style={{ margin: 0, color: "#666", fontSize: "1rem" }}>
+                    ⟳ Loading promotional offers...
+                  </p>
+                </div>
+              ) : offers.length === 0 ? (
                 <div
                   style={{
                     background: "#fff",
@@ -1857,7 +2009,7 @@ export default function CustomerCareDashboardPage() {
                       fontWeight: 600,
                     }}
                   >
-                    Active Promotions
+                    All Promotions ({offers.length})
                   </h3>
                   {offers.map((offer) => (
                     <div
@@ -1903,6 +2055,22 @@ export default function CustomerCareDashboardPage() {
                             }}
                           >
                             {offer.title}
+                            {offer.couponCode && (
+                              <span
+                                style={{
+                                  marginLeft: "0.6rem",
+                                  background: "#fff3cd",
+                                  color: "#856404",
+                                  padding: "0.15rem 0.6rem",
+                                  borderRadius: "12px",
+                                  fontSize: "0.75rem",
+                                  fontWeight: 700,
+                                  verticalAlign: "middle",
+                                }}
+                              >
+                                {offer.couponCode}
+                              </span>
+                            )}
                           </h4>
                           {offer.discountPercentage > 0 && (
                             <span
@@ -1916,33 +2084,6 @@ export default function CustomerCareDashboardPage() {
                               }}
                             >
                               {offer.discountPercentage}% OFF
-                            </span>
-                          )}
-                          {offer.emailSent ? (
-                            <span
-                              style={{
-                                background: "#d4edda",
-                                color: "#155724",
-                                padding: "0.25rem 0.75rem",
-                                borderRadius: "20px",
-                                fontSize: "0.8rem",
-                                fontWeight: 600,
-                              }}
-                            >
-                              ✓ Emails Sent
-                            </span>
-                          ) : (
-                            <span
-                              style={{
-                                background: "#f8d7da",
-                                color: "#721c24",
-                                padding: "0.25rem 0.75rem",
-                                borderRadius: "20px",
-                                fontSize: "0.8rem",
-                                fontWeight: 600,
-                              }}
-                            >
-                              ⚠ Pending
                             </span>
                           )}
                         </div>
@@ -1962,26 +2103,12 @@ export default function CustomerCareDashboardPage() {
                             gap: "2rem",
                             fontSize: "0.9rem",
                             color: "#777",
-                            marginBottom: "1rem",
-                            flexWrap: "wrap",
                           }}
                         >
                           <div>
                             <span style={{ color: "#999" }}>✓ Sent to: </span>
                             <strong style={{ color: "#333" }}>
                               {offer.sentCount || 0}
-                            </strong>
-                          </div>
-                          <div>
-                            <span style={{ color: "#999" }}>
-                              ⏰ Valid from:{" "}
-                            </span>
-                            <strong style={{ color: "#333" }}>
-                              {offer.validFrom
-                                ? new Date(
-                                    offer.validFrom,
-                                  ).toLocaleDateString()
-                                : "-"}
                             </strong>
                           </div>
                           <div>
@@ -1996,37 +2123,11 @@ export default function CustomerCareDashboardPage() {
                                 : "-"}
                             </strong>
                           </div>
-                        </div>
-                        <div
-                          style={{
-                            display: "flex",
-                            gap: "1.5rem",
-                            fontSize: "0.9rem",
-                            color: "#777",
-                            alignItems: "center",
-                            flexWrap: "wrap",
-                          }}
-                        >
-                          <div>
-                            <span style={{ color: "#999" }}>🎟 Coupon: </span>
-                            <strong style={{ color: "#6f0022", fontSize: "1rem", fontFamily: "monospace" }}>
-                              {offer.couponCode || "-"}
-                            </strong>
-                          </div>
-                          <div>
-                            <span style={{ color: "#999" }}>📧 Emails Sent: </span>
-                            <strong style={{ 
-                              color: offer.emailSent ? "#22863a" : "#dc3545",
-                              fontSize: "1rem"
-                            }}>
-                              {offer.recipientsCount || 0}
-                            </strong>
-                          </div>
-                          {offer.sentAt && (
+                          {offer.couponCode && (
                             <div>
-                              <span style={{ color: "#999" }}>📨 Sent on: </span>
+                              <span style={{ color: "#999" }}>Coupon: </span>
                               <strong style={{ color: "#333" }}>
-                                {new Date(offer.sentAt).toLocaleDateString()}
+                                {offer.couponCode}
                               </strong>
                             </div>
                           )}
@@ -2044,33 +2145,26 @@ export default function CustomerCareDashboardPage() {
                       >
                         <button
                           onClick={() => sendOfferEmails(offer._id)}
-                          disabled={offer.emailSent}
                           style={{
                             padding: "0.75rem 1rem",
-                            background: offer.emailSent ? "#ccc" : "#6f0022",
-                            color: offer.emailSent ? "#999" : "#fff",
+                            background: "#6f0022",
+                            color: "#fff",
                             border: "none",
                             borderRadius: "6px",
                             fontSize: "0.85rem",
                             fontWeight: 600,
-                            cursor: offer.emailSent ? "not-allowed" : "pointer",
+                            cursor: "pointer",
                             fontFamily: "Arial, sans-serif",
                             transition: "all 0.2s ease",
-                            opacity: offer.emailSent ? 0.7 : 1,
                           }}
-                          onMouseEnter={(e) => {
-                            if (!offer.emailSent) {
-                              e.target.style.background = "#8b0033";
-                            }
-                          }}
-                          onMouseLeave={(e) => {
-                            if (!offer.emailSent) {
-                              e.target.style.background = "#6f0022";
-                            }
-                          }}
-                          title={offer.emailSent ? `Emails already sent to ${offer.recipientsCount} customers` : "Send promotional emails to standard customers"}
+                          onMouseEnter={(e) =>
+                            (e.target.style.background = "#8b0033")
+                          }
+                          onMouseLeave={(e) =>
+                            (e.target.style.background = "#6f0022")
+                          }
                         >
-                          {offer.emailSent ? "✓ Sent" : "✉ Send Email"}
+                          ✉ Send Email
                         </button>
                         <button
                           onClick={() => startEditOffer(offer)}
@@ -3304,7 +3398,47 @@ export default function CustomerCareDashboardPage() {
                     </div>
                   </div>
 
-                  {/* appointment type removed per request */}
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr",
+                      gap: "1.5rem",
+                    }}
+                  >
+                    <div>
+                      <label
+                        style={{
+                          display: "block",
+                          margin: "0 0 0.6rem",
+                          color: "#333",
+                          fontSize: "0.9rem",
+                          fontWeight: 500,
+                        }}
+                      >
+                        Capacity
+                      </label>
+                      <input
+                        type="number"
+                        value={slotForm.capacity}
+                        onChange={(e) =>
+                          setSlotForm({
+                            ...slotForm,
+                            capacity: parseInt(e.target.value),
+                          })
+                        }
+                        min="1"
+                        style={{
+                          width: "100%",
+                          padding: "0.85rem 1rem",
+                          border: "1px solid #d0d0d0",
+                          borderRadius: "8px",
+                          fontSize: "0.95rem",
+                          boxSizing: "border-box",
+                          background: "#fafbfc",
+                        }}
+                      />
+                    </div>
+                  </div>
 
                   <div
                     style={{
@@ -3452,7 +3586,7 @@ export default function CustomerCareDashboardPage() {
                 <h3
                   style={{
                     margin: "0 0 1rem",
-                    color: "#1a1a1a",
+                    color: "#FFFFFF",
                     fontSize: "1.1rem",
                     fontWeight: 600,
                   }}
@@ -3508,20 +3642,27 @@ export default function CustomerCareDashboardPage() {
                           >
                             {slot.type}
                           </h4>
-                          {slot.isBlocked && (
-                            <span
-                              style={{
-                                background: "#ff6b6b",
-                                color: "#fff",
-                                padding: "0.25rem 0.75rem",
-                                borderRadius: "20px",
-                                fontSize: "0.8rem",
-                                fontWeight: 600,
-                              }}
-                            >
-                              {"Blocked: " + slot.blockReason}
-                            </span>
-                          )}
+                          <span
+                            style={{
+                              background: slot.isBlocked
+                                ? "#ff6b6b"
+                                : slot.bookedCount < slot.capacity
+                                  ? "#d4edda"
+                                  : "#fff3cd",
+                              color: slot.isBlocked ? "#fff" : "#333",
+                              padding: "0.25rem 0.75rem",
+                              borderRadius: "20px",
+                              fontSize: "0.8rem",
+                              fontWeight: 600,
+                            }}
+                          >
+                            {slot.isBlocked
+                              ? "Blocked: " + slot.blockReason
+                              : slot.bookedCount +
+                                "/" +
+                                slot.capacity +
+                                " booked"}
+                          </span>
                         </div>
                         <p
                           style={{
@@ -3563,6 +3704,8 @@ export default function CustomerCareDashboardPage() {
                             setSlotForm({
                               date: slot.date.split("T")[0],
                               timeSlotIndex: slotIndex >= 0 ? slotIndex : 0,
+                              type: slot.type,
+                              capacity: slot.capacity,
                               assignedStaff: slot.assignedStaff,
                               isBlocked: slot.isBlocked,
                               blockReason: slot.blockReason,
@@ -3607,7 +3750,7 @@ export default function CustomerCareDashboardPage() {
                 <h3
                   style={{
                     margin: "0 0 1rem",
-                    color: "#1a1a1a",
+                    color: "#FFFFFF",
                     fontSize: "1.1rem",
                     fontWeight: 600,
                   }}

@@ -27,6 +27,9 @@ export default function CustomerSupportPage() {
     confirmed: 0
   });
   const [statsLoading, setStatsLoading] = useState(true);
+  const [myBookings, setMyBookings] = useState([]);
+  const [bookingsLoading, setBookingsLoading] = useState(false);
+  const [cancellingId, setCancellingId] = useState(null);
 
   const cartCount = useMemo(
     () => cart.reduce((sum, item) => sum + Number(item.quantity || 0), 0),
@@ -59,10 +62,12 @@ export default function CustomerSupportPage() {
       await loadMessages();
       await loadAvailableSlots();
       await loadAppointmentStats();
+      await loadMyBookings();
       // Reload slots and messages periodically for real-time updates
       intervalId = window.setInterval(async () => {
         await loadMessages();
         await loadAvailableSlots(); // Refresh slots to show real-time bookings
+        await loadMyBookings();
       }, 5000);
     }
 
@@ -147,6 +152,47 @@ export default function CustomerSupportPage() {
       console.error('Error loading appointment stats:', error);
     } finally {
       setStatsLoading(false);
+    }
+  }
+
+  async function loadMyBookings() {
+    try {
+      setBookingsLoading(true);
+      const response = await authManager.apiRequest('/api/appointments/my-bookings');
+      if (!response.ok) return;
+      const data = await response.json();
+      if (data.bookings) {
+        setMyBookings(data.bookings);
+      }
+    } catch (error) {
+      console.error('Error loading my bookings:', error);
+    } finally {
+      setBookingsLoading(false);
+    }
+  }
+
+  async function cancelAppointment(appointmentId) {
+    if (!window.confirm('Are you sure you want to cancel this appointment?')) return;
+
+    setCancellingId(appointmentId);
+    try {
+      const response = await authManager.apiRequest(`/api/appointments/${appointmentId}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        alert('✓ Appointment cancelled successfully');
+        await loadMyBookings();
+        await loadAppointmentStats();
+      } else {
+        const error = await response.json();
+        alert(`Error: ${error.message || 'Failed to cancel appointment'}`);
+      }
+    } catch (error) {
+      console.error('Error cancelling appointment:', error);
+      alert('Error cancelling appointment. Please try again.');
+    } finally {
+      setCancellingId(null);
     }
   }
 
@@ -454,6 +500,84 @@ export default function CustomerSupportPage() {
                 </div>
               </div>
             </div>
+
+            {/* My Bookings Section */}
+            <h3 style={{ marginBottom: '1.5rem', fontSize: '1.3rem', color: 'var(--brand-burgundy)' }}>✦ My Booked Appointments</h3>
+            {bookingsLoading ? (
+              <p style={{ fontSize: '0.95rem', color: '#999', marginBottom: '2rem' }}>Loading your appointments...</p>
+            ) : myBookings.length === 0 ? (
+              <p style={{ fontSize: '0.95rem', color: '#999', marginBottom: '2rem' }}>No appointments booked yet.</p>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+                {myBookings.map((booking) => {
+                  const isCancelled = booking.status === 'cancelled';
+                  const isCompleted = booking.status === 'completed';
+                  return (
+                    <div
+                      key={booking._id}
+                      style={{
+                        padding: '1.2rem',
+                        background: isCancelled ? '#ffebee' : isCompleted ? '#e8f5e9' : 'white',
+                        border: isCancelled ? '2px solid #f44336' : isCompleted ? '2px solid #4caf50' : '2px solid rgba(224, 191, 99, 0.4)',
+                        borderRadius: '8px',
+                        opacity: isCancelled ? 0.7 : 1,
+                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '0.8rem' }}>
+                        <div style={{ fontWeight: '700', color: 'var(--brand-burgundy)', fontSize: '1.05rem' }}>
+                          {new Date(booking.slotId?.date || booking.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </div>
+                        <span style={{
+                          padding: '0.3rem 0.6rem',
+                          borderRadius: '12px',
+                          fontSize: '0.75rem',
+                          fontWeight: '600',
+                          background: isCancelled ? '#ffcdd2' : isCompleted ? '#c8e6c9' : '#e0bf63',
+                          color: isCancelled ? '#c62828' : isCompleted ? '#1b5e20' : '#6f0022'
+                        }}>
+                          {booking.status?.toUpperCase() || 'CONFIRMED'}
+                        </span>
+                      </div>
+                      <div style={{ color: '#555', marginBottom: '0.6rem', fontSize: '0.95rem' }}>
+                        <span style={{ fontWeight: '600' }}>⏰ Time:</span> {booking.slotId?.startTime || booking.time} - {booking.slotId?.endTime}
+                      </div>
+                      <div style={{ color: '#555', marginBottom: '0.6rem', fontSize: '0.95rem' }}>
+                        <span style={{ fontWeight: '600' }}>📋 Type:</span> {booking.appointmentType}
+                      </div>
+                      {booking.notes && (
+                        <div style={{ color: '#666', marginBottom: '0.8rem', fontSize: '0.9rem', padding: '0.6rem', background: 'rgba(0,0,0,0.05)', borderRadius: '4px' }}>
+                          <span style={{ fontWeight: '600' }}>Notes:</span> {booking.notes}
+                        </div>
+                      )}
+                      {!isCancelled && !isCompleted && (
+                        <button
+                          onClick={() => cancelAppointment(booking._id)}
+                          disabled={cancellingId === booking._id}
+                          style={{
+                            width: '100%',
+                            padding: '0.6rem',
+                            background: cancellingId === booking._id ? '#ccc' : '#f44336',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: cancellingId === booking._id ? 'not-allowed' : 'pointer',
+                            fontWeight: '600',
+                            fontSize: '0.9rem',
+                            transition: 'all 0.2s ease',
+                            marginTop: '0.8rem'
+                          }}
+                          onMouseEnter={(e) => !cancellingId && (e.target.style.background = '#d32f2f')}
+                          onMouseLeave={(e) => !cancellingId && (e.target.style.background = '#f44336')}
+                        >
+                          {cancellingId === booking._id ? 'Cancelling...' : '✕ Cancel Appointment'}
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
 
             <h3 style={{ marginBottom: '1.5rem', fontSize: '1.3rem', color: 'var(--brand-burgundy)' }}>✦ Available Appointment Slots</h3>
             {slotsLoading ? (

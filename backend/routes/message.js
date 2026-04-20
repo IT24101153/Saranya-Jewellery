@@ -28,7 +28,7 @@ router.get('/active', async (req, res) => {
         { validUntil: { $gte: new Date() } }
       ]
     })
-    .select('title message type validUntil createdAt')
+    .select('title message type validUntil createdAt discountPercentage couponCode')
     .sort({ createdAt: -1 })
     .limit(10);
     
@@ -148,6 +148,7 @@ router.post('/', hasRole('Customer Care', 'Admin'), async (req, res) => {
       status,
       validUntil,
       discountPercentage,
+      couponCode,
       targetAudience,
       sendOnLogin
     } = req.body;
@@ -177,6 +178,7 @@ router.post('/', hasRole('Customer Care', 'Admin'), async (req, res) => {
       status: status || 'active',
       validUntil: parsedValidUntil,
       discountPercentage: parsedDiscount,
+      couponCode: couponCode || '',
       targetAudience: targetAudience || 'all',
       sendOnLogin: sendOnLogin !== undefined ? sendOnLogin : true,
       createdBy: req.session.staffId
@@ -212,6 +214,7 @@ router.put('/:id', hasRole('Customer Care', 'Admin'), async (req, res) => {
       status,
       validUntil,
       discountPercentage,
+      couponCode,
       targetAudience,
       sendOnLogin
     } = req.body;
@@ -222,6 +225,10 @@ router.put('/:id', hasRole('Customer Care', 'Admin'), async (req, res) => {
         return res.status(400).json({ message: 'Discount percentage must be between 0 and 100' });
       }
       message.discountPercentage = parsedDiscount;
+    }
+
+    if (couponCode !== undefined) {
+      message.couponCode = couponCode;
     }
 
     if (validUntil !== undefined) {
@@ -406,6 +413,7 @@ router.post('/:id/send-email', hasRole('Customer Care', 'Admin'), async (req, re
           <h2>${message.title}</h2>
           <p>${message.message}</p>
           ${message.validUntil ? `<p><small>Valid until ${new Date(message.validUntil).toLocaleDateString()}</small></p>` : ''}
+          ${message.couponCode ? `<p><strong>Coupon Code: ${message.couponCode}</strong></p>` : ''}
         `;
         
         const result = await emailService.sendCustomEmail(

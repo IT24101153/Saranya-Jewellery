@@ -831,7 +831,7 @@ export default function CustomerDashboardPage() {
 
       <zapier-interfaces-chatbot-embed
         is-popup="true"
-        chatbot-id="cmnd1hjex005bm8ij9enun3qb"
+        chatbot-id="cmo5zldf1004p4ftzwiocldrz"
       />
     </>
   );

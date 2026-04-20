@@ -1,6 +1,7 @@
 import express from 'express';
 import AppointmentSlot from '../models/AppointmentSlot.js';
 import Appointment from '../models/Appointment.js';
+import Customer from '../models/Customer.js';
 import { isAuthenticated, hasRole } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -41,7 +42,7 @@ router.post('/slots', isAuthenticated, hasRole('Customer Care', 'Admin'), async 
   try {
     const { date, startTime, endTime, type, capacity, assignedStaff, isBlocked, blockReason, internalNotes } = req.body;
 
-    if (!date || !startTime || !endTime) {
+    if (!date || !startTime || !endTime || !type) {
       return res.status(400).json({ message: 'Missing required fields' });
     }
 
@@ -74,7 +75,7 @@ router.post('/slots', isAuthenticated, hasRole('Customer Care', 'Admin'), async 
       date: parsedDate,
       startTime,
       endTime,
-      type: type || undefined,
+      type,
       capacity: capacity || 1,
       assignedStaff: staffId,
       status: isBlocked ? 'blocked' : 'available',
@@ -214,7 +215,7 @@ router.get('/available', async (req, res) => {
 // Customer: Book an appointment (accepts type selection from customer)
 router.post('/book', isAuthenticated, async (req, res) => {
   try {
-    const { slotId, type, notes, date } = req.body;
+    const { slotId, type, notes } = req.body;
     const userId = req.user.id;
 
     if (!slotId || !type) {
@@ -245,17 +246,27 @@ router.post('/book', isAuthenticated, async (req, res) => {
       return res.status(400).json({ message: 'This slot is full' });
     }
 
-    // Create appointment with customer-selected type
+    // Get customer data
+    const customer = await Customer.findById(userId);
+    if (!customer) {
+      return res.status(404).json({ message: 'Customer not found' });
+    }
+
+    // Create appointment with customer data
     const newAppointment = new Appointment({
       slotId,
       customerId: userId,
-      appointmentType: type, // Customer's selected appointment type
+      customerName: customer.fullName,
+      customerEmail: customer.email,
+      customerPhone: customer.phone || '',
+      appointmentType: type,
       date: slot.date,
       startTime: slot.startTime,
       endTime: slot.endTime,
       notes,
       assignedStaff: slot.assignedStaff,
       status: 'confirmed',
+      isVIP: customer.loyaltyPoints > 500 // Mark as VIP if high loyalty
     });
 
     await newAppointment.save();
