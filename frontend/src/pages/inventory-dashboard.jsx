@@ -1255,7 +1255,7 @@ export default function InventoryDashboardPage() {
               >
                 <option value="">Select Supplier (optional)</option>
                 {supplierOptions.map((supplier) => (
-                  <option key={supplier._id} value={supplier.name}>
+                  <option key={supplier._id} value={supplier._id}>
                     {supplier.name}
                   </option>
                 ))}
