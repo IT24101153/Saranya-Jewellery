@@ -317,7 +317,7 @@ export default function InventoryDashboardPage() {
       karat: '22K',
       weight: '',
       quantity: '',
-      supplier: supplier.name
+      supplier: supplier._id
     });
     setEditingStock(null);
     setShowStockModal(true);
