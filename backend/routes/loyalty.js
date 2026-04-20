@@ -949,6 +949,31 @@ router.post('/coupons/validate', async (req, res) => {
     if (coupon.customerId && coupon.customerId.toString() !== customerId) {
       return res.status(400).json({ message: 'This coupon is not assigned to your account', valid: false });
     }
+
+    // Check customer tier eligibility
+    const customer = await Customer.findById(customerId);
+    if (!customer) {
+      return res.status(404).json({ message: 'Customer not found', valid: false });
+    }
+
+    // Determine customer type and check tier eligibility
+    let customerTier = 'Standard'; // Default to standard customers
+    if (customer.isLoyalty && customer.loyaltyTier) {
+      customerTier = customer.loyaltyTier; // Silver, Gold, or Platinum
+    }
+
+    // Check if coupon tier matches customer tier (or if coupon is for 'All')
+    if (coupon.assignedTier !== 'All' && coupon.assignedTier !== customerTier) {
+      const tierName = coupon.assignedTier === 'Standard' 
+        ? 'standard customers' 
+        : `${coupon.assignedTier} tier loyalty members`;
+      return res.status(403).json({ 
+        message: `This coupon is only available for ${tierName}. You are a ${customerTier === 'Standard' ? 'standard' : customerTier + ' tier'} customer.`, 
+        valid: false,
+        requiredTier: coupon.assignedTier,
+        customerTier: customerTier
+      });
+    }
     
     res.json({ 
       valid: true,

@@ -343,6 +343,26 @@ export default function CustomerCartPage() {
                 <div style={{ marginBottom: '1.5rem', padding: '1rem', background: '#f8f9fa', borderRadius: '6px', border: '1px solid #e9ecef' }}>
                   <h4 style={{ margin: '0 0 0.75rem', fontSize: '0.95rem', color: 'var(--brand-burgundy)' }}>Have a Coupon Code?</h4>
                   
+                  {/* Helpful coupon eligibility message */}
+                  <div style={{ 
+                    margin: '0 0 1rem', 
+                    padding: '0.75rem', 
+                    background: customer?.isLoyalty ? '#e3f2fd' : '#fff3e0', 
+                    borderLeft: `4px solid ${customer?.isLoyalty ? '#1976d2' : '#f57c00'}`,
+                    fontSize: '0.85rem',
+                    color: customer?.isLoyalty ? '#0d47a1' : '#e65100'
+                  }}>
+                    {customer?.isLoyalty && customer?.loyaltyTier ? (
+                      <>
+                        <strong>Loyalty Member:</strong> You are a {customer.loyaltyTier} tier member and can use {customer.loyaltyTier}-specific and general coupons.
+                      </>
+                    ) : (
+                      <>
+                        <strong>Standard Customer:</strong> You can use standard offer coupons. Join our loyalty program to unlock tier-specific offers!
+                      </>
+                    )}
+                  </div>
+                  
                   {!appliedCoupon ? (
                     <div>
                       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
