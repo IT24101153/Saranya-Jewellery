@@ -1,6 +1,5 @@
 export const routeMap = {
   '/admin-dashboard': 'admin-dashboard',
-  '/customer-appointment-booking': 'customer-appointment-booking',
   '/customer-care-dashboard': 'customer-care-dashboard',
   '/customer-cart': 'customer-cart',
   '/customer-dashboard': 'customer-dashboard',

@@ -351,7 +351,6 @@ export default function CustomerDashboardPage() {
           <a href="/customer-shop">Shop</a>
           <a href="/customer-orders">My Orders</a>
           <a href="/customer-loyalty">Loyalty</a>
-          <a href="/customer-appointment-booking">📅 Appointments</a>
           <a href="/customer-support">Support</a>
         </div>
 
