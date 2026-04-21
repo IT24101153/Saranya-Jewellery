@@ -8,7 +8,7 @@ const emptyForm = {
   description: '',
   image: '/assets/placeholder-product.jpg',
   category: 'Ring',
-  taxPercentage: 0,
+  taxPercentage: '',
   featured: false
 };
 
@@ -88,7 +88,7 @@ export default function ProductManagementDashboardPage() {
     event.preventDefault();
     setError('');
 
-    const parsedTaxPercentage = Number(form.taxPercentage);
+    const parsedTaxPercentage = form.taxPercentage === '' ? 0 : Number(form.taxPercentage);
     if (!Number.isFinite(parsedTaxPercentage) || parsedTaxPercentage < 0 || parsedTaxPercentage > 100) {
       setError('Tax percentage must be between 0 and 100');
       return;
@@ -588,9 +588,16 @@ export default function ProductManagementDashboardPage() {
                     required
                     value={form.taxPercentage}
                     onChange={(e) => {
-                      let value = parseFloat(e.target.value) || 0;
-                      value = Math.max(0, Math.min(100, value));
-                      setForm((prev) => ({ ...prev, taxPercentage: value }));
+                      const value = e.target.value;
+                      if (value === '') {
+                        setForm((prev) => ({ ...prev, taxPercentage: '' }));
+                      } else {
+                        let numValue = parseFloat(value);
+                        if (!isNaN(numValue)) {
+                          numValue = Math.max(0, Math.min(100, numValue));
+                          setForm((prev) => ({ ...prev, taxPercentage: numValue }));
+                        }
+                      }
                     }}
                     placeholder="0 to 100"
                     style={{ padding: '0.75rem', border: '1px solid #ddd', borderRadius: 8, fontSize: '1rem' }}

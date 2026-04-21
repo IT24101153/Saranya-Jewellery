@@ -848,10 +848,10 @@ export default function InventoryDashboardPage() {
                             borderRadius: '6px',
                             fontSize: '0.85rem',
                             fontWeight: '600',
-                            background: Number(row.quantity) === 0 ? '#ffebee' : '#e8f5e9',
-                            color: Number(row.quantity) === 0 ? '#c33' : '#1f7a55'
+                            background: Number(row.quantity) === 0 ? '#ffebee' : (Number(row.quantity) < 4 ? '#fff3e0' : '#e8f5e9'),
+                            color: Number(row.quantity) === 0 ? '#c33' : (Number(row.quantity) < 4 ? '#e65100' : '#1f7a55')
                           }}>
-                            {Number(row.quantity) === 0 ? 'Out of Stock' : 'In Stock'}
+                            {Number(row.quantity) === 0 ? 'Out of Stock' : (Number(row.quantity) < 4 ? 'Low Stock' : 'In Stock')}
                           </span>
                         </td>
                         <td style={{ padding: '0.8rem', fontSize: '0.9rem', color: '#666' }}>{row.supplier || '-'}</td>
