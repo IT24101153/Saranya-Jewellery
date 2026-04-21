@@ -1,6 +1,19 @@
 import { useEffect, useMemo, useState } from 'react';
 import authManager from '../auth.js';
-import { FiUsers, FiSettings, FiGift, FiLogOut, FiStar } from 'react-icons/fi';
+import { FiUsers, FiSettings, FiGift, FiLogOut, FiStar, FiTrendingUp, FiPlus, FiEdit2, FiList, FiMail, FiTrash2, FiLoader } from 'react-icons/fi';
+
+// Add CSS animation for loading spinner
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+`;
+if (typeof document !== 'undefined' && !document.querySelector('style[data-loyalty-spinner]')) {
+  style.setAttribute('data-loyalty-spinner', 'true');
+  document.head.appendChild(style);
+}
 
 const TIER_OPTIONS = ['Silver', 'Gold', 'Platinum'];
 const OFFER_TIER_OPTIONS = ['All', 'Silver', 'Gold', 'Platinum'];
@@ -490,10 +503,10 @@ export default function LoyaltyManagementDashboardPage() {
         <>
       <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.2rem', marginBottom: '2rem' }}>
         {[
-          { label: 'Total Customers', value: members.length, color: '#6f0022', icon: '👥' },
-          { label: 'Active Members', value: loyaltyMembers.length, color: '#b33f62', icon: '⭐' },
-          { label: 'Enrollment Ratio', value: `${enrollmentPct}%`, color: '#1f7a55', icon: '📈' },
-          { label: 'Eligible To Add', value: nonMembers.length, color: '#8b5e1f', icon: '➕' }
+          { label: 'Total Customers', value: members.length, color: '#6f0022', Icon: FiUsers },
+          { label: 'Active Members', value: loyaltyMembers.length, color: '#b33f62', Icon: FiStar },
+          { label: 'Enrollment Ratio', value: `${enrollmentPct}%`, color: '#1f7a55', Icon: FiTrendingUp },
+          { label: 'Eligible To Add', value: nonMembers.length, color: '#8b5e1f', Icon: FiPlus }
         ].map((item) => (
           <article
             key={item.label}
@@ -509,7 +522,7 @@ export default function LoyaltyManagementDashboardPage() {
             onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', marginBottom: '0.8rem' }}>
-              <div style={{ fontSize: '2rem' }}>{item.icon}</div>
+              <item.Icon style={{ fontSize: '2rem', color: item.color }} />
               <div style={{ width: '6px', height: '36px', borderRadius: '3px', background: item.color }} />
             </div>
             <p style={{ margin: 0, color: '#7a7279', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.7px', fontWeight: 600 }}>{item.label}</p>
@@ -883,8 +896,8 @@ export default function LoyaltyManagementDashboardPage() {
           <>
           <section style={{ marginBottom: '2rem' }}>
             <div style={{ marginBottom: '1.5rem' }}>
-              <h2 style={{ margin: '0 0 0.5rem', color: '#6f0022', fontSize: '1.5rem', fontFamily: "'Cormorant Garamond', serif" }}>
-                {editingOfferId ? '✏️ Edit Loyalty Offer' : '🎁 Create Loyalty Offer'}
+              <h2 style={{ margin: '0 0 0.5rem', color: '#6f0022', fontSize: '1.5rem', fontFamily: "'Cormorant Garamond', serif", display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                {editingOfferId ? <><FiEdit2 /> Edit Loyalty Offer</> : <><FiGift /> Create Loyalty Offer</>}
               </h2>
               <p style={{ margin: 0, color: '#777', fontSize: '0.95rem' }}>
                 {editingOfferId ? 'Update this offer and resend to customers.' : 'Create targeted offers and send to a specific loyalty tier or all tiers.'}
@@ -1058,11 +1071,11 @@ export default function LoyaltyManagementDashboardPage() {
 
           {/* Offer Campaigns Section */}
           <section style={{ marginTop: '2rem' }}>
-            <h2 style={{ margin: '0 0 1rem', color: '#6f0022', fontSize: '1.5rem', fontFamily: "'Cormorant Garamond', serif" }}>📋 Offer Campaigns</h2>
+            <h2 style={{ margin: '0 0 1rem', color: '#6f0022', fontSize: '1.5rem', fontFamily: "'Cormorant Garamond', serif", display: 'flex', alignItems: 'center', gap: '0.5rem' }}><FiList /> Offer Campaigns</h2>
             
             {offers.length === 0 ? (
               <article style={{ background: '#fff', border: '1px solid #ebe6e8', borderRadius: 14, padding: '2rem', boxShadow: '0 4px 16px rgba(51, 25, 35, 0.08)', textAlign: 'center' }}>
-                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🎁</div>
+                <div style={{ fontSize: '3rem', marginBottom: '1rem', color: '#D4AF37' }}><FiGift style={{ width: '3rem', height: '3rem' }} /></div>
                 <p style={{ margin: 0, color: '#666', fontSize: '1rem' }}>No offers created yet. Create your first offer above!</p>
               </article>
             ) : (
@@ -1149,7 +1162,7 @@ export default function LoyaltyManagementDashboardPage() {
                           if (busyCouponOfferId !== offer._id) e.target.style.background = '#1f7a55';
                         }}
                       >
-                        {busyCouponOfferId === offer._id ? '⏳ Sending...' : '📧 Send Email'}
+                        {busyCouponOfferId === offer._id ? <><FiLoader style={{ animation: 'spin 1s linear infinite' }} /> Sending...</> : <><FiMail /> Send Email</>}
                       </button>
                       <button
                         type="button"
@@ -1210,7 +1223,7 @@ export default function LoyaltyManagementDashboardPage() {
                           if (busyOfferId !== offer._id) e.target.style.background = '#fff';
                         }}
                       >
-                        {busyOfferId === offer._id ? '⏳ Deleting...' : '🗑️ Delete'}
+                        {busyOfferId === offer._id ? <><FiLoader style={{ animation: 'spin 1s linear infinite' }} /> Deleting...</> : <><FiTrash2 /> Delete</>}
                       </button>
                     </div>
                   </article>
