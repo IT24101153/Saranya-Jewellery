@@ -150,6 +150,11 @@ export default function CustomerCartPage() {
       return;
     }
 
+    if (!receiptFile) {
+      alert('Payment receipt is required. Please upload a screenshot of your bank transfer.');
+      return;
+    }
+
     for (const item of cart) {
       if (!item.productId || !item.name || !item.price) {
         alert('Invalid cart data. Please clear your cart and add items again.');
@@ -481,14 +486,15 @@ export default function CustomerCartPage() {
                 </div>
 
                 <div style={{ marginBottom: '1.5rem' }}>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Payment Receipt / Screenshot (Optional)</label>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Payment Receipt / Screenshot *</label>
                   <input
                     type="file"
                     accept="image/*"
+                    required
                     onChange={(event) => handleReceiptChange(event.target.files?.[0])}
                     style={{ width: '100%', padding: '0.75rem', border: '1px solid #ddd', borderRadius: '4px' }}
                   />
-                  <p style={{ margin: '0.5rem 0 0', fontSize: '0.8rem', color: '#666' }}>Upload a screenshot or photo of your bank transfer receipt (max 5MB). You can also submit this later.</p>
+                  <p style={{ margin: '0.5rem 0 0', fontSize: '0.8rem', color: '#666' }}>Upload a screenshot or photo of your bank transfer receipt (max 5MB). This is required to complete your order.</p>
                   {receiptPreview ? (
                     <div style={{ marginTop: '0.5rem' }}>
                       <img src={receiptPreview} alt="Receipt preview" style={{ maxWidth: '200px', borderRadius: '4px', border: '1px solid #ddd' }} />

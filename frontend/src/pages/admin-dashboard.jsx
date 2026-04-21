@@ -2494,13 +2494,15 @@ export default function AdminDashboardPage() {
               aria-modal="true"
               onClick={(event) => event.stopPropagation()}
               style={{
-                width: 'min(100%, 900px)',
+                width: 'min(100%, 550px)',
+                maxHeight: '90vh',
                 background: '#fff',
                 borderRadius: '24px',
                 border: '1px solid #eadfd6',
                 boxShadow: '0 24px 60px rgba(0, 0, 0, 0.28)',
                 overflow: 'hidden',
-                margin: 'auto 0'
+                display: 'flex',
+                flexDirection: 'column'
               }}
             >
               {/* Modal Header */}
@@ -2511,7 +2513,8 @@ export default function AdminDashboardPage() {
                 gap: '1rem',
                 padding: '2rem',
                 borderBottom: '1px solid #f1e8ea',
-                background: '#f9f7f4'
+                background: '#f9f7f4',
+                flexShrink: 0
               }}>
                 <div>
                   <h2 style={{
@@ -2906,19 +2909,23 @@ export default function AdminDashboardPage() {
               aria-modal="true"
               onClick={(event) => event.stopPropagation()}
               style={{
-                width: 'min(100%, 820px)',
+                width: 'min(100%, 500px)',
+                maxHeight: '90vh',
                 background: '#fff',
                 borderRadius: '24px',
                 border: '1px solid #eadfd6',
                 boxShadow: '0 24px 60px rgba(0, 0, 0, 0.28)',
-                overflow: 'hidden'
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column'
               }}
             >
               {/* Header with gradient accent */}
               <div style={{
                 position: 'relative',
                 overflow: 'hidden',
-                paddingBottom: '0'
+                paddingBottom: '0',
+                flexShrink: 0
               }}>
                 {/* Accent bar at top */}
                 <div style={{
@@ -2992,7 +2999,7 @@ export default function AdminDashboardPage() {
               </div>
 
               {/* Form Content */}
-              <form onSubmit={isEditBannerModalOpen ? updateBanner : createBanner} style={{ padding: '2.5rem', background: '#fff' }}>
+              <form onSubmit={isEditBannerModalOpen ? updateBanner : createBanner} style={{ padding: '2.5rem', background: '#fff', overflowY: 'auto', flex: 1 }}>
                 {error && (
                   <div style={{
                     background: '#fff5f5',
