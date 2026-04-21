@@ -65,6 +65,8 @@ export default function CustomerCareDashboardPage() {
     description: '',
     offerType: 'Seasonal Offer',
     discountPercentage: '',
+    discountAmount: '',
+    validFrom: '',
     validUntil: '',
     couponCode: ''
   });
@@ -303,26 +305,21 @@ export default function CustomerCareDashboardPage() {
     try {
       setOffersLoading(true);
       setOffersError('');
-      // Query the backend directly for promotions
-      const response = await authManager.apiRequest('/api/messages?type=promotion');
+      // Query the backend for standard offers
+      const response = await authManager.apiRequest('/api/loyalty/offers/standard');
       const data = await response.json();
       
       if (response.ok) {
-        const promotionalOffers = Array.isArray(data) ? data : [];
-        console.log('Loaded promotional offers:', promotionalOffers);
-        console.log('Number of promotional offers:', promotionalOffers.length);
-        console.log('Active offers count:', promotionalOffers.filter(o => o.status === 'active').length);
-        const totalSent = promotionalOffers.reduce((sum, o) => sum + (o.sentCount || 0), 0);
-        console.log('Total sent:', totalSent);
-        console.log('Debug - First offer:', promotionalOffers[0] || 'No offers');
-        setOffers(promotionalOffers);
+        const standardOffers = Array.isArray(data) ? data : [];
+        console.log('Loaded standard offers:', standardOffers);
+        setOffers(standardOffers);
       } else {
         console.error('Failed to load offers:', data);
-        setOffersError(data.message || 'Failed to load promotional offers');
+        setOffersError(data.message || 'Failed to load standard offers');
       }
     } catch (err) {
       console.error('Error loading offers:', err);
-      setOffersError(err.message || 'Error loading promotional offers');
+      setOffersError(err.message || 'Error loading standard offers');
     } finally {
       setOffersLoading(false);
     }
@@ -330,8 +327,8 @@ export default function CustomerCareDashboardPage() {
 
   async function createOffer(event) {
     event.preventDefault();
-    if (!offerForm.title || !offerForm.description || !offerForm.validUntil || !offerForm.couponCode) {
-      setError('All fields including valid dates and coupon code are required');
+    if (!offerForm.title || !offerForm.description || !offerForm.validFrom || !offerForm.validUntil || !offerForm.couponCode) {
+      setError('All fields including title, description, date range, and coupon code are required');
       return;
     }
 
@@ -341,29 +338,37 @@ export default function CustomerCareDashboardPage() {
       return;
     }
 
+    if (offerForm.validFrom > offerForm.validUntil) {
+      setError('Valid From date must be before Valid Until date');
+      return;
+    }
+
     if (offerForm.validUntil < todayDate) {
-      setError('Offer valid until date cannot be in the past');
+      setError('Valid Until date cannot be in the past');
+      return;
+    }
+
+    if (offerForm.validFrom < todayDate) {
+      setError('Valid From date cannot be in the past');
       return;
     }
 
     setIsCreatingOffer(true);
     setError('');
     try {
-      const endpoint = editingOfferId ? `/api/messages/${editingOfferId}` : '/api/messages';
+      const endpoint = editingOfferId ? `/api/loyalty/offers/standard/${editingOfferId}` : '/api/loyalty/offers/standard/create';
       const method = editingOfferId ? 'PUT' : 'POST';
 
       const response = await authManager.apiRequest(endpoint, {
         method,
         body: JSON.stringify({
           title: offerForm.title,
-          message: offerForm.description,
-          type: 'promotion',
-          status: 'active',
-          targetAudience: 'all',
-          sendOnLogin: true,
+          description: offerForm.description,
+          validFrom: offerForm.validFrom,
           validUntil: offerForm.validUntil,
           discountPercentage: parsedDiscount,
-          couponCode: offerForm.couponCode
+          discountAmount: Number(offerForm.discountAmount || 0),
+          couponCode: offerForm.couponCode.toUpperCase().trim()
         })
       });
 
@@ -371,7 +376,7 @@ export default function CustomerCareDashboardPage() {
       if (!response.ok) {
         setError(data.message || 'Failed to create offer');
       } else {
-        setOfferForm({ title: '', description: '', offerType: 'Seasonal Offer', discountPercentage: '', validUntil: '', couponCode: '' });
+        setOfferForm({ title: '', description: '', offerType: 'Seasonal Offer', discountPercentage: '', discountAmount: '', validFrom: '', validUntil: '', couponCode: '' });
         setEditingOfferId(null);
         setError('');
         await loadOffers();
@@ -388,9 +393,11 @@ export default function CustomerCareDashboardPage() {
     setError('');
     setOfferForm({
       title: offer.title || '',
-      description: offer.message || '',
+      description: offer.description || '',
       offerType: 'Seasonal Offer',
       discountPercentage: offer.discountPercentage ?? '',
+      discountAmount: offer.discountAmount ?? '',
+      validFrom: offer.validFrom ? new Date(offer.validFrom).toISOString().split('T')[0] : '',
       validUntil: offer.validUntil ? new Date(offer.validUntil).toISOString().split('T')[0] : '',
       couponCode: offer.couponCode || ''
     });
@@ -398,22 +405,22 @@ export default function CustomerCareDashboardPage() {
 
   function cancelEditOffer() {
     setEditingOfferId(null);
-    setOfferForm({ title: '', description: '', offerType: 'Seasonal Offer', discountPercentage: '', validUntil: '', couponCode: '' });
+    setOfferForm({ title: '', description: '', offerType: 'Seasonal Offer', discountPercentage: '', discountAmount: '', validFrom: '', validUntil: '', couponCode: '' });
     setError('');
   }
 
   async function sendOfferEmails(offerId) {
-    if (!window.confirm('Send this offer to all customers?')) return;
+    if (!window.confirm('Send this offer to all standard customers?')) return;
 
     try {
       setError('');
-      const response = await authManager.apiRequest(`/api/messages/${offerId}/send-email`, {
+      const response = await authManager.apiRequest(`/api/loyalty/offers/standard/${offerId}/send-coupons`, {
         method: 'POST'
       });
 
       const data = await response.json();
       if (response.ok) {
-        alert(`Offer sent to ${data.recipientsCount || 0} customers`);
+        alert(`Offer sent to ${data.successCount || 0} customers`);
         await loadOffers();
       } else {
         setError(data.message || 'Failed to send offer');
@@ -424,11 +431,11 @@ export default function CustomerCareDashboardPage() {
   }
 
   async function deleteOffer(offerId) {
-    if (!window.confirm('Delete this offer?')) return;
+    if (!window.confirm('Delete this offer and associated coupons?')) return;
 
     try {
       setError('');
-      const response = await authManager.apiRequest(`/api/messages/${offerId}`, {
+      const response = await authManager.apiRequest(`/api/loyalty/offers/standard/${offerId}`, {
         method: 'DELETE'
       });
 
@@ -1791,11 +1798,11 @@ export default function CustomerCareDashboardPage() {
                     />
                   </div>
 
-                  {/* Row 2: Discount & Validity */}
+                  {/* Row 2: Discount, Valid From, Valid Until, Coupon Code */}
                   <div
                     style={{
                       display: "grid",
-                      gridTemplateColumns: "1fr 1fr 1fr",
+                      gridTemplateColumns: "1fr 1fr 1fr 1fr",
                       gap: "1.5rem",
                     }}
                   >
@@ -1846,15 +1853,51 @@ export default function CustomerCareDashboardPage() {
                           fontWeight: 500,
                         }}
                       >
-                        Valid Until *
+                        Discount Amount (Optional)
                       </label>
                       <input
-                        type="date"
-                        value={offerForm.validUntil}
+                        type="number"
+                        placeholder="e.g., 500"
+                        value={offerForm.discountAmount}
                         onChange={(e) =>
                           setOfferForm({
                             ...offerForm,
-                            validUntil: e.target.value,
+                            discountAmount: e.target.value,
+                          })
+                        }
+                        min="0"
+                        step="0.01"
+                        style={{
+                          width: "100%",
+                          padding: "0.85rem 1rem",
+                          border: "1px solid #d0d0d0",
+                          borderRadius: "8px",
+                          fontSize: "0.95rem",
+                          fontFamily: "Arial, sans-serif",
+                          boxSizing: "border-box",
+                          background: "#fafbfc",
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <label
+                        style={{
+                          display: "block",
+                          margin: "0 0 0.6rem",
+                          color: "#333",
+                          fontSize: "0.9rem",
+                          fontWeight: 500,
+                        }}
+                      >
+                        Valid From *
+                      </label>
+                      <input
+                        type="date"
+                        value={offerForm.validFrom}
+                        onChange={(e) =>
+                          setOfferForm({
+                            ...offerForm,
+                            validFrom: e.target.value,
                           })
                         }
                         min={todayDate}
@@ -1881,18 +1924,18 @@ export default function CustomerCareDashboardPage() {
                           fontWeight: 500,
                         }}
                       >
-                        Coupon Code *
+                        Valid Until *
                       </label>
                       <input
-                        type="text"
-                        placeholder="e.g., SUMMER21"
-                        value={offerForm.couponCode}
+                        type="date"
+                        value={offerForm.validUntil}
                         onChange={(e) =>
                           setOfferForm({
                             ...offerForm,
-                            couponCode: e.target.value,
+                            validUntil: e.target.value,
                           })
                         }
+                        min={todayDate}
                         style={{
                           width: "100%",
                           padding: "0.85rem 1rem",
@@ -1902,9 +1945,46 @@ export default function CustomerCareDashboardPage() {
                           fontFamily: "Arial, sans-serif",
                           boxSizing: "border-box",
                           background: "#fafbfc",
+                          cursor: "pointer",
                         }}
                       />
                     </div>
+                  </div>
+
+                  {/* Coupon Code */}
+                  <div>
+                    <label
+                      style={{
+                        display: "block",
+                        margin: "0 0 0.6rem",
+                        color: "#333",
+                        fontSize: "0.9rem",
+                        fontWeight: 500,
+                      }}
+                    >
+                      Coupon Code (will be converted to UPPERCASE) *
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g., SUMMER21"
+                      value={offerForm.couponCode}
+                      onChange={(e) =>
+                        setOfferForm({
+                          ...offerForm,
+                          couponCode: e.target.value.toUpperCase(),
+                        })
+                      }
+                      style={{
+                        width: "100%",
+                        padding: "0.85rem 1rem",
+                        border: "1px solid #d0d0d0",
+                        borderRadius: "8px",
+                        fontSize: "0.95rem",
+                        fontFamily: "Arial, sans-serif",
+                        boxSizing: "border-box",
+                        background: "#fafbfc",
+                      }}
+                    />
                   </div>
 
                   {/* Action Buttons */}
@@ -2106,7 +2186,7 @@ export default function CustomerCareDashboardPage() {
                             lineHeight: 1.5,
                           }}
                         >
-                          {offer.message}
+                          {offer.description}
                         </p>
                         <div
                           style={{
@@ -2114,18 +2194,22 @@ export default function CustomerCareDashboardPage() {
                             gap: "2rem",
                             fontSize: "0.9rem",
                             color: "#777",
+                            flexWrap: "wrap"
                           }}
                         >
                           <div>
-                            <span style={{ color: "#999" }}>✓ Sent to: </span>
+                            <span style={{ color: "#999" }}>◆ Valid From: </span>
                             <strong style={{ color: "#333" }}>
-                              {offer.sentCount || 0}
+                              {offer.validFrom
+                                ? new Date(
+                                    offer.validFrom,
+                                  ).toLocaleDateString()
+                                : "-"}
                             </strong>
                           </div>
                           <div>
                             <span style={{ color: "#999" }}>
-                              ◆ Valid until:{" "}
-                            </span>
+                              ◆ Valid Until: </span>
                             <strong style={{ color: "#333" }}>
                               {offer.validUntil
                                 ? new Date(
@@ -2134,9 +2218,25 @@ export default function CustomerCareDashboardPage() {
                                 : "-"}
                             </strong>
                           </div>
+                          {offer.discountPercentage > 0 && (
+                            <div>
+                              <span style={{ color: "#999" }}>Discount: </span>
+                              <strong style={{ color: "#333" }}>
+                                {offer.discountPercentage}%
+                              </strong>
+                            </div>
+                          )}
+                          {offer.discountAmount > 0 && (
+                            <div>
+                              <span style={{ color: "#999" }}>Discount: </span>
+                              <strong style={{ color: "#333" }}>
+                                Rs. {offer.discountAmount}
+                              </strong>
+                            </div>
+                          )}
                           {offer.couponCode && (
                             <div>
-                              <span style={{ color: "#999" }}>Coupon: </span>
+                              <span style={{ color: "#999" }}>Code: </span>
                               <strong style={{ color: "#333" }}>
                                 {offer.couponCode}
                               </strong>
