@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useRef } from 'react';
 import { jsPDF } from 'jspdf';
-import { FiHome, FiTrendingUp, FiLogOut, FiShield, FiFileText, FiPackage } from 'react-icons/fi';
+import { FiHome, FiTruck, FiFileText, FiLogOut } from 'react-icons/fi';
 import authManager from '../auth.js';
 
 // Chart.js CDN will be loaded in useEffect
@@ -95,7 +95,7 @@ function downloadInvoicePdf(order) {
   doc.save(`invoice-${order.invoiceNumber || order._id?.slice(-8) || 'order'}.pdf`);
 }
 
-// Order Detail Modal Component
+// Order Detail Modal Component (now includes email and phone prominently)
 function OrderDetailModal({ order, onClose, getStatusColor }) {
   if (!order) return null;
 
@@ -121,7 +121,9 @@ function OrderDetailModal({ order, onClose, getStatusColor }) {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
             <div>
               <p><strong>Order #:</strong> {order.orderNumber || order._id?.slice(-8)}</p>
-              <p><strong>Customer:</strong> {order.customerName || order.customerEmail}</p>
+              <p><strong>Customer Name:</strong> {order.customerName || order.customerEmail}</p>
+              <p><strong>Email:</strong> {order.customerEmail || 'N/A'}</p>
+              <p><strong>Phone:</strong> {order.phoneNumber || 'N/A'}</p>
               <p><strong>Date:</strong> {new Date(order.createdAt).toLocaleString()}</p>
               <p><strong>Status:</strong> <span style={{ padding: '0.25rem 0.6rem', borderRadius: '20px', background: getStatusColor(order.status) }}>{order.status}</span></p>
             </div>
@@ -148,7 +150,6 @@ function OrderDetailModal({ order, onClose, getStatusColor }) {
               </tr>
             </tbody>
           </table>
-          <p><strong>Phone:</strong> {order.phoneNumber || 'N/A'}</p>
           <p><strong>Collection:</strong> Shop Collection</p>
           {order.paymentReceipt && <p><strong>Payment Receipt:</strong> <a href={order.paymentReceipt} target="_blank" rel="noreferrer" style={{ color: '#C5A059', fontWeight: 600 }}>View Receipt</a></p>}
           {order.orderNotes && <p><strong>Notes:</strong> {order.orderNotes}</p>}
@@ -214,7 +215,7 @@ function InvoiceModal({ order, onClose }) {
   );
 }
 
-// Create Manual Order Modal (styled consistently)
+// Create Manual Order Modal with phone validation
 function CreateOrderModal({ onClose, onOrderCreated, products }) {
   const [formData, setFormData] = useState({
     customerName: '',
@@ -227,6 +228,8 @@ function CreateOrderModal({ onClose, onOrderCreated, products }) {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+
+  const isValidPhone = (phone) => /^\d{10}$/.test(phone);
 
   const updateItem = (index, field, value) => {
     setFormData(prev => ({
@@ -278,6 +281,11 @@ function CreateOrderModal({ onClose, onOrderCreated, products }) {
 
     if (!formData.customerName || !formData.customerEmail || !formData.phoneNumber) {
       setError('Please fill in all customer details');
+      return;
+    }
+
+    if (!isValidPhone(formData.phoneNumber)) {
+      setError('Phone number must be exactly 10 digits (numbers only)');
       return;
     }
 
@@ -353,8 +361,18 @@ function CreateOrderModal({ onClose, onOrderCreated, products }) {
               <input type="email" value={formData.customerEmail} onChange={e => setFormData(prev => ({ ...prev, customerEmail: e.target.value }))} required style={{ width: '100%', padding: '0.6rem', border: '1px solid #EAD7C4', borderRadius: '20px', fontSize: '0.9rem', background: '#FEFCF8' }} />
             </div>
             <div>
-              <label style={{ display: 'block', marginBottom: '0.3rem', fontWeight: 600, fontSize: '0.9rem' }}>Phone Number *</label>
-              <input type="tel" value={formData.phoneNumber} onChange={e => setFormData(prev => ({ ...prev, phoneNumber: e.target.value }))} required style={{ width: '100%', padding: '0.6rem', border: '1px solid #EAD7C4', borderRadius: '20px', fontSize: '0.9rem', background: '#FEFCF8' }} />
+              <label style={{ display: 'block', marginBottom: '0.3rem', fontWeight: 600, fontSize: '0.9rem' }}>Phone Number * (10 digits)</label>
+              <input
+                type="tel"
+                value={formData.phoneNumber}
+                onChange={e => setFormData(prev => ({ ...prev, phoneNumber: e.target.value }))}
+                required
+                maxLength="10"
+                inputMode="numeric"
+                pattern="\d{10}"
+                title="Please enter exactly 10 digits"
+                style={{ width: '100%', padding: '0.6rem', border: '1px solid #EAD7C4', borderRadius: '20px', fontSize: '0.9rem', background: '#FEFCF8' }}
+              />
             </div>
             <div>
               <label style={{ display: 'block', marginBottom: '0.3rem', fontWeight: 600, fontSize: '0.9rem' }}>Payment Method</label>
@@ -445,10 +463,10 @@ export default function OrderManagementDashboardPage() {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [invoiceOrder, setInvoiceOrder] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard', 'orders', 'invoices'
-  const [isLogoutHovered, setIsLogoutHovered] = useState(false);
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [searchTerm, setSearchTerm] = useState('');
   const chartRef = useRef(null);
-  let chartInstance = useRef(null);
+  const chartInstance = useRef(null);
 
   const stats = useMemo(() => {
     const pending = orders.filter(o => o.status === 'Pending').length;
@@ -459,50 +477,101 @@ export default function OrderManagementDashboardPage() {
     return { pending, confirmed, invoiced, completed, revenue };
   }, [orders]);
 
+  // Apply both status filter and search term
   const filteredOrders = useMemo(() => {
-    if (statusFilter === 'all') return orders;
-    return orders.filter(order => order.status === statusFilter);
-  }, [orders, statusFilter]);
+    let filtered = orders;
+    
+    // Status filter
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(order => order.status === statusFilter);
+    }
+    
+    // Search filter (order number, customer name, customer email, phone number)
+    if (searchTerm.trim()) {
+      const term = searchTerm.trim().toLowerCase();
+      filtered = filtered.filter(order => 
+        (order.orderNumber || '').toLowerCase().includes(term) ||
+        (order._id || '').slice(-8).toLowerCase().includes(term) ||
+        (order.customerName || '').toLowerCase().includes(term) ||
+        (order.customerEmail || '').toLowerCase().includes(term) ||
+        (order.phoneNumber || '').toLowerCase().includes(term)
+      );
+    }
+    
+    return filtered;
+  }, [orders, statusFilter, searchTerm]);
 
   const invoicesList = useMemo(() => {
-    return orders.filter(o => o.invoiceNumber).sort((a, b) => new Date(b.invoiceDate || b.updatedAt || b.createdAt) - new Date(a.invoiceDate || a.updatedAt || a.createdAt));
+    let filtered = orders.filter(o => o.invoiceNumber);
+    
+    // Apply search filter to invoices too
+    if (searchTerm.trim()) {
+      const term = searchTerm.trim().toLowerCase();
+      filtered = filtered.filter(order => 
+        (order.invoiceNumber || '').toLowerCase().includes(term) ||
+        (order.orderNumber || '').toLowerCase().includes(term) ||
+        (order._id || '').slice(-8).toLowerCase().includes(term) ||
+        (order.customerName || '').toLowerCase().includes(term) ||
+        (order.customerEmail || '').toLowerCase().includes(term) ||
+        (order.phoneNumber || '').toLowerCase().includes(term)
+      );
+    }
+    
+    return filtered.sort((a, b) => new Date(b.invoiceDate || b.updatedAt || b.createdAt) - new Date(a.invoiceDate || a.updatedAt || a.createdAt));
+  }, [orders, searchTerm]);
+
+  // Calculate weekly revenue (last 7 days) from orders
+  const weeklyRevenueData = useMemo(() => {
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const today = new Date();
+    const result = [];
+    
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(today.getDate() - i);
+      date.setHours(0, 0, 0, 0);
+      const nextDate = new Date(date);
+      nextDate.setDate(date.getDate() + 1);
+      
+      const dayRevenue = orders
+        .filter(order => {
+          if (!order.createdAt) return false;
+          const orderDate = new Date(order.createdAt);
+          return orderDate >= date && orderDate < nextDate;
+        })
+        .reduce((sum, order) => sum + (order.total || order.totalAmount || 0), 0);
+      
+      result.push({
+        label: days[date.getDay()],
+        value: dayRevenue
+      });
+    }
+    return result;
   }, [orders]);
 
+  // Initialize or update chart when weeklyRevenueData changes
   useEffect(() => {
-    document.title = 'Order Management Dashboard - Saranya Jewellery';
-  }, []);
-
-  useEffect(() => {
-    // Load Chart.js if not already loaded
-    if (!window.Chart) {
-      const script = document.createElement('script');
-      script.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js';
-      script.onload = () => {
-        // Small delay to ensure DOM is ready
-        setTimeout(() => initChart(), 100);
-      };
-      document.head.appendChild(script);
-    } else {
-      // Small delay to ensure DOM is ready
-      setTimeout(() => initChart(), 100);
-    }
-    return () => {
-      if (chartInstance.current) chartInstance.current.destroy();
-    };
-  }, [activeTab]);
-
-  function initChart() {
+    if (!window.Chart) return;
+    
     const canvas = document.getElementById('revenueChart');
-    if (!canvas || !window.Chart) return;
-    if (chartInstance.current) chartInstance.current.destroy();
+    if (!canvas) return;
+    
     const ctx = canvas.getContext('2d');
+    
+    if (chartInstance.current) {
+      chartInstance.current.destroy();
+    }
+    
+    const labels = weeklyRevenueData.map(d => d.label);
+    const dataValues = weeklyRevenueData.map(d => d.value / 1000); // Convert to K
+    
     chartInstance.current = new window.Chart(ctx, {
       type: 'bar',
       data: {
-        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+        labels,
         datasets: [{
           label: 'Revenue (LKR K)',
-          data: [182, 236, 210, 266, 334, 395, 350],
+          data: dataValues,
           backgroundColor: '#D4AF37',
           borderRadius: 12,
           barPercentage: 0.65,
@@ -514,15 +583,49 @@ export default function OrderManagementDashboardPage() {
         maintainAspectRatio: true,
         plugins: {
           legend: { display: false },
-          tooltip: { callbacks: { label: (ctx) => `Rs${ctx.raw}K` } }
+          tooltip: {
+            callbacks: {
+              label: (ctx) => {
+                const rawValue = weeklyRevenueData[ctx.dataIndex].value;
+                return `Rs ${rawValue.toLocaleString()}`;
+              }
+            }
+          }
         },
         scales: {
-          y: { grid: { color: '#F3E9DE' }, ticks: { callback: (val) => 'Rs'+val+'K' } },
-          x: { grid: { display: false } }
+          y: {
+            grid: { color: '#F3E9DE' },
+            ticks: {
+              callback: (val) => 'Rs ' + val + 'K'
+            }
+          },
+          x: {
+            grid: { display: false }
+          }
         }
       }
     });
-  }
+  }, [weeklyRevenueData]);
+
+  useEffect(() => {
+    document.title = 'Order Management Dashboard - Saranya Jewellery';
+    
+    // Load Chart.js if not already loaded
+    if (!window.Chart) {
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js';
+      script.onload = () => {
+        // Chart will be drawn by the useEffect above when weeklyRevenueData is ready
+      };
+      document.head.appendChild(script);
+    }
+    
+    return () => {
+      if (chartInstance.current) {
+        chartInstance.current.destroy();
+      }
+    };
+  }, []);
 
   useEffect(() => {
     async function bootstrap() {
@@ -636,8 +739,8 @@ export default function OrderManagementDashboardPage() {
   if (!staffUser) return <div style={{ padding: '2rem', textAlign: 'center', background: '#FDF9F2', minHeight: '100vh' }}>Checking order management access...</div>;
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#FDF9F2' }}>
-      {/* Sidebar */}
+    <div style={{ display: 'flex', minHeight: '100vh', background: '#FDF9F2', fontFamily: "'Inter', sans-serif" }}>
+      {/* Sidebar - Redesigned to match Admin Dashboard */}
       <aside style={{
         width: '320px',
         background: '#6f0022',
@@ -655,7 +758,7 @@ export default function OrderManagementDashboardPage() {
           padding: '2rem 1.5rem 1.5rem',
           borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
         }}>
-          <h1 style={{
+          <h2 style={{
             margin: 0,
             fontSize: '1.2rem',
             fontFamily: 'Cormorant Garamond, serif',
@@ -667,9 +770,9 @@ export default function OrderManagementDashboardPage() {
             gap: '0.6rem',
             textTransform: 'uppercase'
           }}>
-            <FiShield size={28} />
+            <FiHome size={28} />
             Order Management
-          </h1>
+          </h2>
         </div>
 
         {/* Navigation Items */}
@@ -681,15 +784,14 @@ export default function OrderManagementDashboardPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             {[
               { key: 'dashboard', icon: FiHome, label: 'Dashboard' },
-              { key: 'orders', icon: FiPackage, label: 'Orders' },
+              { key: 'orders', icon: FiTruck, label: 'Orders' },
               { key: 'invoices', icon: FiFileText, label: 'Invoices' }
             ].map((item) => {
               const isActive = activeTab === item.key;
-              const IconComponent = item.icon;
+              const Icon = item.icon;
               return (
                 <button
                   key={item.key}
-                  type="button"
                   onClick={() => setActiveTab(item.key)}
                   style={{
                     display: 'flex',
@@ -702,24 +804,19 @@ export default function OrderManagementDashboardPage() {
                     border: 'none',
                     borderRadius: '10px',
                     fontSize: '1.1rem',
-                    fontFamily: 'Poppins, sans-serif',
                     fontWeight: isActive ? 600 : 500,
                     cursor: 'pointer',
                     transition: 'all 0.3s',
                     textAlign: 'left'
                   }}
                   onMouseEnter={(e) => {
-                    if (!isActive) {
-                      e.currentTarget.style.background = 'rgba(224, 191, 99, 0.1)';
-                    }
+                    if (!isActive) e.currentTarget.style.background = 'rgba(224, 191, 99, 0.1)';
                   }}
                   onMouseLeave={(e) => {
-                    if (!isActive) {
-                      e.currentTarget.style.background = 'transparent';
-                    }
+                    if (!isActive) e.currentTarget.style.background = 'transparent';
                   }}
                 >
-                  <IconComponent size={24} style={{ minWidth: '24px' }} />
+                  <Icon size={24} />
                   <span>{item.label}</span>
                 </button>
               );
@@ -727,7 +824,7 @@ export default function OrderManagementDashboardPage() {
           </div>
         </nav>
 
-        {/* User Profile Section */}
+        {/* User Profile & Logout */}
         <div style={{
           padding: '1.5rem',
           borderTop: '1px solid rgba(255, 255, 255, 0.1)',
@@ -764,7 +861,7 @@ export default function OrderManagementDashboardPage() {
           <button
             onClick={() => authManager.logout()}
             style={{
-              background: isLogoutHovered ? 'rgba(255, 255, 255, 0.3)' : 'rgba(255, 255, 255, 0.2)',
+              background: 'rgba(255, 255, 255, 0.2)',
               color: '#fff',
               border: 'none',
               width: '32px',
@@ -779,8 +876,8 @@ export default function OrderManagementDashboardPage() {
               flexShrink: 0
             }}
             title="Logout"
-            onMouseEnter={() => setIsLogoutHovered(true)}
-            onMouseLeave={() => setIsLogoutHovered(false)}
+            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)'}
+            onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'}
           >
             <FiLogOut size={20} />
           </button>
@@ -788,19 +885,19 @@ export default function OrderManagementDashboardPage() {
       </aside>
 
       {/* Main Content */}
-      <main style={{
-        flex: 1,
-        marginLeft: '320px',
-        padding: '2rem',
-        overflowY: 'auto',
-        background: '#FDF9F2'
-      }}>
+      <main style={{ flex: 1, marginLeft: '320px', padding: '1.8rem 2.2rem', background: '#FDF9F2' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', marginBottom: '2rem' }}>
           <div>{/* Empty for spacing */}</div>
           <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
             <div style={{ background: 'white', padding: '0.5rem 1rem', borderRadius: '60px', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 2px 6px rgba(0,0,0,0.02)', border: '1px solid #F0E2D2' }}>
               <i className="fas fa-search" style={{ color: '#C5A15B' }}></i>
-              <input type="text" placeholder="Search orders..." style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '0.85rem', width: '180px' }} />
+              <input
+                type="text"
+                placeholder="Search orders..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '0.85rem', width: '180px' }}
+              />
             </div>
             <div style={{ width: '42px', height: '42px', background: '#EADECF', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#A87B41', fontWeight: 'bold', fontSize: '1.1rem' }}>
               <i className="fas fa-user-astronaut"></i>
@@ -854,7 +951,7 @@ export default function OrderManagementDashboardPage() {
                       <tr><th style={{ textAlign: 'left', padding: '0.8rem 1rem', color: '#A27D53' }}>Order ID</th><th>Customer</th><th>Amount</th><th>Status</th></tr>
                     </thead>
                     <tbody>
-                      {orders.slice(0, 3).map(order => (
+                      {filteredOrders.slice(0, 3).map(order => (
                         <tr key={order._id}>
                           <td style={{ padding: '0.7rem 1rem', borderTop: '1px solid #F4E9DF' }}>{order.orderNumber || order._id?.slice(-8)}</td>
                           <td style={{ padding: '0.7rem 1rem', borderTop: '1px solid #F4E9DF' }}>{order.customerName || order.customerEmail}</td>
@@ -862,7 +959,7 @@ export default function OrderManagementDashboardPage() {
                           <td style={{ padding: '0.7rem 1rem', borderTop: '1px solid #F4E9DF' }}><span className="status" style={{ background: '#EAF6E6', color: '#4D6A3B', padding: '0.2rem 0.8rem', borderRadius: '30px', fontSize: '0.7rem' }}>{order.status}</span></td>
                         </tr>
                       ))}
-                      {orders.length === 0 && <tr><td colSpan="4" style={{ padding: '1rem', textAlign: 'center' }}>No orders yet</td></tr>}
+                      {filteredOrders.length === 0 && <tr><td colSpan="4" style={{ padding: '1rem', textAlign: 'center' }}>No orders found</td></tr>}
                     </tbody>
                   </table>
                 </div>
@@ -872,7 +969,7 @@ export default function OrderManagementDashboardPage() {
           </>
         )}
 
-        {/* ORDERS TAB */}
+        {/* ORDERS TAB - removed email and phone columns, only customer name shown */}
         {activeTab === 'orders' && (
           <>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap' }}>
@@ -906,20 +1003,20 @@ export default function OrderManagementDashboardPage() {
               ))}
             </div>
 
-            {/* Orders Table */}
+            {/* Orders Table - simple columns, contact details only in View modal */}
             <div style={{ background: 'white', borderRadius: '28px', padding: '1rem 0', border: '1px solid #F0E2D2', overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
                 <thead>
-                  <tr style={{ background: '#5C1D28' }}>
-                    <th style={{ textAlign: 'left', padding: '1rem 1.2rem', color: '#E8C89F', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '0.5px' }}>Order ID</th>
-                    <th style={{ textAlign: 'left', padding: '1rem 1.2rem', color: '#E8C89F', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '0.5px' }}>Customer</th>
-                    <th style={{ textAlign: 'left', padding: '1rem 1.2rem', color: '#E8C89F', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '0.5px' }}>Date</th>
-                    <th style={{ textAlign: 'left', padding: '1rem 1.2rem', color: '#E8C89F', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '0.5px' }}>Items</th>
-                    <th style={{ textAlign: 'left', padding: '1rem 1.2rem', color: '#E8C89F', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '0.5px' }}>Amount</th>
-                    <th style={{ textAlign: 'left', padding: '1rem 1.2rem', color: '#E8C89F', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '0.5px' }}>Status</th>
-                    <th style={{ textAlign: 'left', padding: '1rem 1.2rem', color: '#E8C89F', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '0.5px' }}>Payment</th>
-                    <th style={{ textAlign: 'left', padding: '1rem 1.2rem', color: '#E8C89F', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '0.5px' }}>Invoice</th>
-                    <th style={{ textAlign: 'left', padding: '1rem 1.2rem', color: '#E8C89F', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '0.5px', minWidth: '200px' }}>Actions</th>
+                  <tr>
+                    <th style={{ textAlign: 'left', padding: '1rem 1.2rem', color: '#A27D53', fontWeight: 600 }}>Order ID</th>
+                    <th style={{ textAlign: 'left', padding: '1rem 1.2rem', color: '#A27D53', fontWeight: 600 }}>Customer Name</th>
+                    <th style={{ textAlign: 'left', padding: '1rem 1.2rem', color: '#A27D53', fontWeight: 600 }}>Date</th>
+                    <th style={{ textAlign: 'left', padding: '1rem 1.2rem', color: '#A27D53', fontWeight: 600 }}>Items</th>
+                    <th style={{ textAlign: 'left', padding: '1rem 1.2rem', color: '#A27D53', fontWeight: 600 }}>Amount</th>
+                    <th style={{ textAlign: 'left', padding: '1rem 1.2rem', color: '#A27D53', fontWeight: 600 }}>Status</th>
+                    <th style={{ textAlign: 'left', padding: '1rem 1.2rem', color: '#A27D53', fontWeight: 600 }}>Payment</th>
+                    <th style={{ textAlign: 'left', padding: '1rem 1.2rem', color: '#A27D53', fontWeight: 600 }}>Invoice</th>
+                    <th style={{ textAlign: 'left', padding: '1rem 1.2rem', color: '#A27D53', fontWeight: 600, minWidth: '200px' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -929,7 +1026,7 @@ export default function OrderManagementDashboardPage() {
                     filteredOrders.map(order => (
                       <tr key={order._id}>
                         <td style={{ padding: '0.9rem 1.2rem', borderTop: '1px solid #F4E9DF' }}>{order.orderNumber || order._id?.slice(-8)}</td>
-                        <td style={{ padding: '0.9rem 1.2rem', borderTop: '1px solid #F4E9DF' }}>{order.customerName || order.customerEmail || 'N/A'}</td>
+                        <td style={{ padding: '0.9rem 1.2rem', borderTop: '1px solid #F4E9DF' }}>{order.customerName || 'N/A'}</td>
                         <td style={{ padding: '0.9rem 1.2rem', borderTop: '1px solid #F4E9DF' }}>{new Date(order.createdAt).toLocaleDateString()}</td>
                         <td style={{ padding: '0.9rem 1.2rem', borderTop: '1px solid #F4E9DF' }}>{order.items?.length || 0} items</td>
                         <td style={{ padding: '0.9rem 1.2rem', borderTop: '1px solid #F4E9DF', fontWeight: 600 }}>{formatCurrency(order.totalAmount || order.total || 0)}</td>
@@ -958,18 +1055,18 @@ export default function OrderManagementDashboardPage() {
             <h3 style={{ fontFamily: "'Playfair Display', serif", margin: '0 0 1rem 1.2rem', color: '#352A22' }}>Created Invoices</h3>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
               <thead>
-                <tr style={{ background: '#5C1D28' }}>
-                  <th style={{ textAlign: 'left', padding: '0.9rem 1.2rem', color: '#E8C89F', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '0.5px' }}>Invoice No</th>
-                  <th style={{ textAlign: 'left', padding: '0.9rem 1.2rem', color: '#E8C89F', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '0.5px' }}>Order No</th>
-                  <th style={{ textAlign: 'left', padding: '0.9rem 1.2rem', color: '#E8C89F', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '0.5px' }}>Customer</th>
-                  <th style={{ textAlign: 'left', padding: '0.9rem 1.2rem', color: '#E8C89F', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '0.5px' }}>Date</th>
-                  <th style={{ textAlign: 'left', padding: '0.9rem 1.2rem', color: '#E8C89F', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '0.5px' }}>Amount</th>
-                  <th style={{ textAlign: 'left', padding: '0.9rem 1.2rem', color: '#E8C89F', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '0.5px' }}>Action</th>
+                <tr>
+                  <th style={{ textAlign: 'left', padding: '0.9rem 1.2rem', color: '#A27D53' }}>Invoice No</th>
+                  <th>Order No</th>
+                  <th>Customer</th>
+                  <th>Date</th>
+                  <th>Amount</th>
+                  <th>Action</th>
                 </tr>
               </thead>
               <tbody>
                 {invoicesList.length === 0 ? (
-                  <tr><td colSpan="6" style={{ padding: '1.5rem', textAlign: 'center', color: '#999' }}>No invoices created yet</td></tr>
+                  <tr><td colSpan="6" style={{ padding: '1.5rem', textAlign: 'center', color: '#999' }}>No invoices found</td></tr>
                 ) : (
                   invoicesList.map(order => (
                     <tr key={order._id}>
@@ -988,6 +1085,10 @@ export default function OrderManagementDashboardPage() {
             </table>
           </div>
         )}
+
+        <footer style={{ marginTop: '2rem', textAlign: 'center', fontSize: '0.7rem', color: '#C7B29A', paddingTop: '1rem' }}>
+          © Saranya Jewellery — handcrafted excellence | order management studio
+        </footer>
       </main>
 
       {/* Modals */}
