@@ -21,7 +21,7 @@ const emptySupplier = {
 
 export default function InventoryDashboardPage() {
   const [staffUser, setStaffUser] = useState(null);
-  const [activeTab, setActiveTab] = useState('alerts'); // 'alerts', 'stock', 'rates', 'suppliers'
+  const [activeTab, setActiveTab] = useState('stock'); // 'alerts', 'stock', 'rates', 'suppliers'
   
   // Stock state
   const [stockRows, setStockRows] = useState([]);
@@ -782,6 +782,14 @@ export default function InventoryDashboardPage() {
       {/* STOCK TAB */}
       {activeTab === 'stock' && (
         <div>
+          {/* Gold Rate Display */}
+          <section style={{ background: 'linear-gradient(135deg, #e0bf63 0%, #d4af37 100%)', border: '2px solid #b8860b', borderRadius: 12, padding: '1.5rem', marginBottom: '1.5rem' }}>
+            <div>
+              <p style={{ margin: '0 0 0.5rem', color: '#3d2b00', fontSize: '0.95rem', fontWeight: '600', letterSpacing: '0.5px' }}>TODAY'S 22K GOLD RATE</p>
+              <h2 style={{ margin: 0, color: '#3d2b00', fontSize: '2rem', fontWeight: '700' }}>Rs. {goldRates['22K'] ? goldRates['22K'].toLocaleString('en-IN') : 'N/A'} <span style={{ fontSize: '0.9rem', fontWeight: '500' }}>per gram</span></h2>
+            </div>
+          </section>
+
           <section style={{ background: '#fafbfc', border: '1px solid #eee', borderRadius: 12, padding: '1.5rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
               <h3 style={{ marginTop: 0, color: '#6f0022', fontSize: '1.1rem' }}>Stock Inventory</h3>
@@ -820,6 +828,7 @@ export default function InventoryDashboardPage() {
                       <th style={{ textAlign: 'left', padding: '0.8rem', fontWeight: '700', color: '#fff', fontSize: '0.78rem', letterSpacing: '0.06em' }}>KARAT</th>
                       <th style={{ textAlign: 'left', padding: '0.8rem', fontWeight: '700', color: '#fff', fontSize: '0.78rem', letterSpacing: '0.06em' }}>WEIGHT</th>
                       <th style={{ textAlign: 'center', padding: '0.8rem', fontWeight: '700', color: '#fff', fontSize: '0.78rem', letterSpacing: '0.06em' }}>QTY</th>
+                      <th style={{ textAlign: 'center', padding: '0.8rem', fontWeight: '700', color: '#fff', fontSize: '0.78rem', letterSpacing: '0.06em' }}>STATUS</th>
                       <th style={{ textAlign: 'left', padding: '0.8rem', fontWeight: '700', color: '#fff', fontSize: '0.78rem', letterSpacing: '0.06em' }}>SUPPLIER</th>
                       <th style={{ textAlign: 'center', padding: '0.8rem', fontWeight: '700', color: '#fff', fontSize: '0.78rem', letterSpacing: '0.06em' }}>ACTION</th>
                     </tr>
@@ -833,6 +842,18 @@ export default function InventoryDashboardPage() {
                         <td style={{ padding: '0.8rem', fontWeight: '600', color: '#6f0022' }}>{row.karat || '-'}</td>
                         <td style={{ padding: '0.8rem', color: '#666' }}>{row.weight}g</td>
                         <td style={{ padding: '0.8rem', textAlign: 'center', fontWeight: '600', color: '#6f0022' }}>{row.quantity}</td>
+                        <td style={{ padding: '0.8rem', textAlign: 'center' }}>
+                          <span style={{
+                            padding: '0.4rem 0.8rem',
+                            borderRadius: '6px',
+                            fontSize: '0.85rem',
+                            fontWeight: '600',
+                            background: Number(row.quantity) === 0 ? '#ffebee' : '#e8f5e9',
+                            color: Number(row.quantity) === 0 ? '#c33' : '#1f7a55'
+                          }}>
+                            {Number(row.quantity) === 0 ? 'Out of Stock' : 'In Stock'}
+                          </span>
+                        </td>
                         <td style={{ padding: '0.8rem', fontSize: '0.9rem', color: '#666' }}>{row.supplier || '-'}</td>
                         <td style={{ padding: '0.8rem', textAlign: 'center' }}>
                           <div style={{ display: 'inline-flex', gap: '0.5rem' }}>
